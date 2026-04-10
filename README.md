@@ -1,9 +1,8 @@
 # 🎮 PS3 Rental Manager - Full Stack
 
-A complete rental management solution for PlayStation 3 rental businesses, deployed on Railway's free tier.
+A complete rental management solution for PlayStation 3 rental businesses.
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue)
-![Railway](https://img.shields.io/badge/deploy-railway-8B5CF6)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## ✨ Features
@@ -28,31 +27,35 @@ Authentic PlayStation 3 aesthetic with:
 
 ## 🚀 Quick Start
 
-### Deploy to Railway (Free Tier)
-
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template)
-
-1. Click "Deploy on Railway" button
-2. Set environment variables:
-   - `ADMIN_PASSWORD` = your secure password
-   - `JWT_SECRET` = random 64-char string
-3. Add volume mount at `/app/data`
-4. Done! Your app is live.
-
 ### Local Development
 
 ```bash
 # Clone
 git clone https://github.com/yourusername/ps3-rental-manager.git
-cd ps3-rental-manager/backend
+cd ps3-rental-manager
 
 # Install
 npm install
 
 # Run
-npm run dev
+npm start
 
 # Open http://localhost:3000
+```
+
+### Environment Variables
+
+Create `.env` file:
+```
+ADMIN_PASSWORD=your-secure-password
+JWT_SECRET=your-random-secret-key
+NODE_ENV=production
+DATA_DIR=./data
+```
+
+Generate secure JWT secret:
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
 ## 📱 Usage
@@ -79,22 +82,19 @@ npm run dev
 
 ```
 ┌─────────────────────────────────────────┐
-│           Railway Platform              │
+│         Node.js + Express Server        │
 │  ┌─────────────────────────────────┐   │
-│  │   Node.js + Express Server      │   │
-│  │   ┌─────────────────────────┐   │   │
-│  │   │   Static Files (UI)   │   │   │
-│  │   ├─────────────────────────┤   │   │
-│  │   │   REST API Routes     │   │   │
-│  │   ├─────────────────────────┤   │   │
-│  │   │   JWT Auth Middleware │   │   │
-│  │   ├─────────────────────────┤   │   │
-│  │   │   SQLite Database     │   │   │
-│  │   └─────────────────────────┘   │   │
+│  │   Static Files (UI)           │   │
+│  ├─────────────────────────────────┤   │
+│  │   REST API Routes             │   │
+│  ├─────────────────────────────────┤   │
+│  │   JWT Auth Middleware         │   │
+│  ├─────────────────────────────────┤   │
+│  │   SQLite Database             │   │
 │  └─────────────────────────────────┘   │
 │           ↓ 3s polling                 │
 │  ┌─────────────────────────────────┐   │
-│  │      Mobile/Tablet/Desktop        │   │
+│  │      Mobile/Tablet/Desktop      │   │
 │  └─────────────────────────────────┘   │
 └─────────────────────────────────────────┘
 ```
@@ -150,23 +150,22 @@ npm run dev
 | Frontend | Vanilla JS + CSS Grid |
 | Fonts | Orbitron, Rajdhani |
 | Icons | Emoji (system-native) |
-| Deploy | Railway |
 
 ## 🧪 Testing
 
 ```bash
 # Health check
-curl https://your-app.railway.app/ping
+curl http://localhost:3000/ping
 
 # Login
-curl -X POST https://your-app.railway.app/api/auth/login \
+curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"password":"your-password"}'
+  -d '{"password": "***"}'
 ```
 
 ## 📈 Performance
 
-- **Memory**: ~80MB (fits in Railway free tier)
+- **Memory**: ~80MB
 - **Startup**: < 2 seconds
 - **API response**: < 50ms average
 - **Database**: Handles 10K+ transactions
@@ -197,7 +196,6 @@ Go to Settings → "Manajemen Unit" → "Tambah Unit"
 |-------|----------|
 | Can't login | Check `ADMIN_PASSWORD` env var |
 | Database locked | Restart app (WAL auto-recover) |
-| Slow loading | Check Railway region (use closest) |
 | Sync not working | Check browser console for errors |
 
 ## 🤝 Contributing
@@ -216,7 +214,6 @@ MIT - Feel free to use for your rental business!
 
 - Design inspired by PlayStation 3 XMB (2006-2007)
 - Fonts by Google Fonts (Orbitron, Rajdhani)
-- Deployed on Railway
 
 ---
 

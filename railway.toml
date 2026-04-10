@@ -1,8 +1,0 @@
-[build]
-builder = "nixpacks"
-buildCommand = "npm install"
-
-[deploy]
-startCommand = "node server.js"
-healthcheckPath = "/ping"
-restartPolicyType = "ON_FAILURE"
