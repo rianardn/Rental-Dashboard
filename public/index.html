@@ -1678,6 +1678,12 @@
     let transactions = [];
     let expenses = [];
     let pollTimer = null;
+
+    // Global error handler for mobile debugging
+    window.addEventListener('error', function(e) {
+      showToast('JS Error: ' + e.message.substring(0, 50), 'error');
+      console.error('Global error:', e.message, 'at', e.filename, ':', e.lineno);
+    });
     let isOnline = true;
     
     // ═════════════════ Audio Warning System ═════════════════
@@ -2196,7 +2202,7 @@
               <div class="transaction-unit">${t.unitName}</div>
               <div style="display: flex; align-items: center; gap: 10px;">
                 <div class="transaction-amount">${formatMoney(t.paid)}</div>
-                <button onclick="openEditModal(${t.id})" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Edit transaksi">✏️</button>
+                <button onclick="try { openEditModal(${t.id || 0}); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Edit transaksi">✏️</button>
               </div>
             </div>
             <div class="transaction-details">
