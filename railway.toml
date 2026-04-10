@@ -1,8 +1,7 @@
 [build]
 builder = "nixpacks"
-buildCommand = "cd backend && npm ci"
 
 [deploy]
-startCommand = "cd backend && node server.js"
+startCommand = "node server.js"
 healthcheckPath = "/ping"
 restartPolicyType = "ON_FAILURE"
