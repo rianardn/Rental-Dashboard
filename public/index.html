@@ -2223,9 +2223,12 @@
         container.innerHTML = filtered.map(t => `
           <div class="transaction-item" style="position: relative;" data-tx-id="${t.id || ''}">
             <div class="transaction-header">
-              <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
                 <div class="transaction-unit">${t.unitName}</div>
-                <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${t.id || ''}</span>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <span style="font-size: 0.6rem; color: var(--ps3-muted); text-transform: uppercase; letter-spacing: 0.05em;">TX ID:</span>
+                  <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${t.id || ''}</span>
+                </div>
               </div>
               <div style="display: flex; align-items: center; gap: 6px;">
                 <div class="transaction-amount">${formatMoney(t.paid)}</div>
@@ -2306,9 +2309,12 @@
         container.innerHTML = filteredExpenses.map(e => `
           <div class="transaction-item">
             <div class="transaction-header">
-              <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
                 <div class="transaction-unit">${e.item}</div>
-                <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${e.id || ''}</span>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <span style="font-size: 0.6rem; color: var(--ps3-muted); text-transform: uppercase; letter-spacing: 0.05em;">TX ID:</span>
+                  <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${e.id || ''}</span>
+                </div>
               </div>
               <div class="transaction-amount" style="color: var(--ps3-red);">${formatMoney(e.amount)}</div>
             </div>
