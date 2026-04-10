@@ -3574,7 +3574,7 @@
         closeModal('modalDeleteTransaction');
 
         // Refresh data
-        await fetchData();
+        await loadData();
         renderReports();
       } catch (error) {
         showToast('Gagal menghapus: ' + error.message, 'error');
