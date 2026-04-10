@@ -3507,11 +3507,21 @@
         // Convert datetime-local to timestamp (WIB to UTC)
         const dtLocal = document.getElementById('editExpenseDateTime').value;
         if (dtLocal) {
-          const dt = new Date(dtLocal);
-          // Convert WIB to UTC (subtract 7 hours)
-          updates.created_at = dt.getTime() - (7 * 60 * 60 * 1000);
-          // Also update date field
-          updates.date = dtLocal.split('T')[0];
+          // Parse as WIB (UTC+7) - manually construct UTC timestamp
+          const [datePart, timePart] = dtLocal.split('T');
+          const [year, month, day] = datePart.split('-').map(Number);
+          const [hours, minutes] = timePart.split(':').map(Number);
+          
+          // Create UTC date that represents the WIB time
+          // WIB = UTC+7, so UTC = WIB - 7 hours
+          const utcYear = year;
+          const utcMonth = month - 1; // JS months are 0-indexed
+          const utcDay = day;
+          const utcHours = hours - 7; // Subtract 7 hours for WIB→UTC
+          
+          const utcDate = new Date(Date.UTC(utcYear, utcMonth, utcDay, utcHours, minutes, 0));
+          updates.created_at = utcDate.getTime();
+          updates.date = datePart; // YYYY-MM-DD format
         }
       }
       
@@ -3524,17 +3534,12 @@
         return;
       }
 
-      // Debug logging
-      console.log('Saving expense edit:', { id: currentEditExpenseId, updates, reason });
-
       try {
         const response = await api('PUT', `/expenses/${currentEditExpenseId}`, {
           updates,
           reason,
           editedBy: 'admin'
         });
-
-        console.log('Edit response:', response);
 
         if (response.ok) {
           showToast(`Pengeluaran diperbarui (${response.changes} perubahan)`, 'success');
@@ -3544,17 +3549,14 @@
           document.getElementById('editExpenseStep3').style.display = 'block';
           await loadExpenseEditHistory(currentEditExpenseId);
 
-          // Refresh data - force full reload from server
-          console.log('Refreshing data after edit...');
+          // Refresh data and re-render
           await loadData();
-          console.log('Data refreshed, expenses:', expenses.find(e => e.id === currentEditExpenseId));
           renderExpenses();
           renderReports();
         } else {
           showToast(response.error || 'Gagal mengupdate pengeluaran', 'error');
         }
       } catch (error) {
-        console.error('Edit error:', error);
         showToast(error.message || 'Terjadi kesalahan', 'error');
       }
     }
