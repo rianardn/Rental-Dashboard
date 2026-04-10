@@ -885,6 +885,30 @@
       font-weight: 600;
     }
 
+    .tx-id-badge {
+      font-family: 'Courier New', monospace;
+      font-size: 0.65rem;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: var(--ps3-muted);
+      cursor: pointer;
+      user-select: all;
+      transition: all 0.15s ease;
+      letter-spacing: 0.02em;
+    }
+
+    .tx-id-badge:hover {
+      background: rgba(230,0,18,0.15);
+      border-color: var(--ps3-red);
+      color: var(--ps3-text);
+    }
+
+    .tx-id-badge:active {
+      transform: scale(0.95);
+    }
+
     .transaction-amount {
       font-family: var(--font-display);
       font-size: 1rem;
@@ -2199,7 +2223,10 @@
         container.innerHTML = filtered.map(t => `
           <div class="transaction-item" style="position: relative;" data-tx-id="${t.id || ''}">
             <div class="transaction-header">
-              <div class="transaction-unit">${t.unitName}</div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="transaction-unit">${t.unitName}</div>
+                <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${t.id || ''}</span>
+              </div>
               <div style="display: flex; align-items: center; gap: 6px;">
                 <div class="transaction-amount">${formatMoney(t.paid)}</div>
                 <button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1.1rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>
@@ -2279,7 +2306,10 @@
         container.innerHTML = filteredExpenses.map(e => `
           <div class="transaction-item">
             <div class="transaction-header">
-              <div class="transaction-unit">${e.item}</div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="transaction-unit">${e.item}</div>
+                <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${e.id || ''}</span>
+              </div>
               <div class="transaction-amount" style="color: var(--ps3-red);">${formatMoney(e.amount)}</div>
             </div>
             <div class="transaction-meta">
@@ -3241,6 +3271,72 @@
     function formatDate(timestamp) {
       return new Date(timestamp).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     }
+
+    async function copyToClipboard(text) {
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast(`ID disalin: ${text}`);
+      } catch (err) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          showToast(`ID disalin: ${text}`);
+        } catch (e) {
+          alert('Gagal copy ID: ' + text);
+        }
+        document.body.removeChild(textArea);
+      }
+    }
+
+    function showToast(message) {
+      const existing = document.querySelector('.toast-notification');
+      if (existing) existing.remove();
+
+      const toast = document.createElement('div');
+      toast.className = 'toast-notification';
+      toast.textContent = message;
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.9);
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        z-index: 10000;
+        border: 1px solid var(--ps3-red);
+        box-shadow: 0 4px 20px rgba(230,0,18,0.3);
+        animation: fadeInUp 0.3s ease;
+      `;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'fadeOutDown 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 2000);
+    }
+
+    // Toast animations
+    const toastStyles = document.createElement('style');
+    toastStyles.textContent = `
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translate(-50%, 20px); }
+        to { opacity: 1; transform: translate(-50%, 0); }
+      }
+      @keyframes fadeOutDown {
+        from { opacity: 1; transform: translate(-50%, 0); }
+        to { opacity: 0; transform: translate(-50%, 20px); }
+      }
+    `;
+    document.head.appendChild(toastStyles);
 
     // ═════════════════ Event Listeners ═════════════════
     document.getElementById('loginForm').addEventListener('submit', (e) => {
