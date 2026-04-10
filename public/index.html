@@ -1802,7 +1802,8 @@
 
     // Configuration
     const API_URL = ''; // Same origin (Railway serves both frontend and API)
-    const POLL_INTERVAL = 10000; // 10 seconds for real-time updates (reduced to allow text selection)
+    const POLL_INTERVAL = 10000; // 10 seconds for data fetching (allows text selection)
+    const TIMER_INTERVAL = 1000; // 1 second for timer updates (smooth countdown)
     
     // Helpers - WIB timezone (UTC+7) for Indonesia
     function getWIBDateISO() {
@@ -1825,6 +1826,7 @@
     let transactions = [];
     let expenses = [];
     let pollTimer = null;
+    let timerInterval = null;
 
     // Global error handler for mobile debugging
     window.addEventListener('error', function(e) {
@@ -2068,6 +2070,7 @@
         await loadData();
         renderAll();
         startPolling();
+        startTimers(); // Start timer updates separately (1 second interval)
         showLoading(false);
       } catch (error) {
         showLoading(false);
@@ -2119,6 +2122,61 @@
           console.error('Poll error:', e);
         }
       }, POLL_INTERVAL);
+    }
+
+    // Separate timer update - runs every 1 second for smooth countdown (doesn't affect text selection)
+    function startTimers() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        updateTimers();
+      }, TIMER_INTERVAL);
+    }
+
+    function updateTimers() {
+      const timerDisplays = document.querySelectorAll('.timer-display[data-unit-id]');
+      const now = Date.now();
+      const warnMs = settings.warnBefore * 60000;
+      const FINAL_ALERT_SECONDS = 30;
+
+      timerDisplays.forEach(display => {
+        const unitId = parseInt(display.dataset.unitId);
+        const startTime = parseInt(display.dataset.startTime);
+        const duration = parseInt(display.dataset.duration);
+
+        if (!startTime) return;
+
+        const elapsed = now - startTime;
+        const countdownEl = display.querySelector('[data-timer-type="countdown"]');
+        const elapsedEl = display.querySelector('[data-timer-type="elapsed"]');
+
+        if (elapsedEl) {
+          elapsedEl.textContent = formatTime(elapsed);
+        }
+
+        if (countdownEl && duration > 0) {
+          const remaining = (duration * 60000) - elapsed;
+          const isWarning = remaining < warnMs && remaining > 0;
+          const isExpired = remaining <= 0;
+          const isFinal30Seconds = remaining <= (FINAL_ALERT_SECONDS * 1000) && remaining > 0;
+
+          // Update class for styling
+          countdownEl.className = 'timer-countdown';
+          if (isExpired) countdownEl.classList.add('expired');
+          else if (isWarning) countdownEl.classList.add('warning');
+
+          countdownEl.textContent = isExpired ? 'WAKTU HABIS' : formatTime(remaining);
+
+          // Play warning jingle only in LAST 30 SECONDS
+          if (isFinal30Seconds && !warnedUnits.has(unitId)) {
+            warnedUnits.add(unitId);
+            const unitIndex = units.findIndex(u => u.id === unitId);
+            if (unitIndex >= 0) playWarningJingle(unitIndex);
+          }
+          if (!isFinal30Seconds && warnedUnits.has(unitId)) {
+            warnedUnits.delete(unitId);
+          }
+        }
+      });
     }
 
     // ═════════════════ Rendering ═════════════════
@@ -2197,34 +2255,22 @@
           const isWarning = remaining < warnMs && remaining > 0;
           const isExpired = remaining <= 0;
           
-          // Play warning jingle only in LAST 30 SECONDS (30,000ms) - not when entering warning state
-          const FINAL_ALERT_SECONDS = 30;
-          const isFinal30Seconds = remaining <= (FINAL_ALERT_SECONDS * 1000) && remaining > 0;
-          
-          if (isFinal30Seconds && !warnedUnits.has(unit.id)) {
-            warnedUnits.add(unit.id);
-            const unitIndex = units.findIndex(u => u.id === unit.id);
-            playWarningJingle(unitIndex);
-          }
-          // Clear warning flag when session ends or passes final 30 seconds
-          if (!isFinal30Seconds && warnedUnits.has(unit.id)) {
-            warnedUnits.delete(unit.id);
-          }
+          // Note: Warning jingle logic moved to updateTimers() for real-time updates
           
           timerHTML = `
-            <div class="timer-display">
-              <div class="timer-countdown ${isWarning ? 'warning' : ''} ${isExpired ? 'expired' : ''}">
+            <div class="timer-display" data-unit-id="${unit.id}" data-start-time="${unit.startTime}" data-duration="${unit.duration}">
+              <div class="timer-countdown ${isWarning ? 'warning' : ''} ${isExpired ? 'expired' : ''}" data-timer-type="countdown">
                 ${isExpired ? 'WAKTU HABIS' : formatTime(remaining)}
               </div>
-              <div class="timer-elapsed">${formatTime(elapsed)}</div>
+              <div class="timer-elapsed" data-timer-type="elapsed">${formatTime(elapsed)}</div>
             </div>
           `;
         } else {
           // Open session (no duration limit)
           timerHTML = `
-            <div class="timer-display">
-              <div class="timer-countdown infinite">∞</div>
-              <div class="timer-elapsed">${formatTime(elapsed)}</div>
+            <div class="timer-display" data-unit-id="${unit.id}" data-start-time="${unit.startTime}" data-duration="0">
+              <div class="timer-countdown infinite" data-timer-type="countdown">∞</div>
+              <div class="timer-elapsed" data-timer-type="elapsed">${formatTime(elapsed)}</div>
             </div>
           `;
         }
