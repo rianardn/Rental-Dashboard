@@ -310,7 +310,10 @@ app.post('/api/transactions', (req, res) => {
 app.put('/api/transactions/:id', (req, res) => {
   try {
     const { updates, reason } = req.body;
-    const result = updateTransaction(parseInt(req.params.id), updates, reason, req.body.editedBy);
+    if (!updates || typeof updates !== 'object') {
+      return res.status(400).json({ ok: false, error: 'Invalid updates object' });
+    }
+    const result = updateTransaction(req.params.id, updates, reason, req.body.editedBy);
     broadcast({ type: 'transactions', data: db.prepare('SELECT * FROM transactions ORDER BY timestamp DESC').all() });
     res.json({ ok: true, ...result });
   } catch (error) {
@@ -320,7 +323,7 @@ app.put('/api/transactions/:id', (req, res) => {
 
 app.get('/api/transactions/:id/edits', (req, res) => {
   try {
-    const logs = getTransactionEditLogs(parseInt(req.params.id));
+    const logs = getTransactionEditLogs(req.params.id);
     res.json({ ok: true, logs });
   } catch (error) {
     res.status(400).json({ ok: false, error: error.message });
