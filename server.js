@@ -32,6 +32,24 @@ function getWIBDateDaysAgo(days) {
   return wibTime.toISOString().split('T')[0];
 }
 
+// Generate sequential transaction ID (PSMxxxxx for revenue)
+function generateRevenueId() {
+  const prefix = 'PSM';
+  const stmt = db.prepare('INSERT INTO id_counters (prefix, last_number) VALUES (?, 1) ON CONFLICT(prefix) DO UPDATE SET last_number = last_number + 1 RETURNING last_number');
+  const result = stmt.get(prefix);
+  const seq = result.last_number;
+  return `${prefix}${String(seq).padStart(5, '0')}`;
+}
+
+// Generate sequential expense ID (PSKxxxxx for expenses)
+function generateExpenseId() {
+  const prefix = 'PSK';
+  const stmt = db.prepare('INSERT INTO id_counters (prefix, last_number) VALUES (?, 1) ON CONFLICT(prefix) DO UPDATE SET last_number = last_number + 1 RETURNING last_number');
+  const result = stmt.get(prefix);
+  const seq = result.last_number;
+  return `${prefix}${String(seq).padStart(5, '0')}`;
+}
+
 // ─── INIT DATA DIR ─────────────────────────────────────────────
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -90,6 +108,12 @@ db.exec(`
     token TEXT PRIMARY KEY,
     user TEXT,
     created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
+  );
+
+  -- Counter table for sequential transaction IDs
+  CREATE TABLE IF NOT EXISTS id_counters (
+    prefix TEXT PRIMARY KEY,
+    last_number INTEGER DEFAULT 0
   );
 
   -- Migration: Create edit_logs table for audit trail
@@ -327,7 +351,7 @@ app.post('/api/units/:id/stop', requireAuth, (req, res) => {
   const dateKey = getWIBDateISO(); // Use WIB timezone (UTC+7) for Indonesia
   
   const tx = {
-    id: Date.now().toString(36),
+    id: generateRevenueId(),
     unitId: unit.id,
     unitName: unit.name,
     customer: unit.customer,
@@ -441,7 +465,7 @@ app.get('/api/expenses', requireAuth, (req, res) => {
 });
 
 app.post('/api/expenses', requireAuth, (req, res) => {
-  const exp = { id: Date.now().toString(36), ...req.body };
+  const exp = { id: generateExpenseId(), ...req.body };
   db.prepare('INSERT INTO expenses (id, item, amount, date, note) VALUES (?, ?, ?, ?, ?)')
     .run(exp.id, exp.item, exp.amount, exp.date, exp.note);
   res.json({ ok: true, exp });
