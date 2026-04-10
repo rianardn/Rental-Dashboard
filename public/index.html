@@ -2953,9 +2953,11 @@
 
     function openEditModal(transactionId) {
       currentEditTransactionId = transactionId;
-      const transaction = transactions.find(t => t.id === transactionId);
+      // Use loose equality to handle string/number type mismatch
+      const transaction = transactions.find(t => t.id == transactionId);
       if (!transaction) {
-        showToast('Transaksi tidak ditemukan', 'error');
+        showToast('Transaksi tidak ditemukan (ID: ' + transactionId + ')', 'error');
+        console.error('Transaction not found. ID:', transactionId, 'Available IDs:', transactions.map(t => t.id));
         return;
       }
 
