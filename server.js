@@ -91,6 +91,19 @@ db.exec(`
     user TEXT,
     created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
   );
+
+  -- Migration: Create edit_logs table for audit trail
+  CREATE TABLE IF NOT EXISTS edit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    transactionId TEXT NOT NULL,
+    fieldName TEXT NOT NULL,
+    oldValue TEXT,
+    newValue TEXT,
+    editReason TEXT,
+    editedAt INTEGER,
+    editedBy TEXT,
+    FOREIGN KEY (transactionId) REFERENCES transactions(id)
+  );
 `);
 
 // Insert default settings
