@@ -131,6 +131,17 @@ db.exec(`
     FOREIGN KEY (transactionId) REFERENCES transactions(id),
     FOREIGN KEY (expenseId) REFERENCES expenses(id)
   );
+
+  -- Migration: Create deletion_logs table for tracking deleted records
+  CREATE TABLE IF NOT EXISTS deletion_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    recordType TEXT NOT NULL, -- 'transaction' or 'expense'
+    recordId TEXT NOT NULL,
+    recordData TEXT NOT NULL, -- JSON snapshot of the deleted record
+    deleteReason TEXT NOT NULL,
+    deletedAt INTEGER DEFAULT (strftime('%s', 'now') * 1000),
+    deletedBy TEXT
+  );
 `);
 
 // Insert default settings
@@ -216,6 +227,27 @@ try {
   }
 } catch (e) {
   console.error('[DB] Migration error:', e.message);
+}
+
+// Runtime migration: Ensure deletion_logs table exists (for existing databases)
+try {
+  const deletionTableInfo = db.prepare(`PRAGMA table_info(deletion_logs)`).all();
+
+  if (deletionTableInfo.length === 0) {
+    // Table doesn't exist - create it
+    db.prepare(`CREATE TABLE IF NOT EXISTS deletion_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      recordType TEXT NOT NULL,
+      recordId TEXT NOT NULL,
+      recordData TEXT NOT NULL,
+      deleteReason TEXT NOT NULL,
+      deletedAt INTEGER DEFAULT (strftime('%s', 'now') * 1000),
+      deletedBy TEXT
+    )`).run();
+    console.log('[DB] Migration: deletion_logs table created');
+  }
+} catch (e) {
+  console.error('[DB] Migration error for deletion_logs:', e.message);
 }
 
 // For existing databases, try to add category column to expenses
@@ -443,8 +475,63 @@ app.get('/api/transactions', requireAuth, (req, res) => {
 });
 
 app.delete('/api/transactions/:id', requireAuth, (req, res) => {
-  db.prepare('DELETE FROM transactions WHERE id = ?').run(req.params.id);
-  res.json({ ok: true });
+  const { id } = req.params;
+  const { reason, deletedBy = 'admin' } = req.body;
+  
+  // Validate deletion reason
+  if (!reason || reason.trim().length < 3) {
+    return res.status(400).json({ error: 'Deletion reason is required (minimum 3 characters)' });
+  }
+  
+  // Get the transaction before deleting (for audit log)
+  const tx = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
+  if (!tx) {
+    return res.status(404).json({ error: 'Transaction not found' });
+  }
+  
+  // Log the deletion before actually deleting
+  const logStmt = db.prepare(`
+    INSERT INTO deletion_logs (recordType, recordId, recordData, deleteReason, deletedAt, deletedBy)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  logStmt.run(
+    'transaction',
+    id,
+    JSON.stringify(tx),
+    reason.trim(),
+    Date.now(),
+    deletedBy
+  );
+  
+  // Now delete the transaction
+  db.prepare('DELETE FROM transactions WHERE id = ?').run(id);
+  
+  res.json({ ok: true, deletedId: id });
+});
+
+// GET deletion logs (for audit trail)
+app.get('/api/deletion-logs', requireAuth, (req, res) => {
+  const { recordType, limit = 50 } = req.query;
+  let query = 'SELECT * FROM deletion_logs';
+  const params = [];
+  
+  if (recordType) {
+    query += ' WHERE recordType = ?';
+    params.push(recordType);
+  }
+  
+  query += ' ORDER BY deletedAt DESC LIMIT ?';
+  params.push(limit);
+  
+  const logs = db.prepare(query).all(...params);
+  
+  // Parse JSON recordData for each log
+  const parsedLogs = logs.map(log => ({
+    ...log,
+    recordData: JSON.parse(log.recordData)
+  }));
+  
+  res.json({ ok: true, logs: parsedLogs });
 });
 
 app.put('/api/transactions/:id', requireAuth, (req, res) => {

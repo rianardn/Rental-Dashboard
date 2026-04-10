@@ -1689,9 +1689,67 @@
 
       <!-- Step 3: Edit History -->
       <div id="editStep3" style="padding: 20px; display: none;">
-        <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Riwayat Perubahan:</p>
+        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+          <button id="btnShowEditLogs" class="btn btn-sm" onclick="showEditLogsTab()" style="flex: 1; background: var(--ps3-red);">✏️ Riwayat Edit</button>
+          <button id="btnShowDeleteLogs" class="btn btn-sm" onclick="showDeleteLogsTab()" style="flex: 1; opacity: 0.7;">🗑️ Log Hapus</button>
+        </div>
         <div id="editHistoryList" style="max-height: 300px; overflow-y: auto;"></div>
         <button class="btn" onclick="closeModal('modalEditTransaction')" style="margin-top: 16px; width: 100%;">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Transaction Modal -->
+  <div id="modalDeleteTransaction" class="modal">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header" style="background: var(--ps3-red);">
+        <div class="modal-title">🗑️ Hapus Transaksi</div>
+        <button class="modal-close" onclick="closeModal('modalDeleteTransaction')">×</button>
+      </div>
+
+      <div style="padding: 20px;">
+        <!-- Warning Box -->
+        <div style="background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: var(--ps3-red); font-weight: 600;">
+            <span style="font-size: 1.5rem;">⚠️</span>
+            <span>PERINGATAN</span>
+          </div>
+          <p style="margin: 0 0 8px 0; font-size: 0.9rem; color: var(--ps3-text);">
+            Anda akan menghapus transaksi pendapatan berikut:
+          </p>
+          <div id="deleteTxInfo" style="background: var(--ps3-surface); padding: 12px; border-radius: 8px; margin: 12px 0; font-size: 0.85rem;">
+            <!-- Populated by JS -->
+          </div>
+          <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; color: var(--ps3-muted);">
+            <li>Data yang dihapus akan dipindahkan ke log penghapusan</li>
+            <li>Transaksi ini TIDAK dapat dikembalikan setelah dihapus</li>
+            <li>Semua riwayat edit terkait transaksi ini juga akan terhapus</li>
+          </ul>
+        </div>
+
+        <!-- Confirmation Checkbox -->
+        <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin-bottom: 16px;">
+          <input type="checkbox" id="deleteConfirmCheckbox" style="width: 20px; height: 20px; margin-top: 2px; accent-color: var(--ps3-red);">
+          <span style="font-size: 0.9rem; color: var(--ps3-text);">
+            Saya mengerti dan menyetujui penghapusan transaksi ini. Tindakan ini bersifat permanen.
+          </span>
+        </label>
+
+        <!-- Reason Field -->
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-red);">
+            Alasan Penghapusan * <span style="color: var(--ps3-muted); font-size: 0.75rem;">(wajib diisi, min. 3 karakter)</span>
+          </label>
+          <textarea id="deleteReason" placeholder="Contoh: Data duplikat, Input salah, Pembatalan transaksi, dll." style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem; min-height: 80px; resize: vertical;"></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-cancel" onclick="closeModal('modalDeleteTransaction')" style="flex: 1;">Batal</button>
+          <button id="deleteTxBtn" class="btn" onclick="confirmDeleteTransaction()" style="flex: 2; background: var(--ps3-red); opacity: 0.5; cursor: not-allowed;" disabled>
+            🗑️ Hapus Transaksi
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -2417,6 +2475,7 @@
                 <div class="transaction-amount">${formatMoney(t.paid)}</div>
                 <button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1.1rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>
                 <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Edit transaksi">✏️</button>
+                <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Hapus transaksi">🗑️</button>
               </div>
             </div>
             <div class="transaction-details" style="display: flex; flex-direction: column; gap: 4px;">
@@ -3411,18 +3470,200 @@
         showToast('ID transaksi tidak valid', 'error');
         return;
       }
-      
+
       currentEditTransactionId = transactionId;
-      
+
       // Show history modal
-      document.querySelector('#modalEditTransaction .modal-title').textContent = `📋 Riwayat Edit: ${unitName} - ${customerName}`;
+      document.querySelector('#modalEditTransaction .modal-title').textContent = `📋 Riwayat: ${unitName} - ${customerName}`;
       document.getElementById('editStep1').style.display = 'none';
       document.getElementById('editStep2').style.display = 'none';
       document.getElementById('editStep3').style.display = 'block';
+
+      // Reset to edit logs tab by default
+      document.getElementById('btnShowEditLogs').style.background = 'var(--ps3-red)';
+      document.getElementById('btnShowEditLogs').style.opacity = '1';
+      document.getElementById('btnShowDeleteLogs').style.background = 'var(--ps3-surface)';
+      document.getElementById('btnShowDeleteLogs').style.opacity = '0.7';
+
       openModal('modalEditTransaction');
-      
+
       // Load history
       await loadEditHistory(transactionId);
+    }
+
+    // ═════════════════ Transaction Delete Functions ═════════════════
+    let currentDeleteTxId = null;
+
+    function openDeleteTransactionModal(txId, customerName, unitName) {
+      if (!txId) {
+        showToast('ID transaksi tidak valid', 'error');
+        return;
+      }
+
+      currentDeleteTxId = txId;
+      const tx = transactions.find(t => t.id === txId);
+
+      // Populate transaction info
+      document.getElementById('deleteTxInfo').innerHTML = `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span style="color: var(--ps3-muted);">Unit:</span>
+          <span style="font-weight: 600;">${unitName || 'Unknown'}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span style="color: var(--ps3-muted);">Penyewa:</span>
+          <span style="font-weight: 600;">${customerName || 'Unknown'}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span style="color: var(--ps3-muted);">Jumlah:</span>
+          <span style="font-weight: 600; color: var(--ps3-green);">${tx ? formatMoney(tx.paid) : '-'}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--ps3-muted);">TX ID:</span>
+          <span style="font-family: monospace; font-size: 0.8rem;">${txId}</span>
+        </div>
+      `;
+
+      // Reset form
+      document.getElementById('deleteConfirmCheckbox').checked = false;
+      document.getElementById('deleteReason').value = '';
+      updateDeleteButtonState();
+
+      // Add listeners
+      document.getElementById('deleteConfirmCheckbox').addEventListener('change', updateDeleteButtonState);
+      document.getElementById('deleteReason').addEventListener('input', updateDeleteButtonState);
+
+      openModal('modalDeleteTransaction');
+    }
+
+    function updateDeleteButtonState() {
+      const checkbox = document.getElementById('deleteConfirmCheckbox');
+      const reason = document.getElementById('deleteReason').value.trim();
+      const btn = document.getElementById('deleteTxBtn');
+
+      if (checkbox.checked && reason.length >= 3) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+      } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+      }
+    }
+
+    async function confirmDeleteTransaction() {
+      if (!currentDeleteTxId) {
+        showToast('ID transaksi tidak valid', 'error');
+        return;
+      }
+
+      const reason = document.getElementById('deleteReason').value.trim();
+      if (!reason || reason.length < 3) {
+        showToast('Alasan penghapusan wajib diisi (min. 3 karakter)', 'error');
+        return;
+      }
+
+      try {
+        const res = await api('DELETE', `/transactions/${currentDeleteTxId}`, { reason, deletedBy: 'admin' });
+
+        if (!res.ok) {
+          throw new Error(res.error || 'Gagal menghapus transaksi');
+        }
+
+        showToast('Transaksi berhasil dihapus', 'success');
+        closeModal('modalDeleteTransaction');
+
+        // Refresh data
+        await fetchData();
+        renderReports();
+      } catch (error) {
+        showToast('Gagal menghapus: ' + error.message, 'error');
+      }
+    }
+
+    // ═════════════════ Deletion Log Viewer ═════════════════
+    async function viewDeletionLogs() {
+      try {
+        const res = await api('GET', '/deletion-logs?recordType=transaction&limit=50');
+
+        if (!res.ok || !res.logs) {
+          throw new Error('Gagal memuat log penghapusan');
+        }
+
+        const container = document.getElementById('editHistoryList');
+
+        if (res.logs.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: var(--ps3-muted);">
+              <div style="font-size: 2rem; margin-bottom: 8px;">🗑️</div>
+              <div>Belum ada transaksi yang dihapus</div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = `
+          <div style="margin-bottom: 16px; padding: 12px; background: rgba(230, 0, 18, 0.1); border-radius: 10px; border-left: 4px solid var(--ps3-red);">
+            <div style="font-weight: 600; color: var(--ps3-red);">🗑️ Log Penghapusan Transaksi</div>
+            <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 4px;">
+              Menampilkan ${res.logs.length} transaksi yang telah dihapus
+            </div>
+          </div>
+          ${res.logs.map(log => {
+            const data = log.recordData;
+            const date = new Date(log.deletedAt);
+            const dateStr = date.toLocaleString('id-ID', {
+              day: '2-digit', month: 'short', year: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            });
+
+            return `
+              <div style="border-left: 3px solid var(--ps3-red); padding: 12px; margin-bottom: 16px; background: rgba(255,255,255,0.05); border-radius: 0 10px 10px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-family: monospace; font-size: 0.75rem; color: var(--ps3-red);">${log.recordId}</span>
+                  <span style="font-size: 0.75rem; color: var(--ps3-muted);">${dateStr}</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; margin-bottom: 8px;">
+                  <div><span style="color: var(--ps3-muted);">Unit:</span> ${data.unitName || '-'}</div>
+                  <div><span style="color: var(--ps3-muted);">Penyewa:</span> ${data.customer || '-'}</div>
+                  <div><span style="color: var(--ps3-muted);">Jumlah:</span> <span style="color: var(--ps3-green); font-weight: 500;">Rp ${(data.paid || 0).toLocaleString('id-ID')}</span></div>
+                  <div><span style="color: var(--ps3-muted);">Pembayaran:</span> ${data.payment || 'cash'}</div>
+                </div>
+                ${data.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-bottom: 8px;">💬 ${data.note}</div>` : ''}
+                <div style="background: rgba(230, 0, 18, 0.05); padding: 8px; border-radius: 6px; font-size: 0.8rem;">
+                  <span style="color: var(--ps3-red);">🗑️ Alasan Hapus:</span> <span style="color: var(--ps3-text);">${log.deleteReason}</span>
+                </div>
+                <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-top: 6px; text-align: right;">
+                  Dihapus oleh: ${log.deletedBy || 'admin'}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        `;
+      } catch (error) {
+        showToast('Gagal memuat log: ' + error.message, 'error');
+      }
+    }
+
+    // Tab switching functions for history modal
+    async function showEditLogsTab() {
+      document.getElementById('btnShowEditLogs').style.background = 'var(--ps3-red)';
+      document.getElementById('btnShowEditLogs').style.opacity = '1';
+      document.getElementById('btnShowDeleteLogs').style.background = 'var(--ps3-surface)';
+      document.getElementById('btnShowDeleteLogs').style.opacity = '0.7';
+
+      if (currentEditTransactionId) {
+        await loadEditHistory(currentEditTransactionId);
+      }
+    }
+
+    async function showDeleteLogsTab() {
+      document.getElementById('btnShowEditLogs').style.background = 'var(--ps3-surface)';
+      document.getElementById('btnShowEditLogs').style.opacity = '0.7';
+      document.getElementById('btnShowDeleteLogs').style.background = 'var(--ps3-red)';
+      document.getElementById('btnShowDeleteLogs').style.opacity = '1';
+
+      await viewDeletionLogs();
     }
 
     // ═════════════════ Expense Edit Functions ═════════════════
