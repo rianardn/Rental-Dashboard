@@ -759,7 +759,7 @@ app.get('/ping', (req, res) => {
     time: Date.now(), 
     server: 'ps3-rental-backend',
     db: 'sqlite',
-    version: '2.0.0'
+    version: '2.0.1'
   });
 });
 
