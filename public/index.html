@@ -1802,7 +1802,7 @@
 
     // Configuration
     const API_URL = ''; // Same origin (Railway serves both frontend and API)
-    const POLL_INTERVAL = 1000; // 1 second for real-time updates (optimized for Railway)
+    const POLL_INTERVAL = 10000; // 10 seconds for real-time updates (reduced to allow text selection)
     
     // Helpers - WIB timezone (UTC+7) for Indonesia
     function getWIBDateISO() {
@@ -2089,12 +2089,32 @@
       }
     }
 
+    // Store previous data hashes for smart rendering
+    let lastTransactionsHash = '';
+    let lastExpensesHash = '';
+    
+    function getDataHash(data) {
+      // Simple hash of data length and last item ID/timestamp
+      if (!data || data.length === 0) return 'empty';
+      const lastItem = data[data.length - 1];
+      return `${data.length}-${lastItem.id || ''}-${lastItem.endTime || lastItem.created_at || ''}`;
+    }
+    
     function startPolling() {
       if (pollTimer) clearInterval(pollTimer);
       pollTimer = setInterval(async () => {
         try {
           await loadData();
-          renderAll();
+          
+          // Smart render: only re-render if data actually changed
+          const currentTxHash = getDataHash(transactions);
+          const currentExpHash = getDataHash(expenses);
+          
+          if (currentTxHash !== lastTransactionsHash || currentExpHash !== lastExpensesHash) {
+            lastTransactionsHash = currentTxHash;
+            lastExpensesHash = currentExpHash;
+            renderAll();
+          }
         } catch (e) {
           console.error('Poll error:', e);
         }
@@ -2359,7 +2379,10 @@
                 <span style="font-size: 0.6rem; color: var(--ps3-muted); text-transform: uppercase; letter-spacing: 0.05em;">TX ID:</span>
                 <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${t.id || ''}</span>
               </div>
-              <span style="text-align: right;">${formatDate(t.endTime)} • ${t.payment || 'cash'}</span>
+              <div style="text-align: right;">
+                <div>${formatDate(t.endTime)}</div>
+                <div style="color: var(--ps3-muted); font-size: 0.85rem;">${t.payment || 'cash'}</div>
+              </div>
             </div>
             ${t.note ? `<div style="font-size: 0.7rem; color: var(--ps3-muted); margin-top: 6px;">${t.note}</div>` : ''}
           </div>
