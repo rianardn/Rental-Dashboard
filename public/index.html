@@ -2196,7 +2196,7 @@
               <div class="transaction-unit">${t.unitName}</div>
               <div style="display: flex; align-items: center; gap: 10px;">
                 <div class="transaction-amount">${formatMoney(t.paid)}</div>
-                <button onclick="openEditModal(${t.id})" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1rem; cursor: pointer; padding: 4px;" title="Edit transaksi">✏️</button>
+                <button onclick="openEditModal(${t.id})" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Edit transaksi">✏️</button>
               </div>
             </div>
             <div class="transaction-details">
@@ -2952,12 +2952,21 @@
     let currentEditTransactionId = null;
 
     function openEditModal(transactionId) {
+      // Mobile-friendly debug - show toast immediately
+      showToast('Membuka edit... ID: ' + transactionId, 'info');
+      
       currentEditTransactionId = transactionId;
+      
+      // Check if transactions array is loaded
+      if (!transactions || transactions.length === 0) {
+        showToast('Data transaksi belum dimuat. Tunggu sebentar...', 'error');
+        return;
+      }
+      
       // Use loose equality to handle string/number type mismatch
       const transaction = transactions.find(t => t.id == transactionId);
       if (!transaction) {
-        showToast('Transaksi tidak ditemukan (ID: ' + transactionId + ')', 'error');
-        console.error('Transaction not found. ID:', transactionId, 'Available IDs:', transactions.map(t => t.id));
+        showToast('Transaksi tidak ditemukan (ID: ' + transactionId + '). Total transaksi: ' + transactions.length, 'error');
         return;
       }
 
