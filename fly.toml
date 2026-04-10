@@ -1,36 +1,38 @@
-# Fly.io Configuration for PS3 Rental Manager
-# Deploy with: fly deploy
-# Region: sin (Singapore) for Indonesia users
+# fly.toml app configuration file generated for ps3-rental-manager on 2026-04-10T17:44:15+08:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = 'ps3-rental-manager'
+app = 'rental-dashboard'
 primary_region = 'sin'
 
 [build]
   dockerfile = 'Dockerfile'
 
-[env]
-  NODE_ENV = 'production'
-  DATA_DIR = '/app/data'
-  PORT = '8080'
+[deploy]
+  strategy = 'rolling'
+  wait_timeout = '2m0s'
 
-[http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = true
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
+[env]
+  DATA_DIR = '/app/data'
+  NODE_ENV = 'production'
+  PORT = '8080'
 
 [[mounts]]
   source = 'ps3_data'
   destination = '/app/data'
 
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
 [[vm]]
   size = 'shared-cpu-1x'
   memory = '512mb'
-  cpus = 1
   cpu_kind = 'shared'
-
-[deploy]
-  strategy = 'rolling'
-  wait_timeout = '2m'
+  cpus = 1
+  memory_mb = 512
