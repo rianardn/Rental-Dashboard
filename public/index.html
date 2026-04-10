@@ -1911,14 +1911,17 @@
           const isWarning = remaining < warnMs && remaining > 0;
           const isExpired = remaining <= 0;
           
-          // Play warning jingle when entering warning state (only once per session)
-          if (isWarning && !warnedUnits.has(unit.id)) {
+          // Play warning jingle only in LAST 30 SECONDS (30,000ms) - not when entering warning state
+          const FINAL_ALERT_SECONDS = 30;
+          const isFinal30Seconds = remaining <= (FINAL_ALERT_SECONDS * 1000) && remaining > 0;
+          
+          if (isFinal30Seconds && !warnedUnits.has(unit.id)) {
             warnedUnits.add(unit.id);
             const unitIndex = units.findIndex(u => u.id === unit.id);
             playWarningJingle(unitIndex);
           }
-          // Clear warning flag when session ends
-          if (!isWarning && warnedUnits.has(unit.id)) {
+          // Clear warning flag when session ends or passes final 30 seconds
+          if (!isFinal30Seconds && warnedUnits.has(unit.id)) {
             warnedUnits.delete(unit.id);
           }
           
