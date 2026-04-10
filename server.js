@@ -17,6 +17,21 @@ const DB_FILE = path.join(DATA_DIR, 'ps3rental.db');
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'; // Change this!
 
+// ─── HELPERS ───────────────────────────────────────────────────
+// Get current date in WIB timezone (UTC+7) for Indonesia
+function getWIBDateISO() {
+  const now = new Date();
+  const wibTime = new Date(now.getTime() + (7 * 60 * 60 * 1000)); // Add 7 hours
+  return wibTime.toISOString().split('T')[0];
+}
+
+// Get date N days ago in WIB timezone
+function getWIBDateDaysAgo(days) {
+  const now = new Date();
+  const wibTime = new Date(now.getTime() + (7 * 60 * 60 * 1000) - (days * 24 * 60 * 60 * 1000));
+  return wibTime.toISOString().split('T')[0];
+}
+
 // ─── INIT DATA DIR ─────────────────────────────────────────────
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -279,8 +294,7 @@ app.post('/api/units/:id/stop', requireAuth, (req, res) => {
   const cost = Math.round((elMin / 60) * settings.ratePerHour);
   const { paid = cost, payment = 'cash' } = req.body;
   
-  const now = new Date();
-  const dateKey = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+  const dateKey = getWIBDateISO(); // Use WIB timezone (UTC+7) for Indonesia
   
   const tx = {
     id: Date.now().toString(36),
@@ -355,29 +369,30 @@ app.delete('/api/expenses/:id', requireAuth, (req, res) => {
 // ─── REPORTS ─────────────────────────────────────────────────
 app.get('/api/reports/summary', requireAuth, (req, res) => {
   const { period = 'today' } = req.query;
-  const now = new Date();
   let startDate, endDate;
   
+  // Use WIB timezone (UTC+7) for Indonesia
   switch(period) {
     case 'today':
-      startDate = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+      startDate = getWIBDateISO();
       endDate = startDate;
       break;
     case 'week':
-      const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-      startDate = `${weekAgo.getFullYear()}-${weekAgo.getMonth()+1}-${weekAgo.getDate()}`;
-      endDate = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+      startDate = getWIBDateDaysAgo(7);
+      endDate = getWIBDateISO();
       break;
     case 'month':
-      startDate = `${now.getFullYear()}-${now.getMonth()+1}-1`;
-      endDate = `${now.getFullYear()}-${now.getMonth()+1}-31`;
+      const wibNow = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
+      startDate = `${wibNow.toISOString().split('T')[0].slice(0, 7)}-01`; // First day of month
+      endDate = getWIBDateISO();
       break;
     case 'year':
-      startDate = `${now.getFullYear()}-1-1`;
-      endDate = `${now.getFullYear()}-12-31`;
+      const wibYear = new Date(new Date().getTime() + (7 * 60 * 60 * 1000)).getFullYear();
+      startDate = `${wibYear}-01-01`;
+      endDate = `${wibYear}-12-31`;
       break;
     default:
-      startDate = '1970-1-1';
+      startDate = '1970-01-01';
       endDate = '2099-12-31';
   }
   

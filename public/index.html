@@ -1251,6 +1251,19 @@
     const API_URL = ''; // Same origin (Railway serves both frontend and API)
     const POLL_INTERVAL = 1000; // 1 second for real-time updates (optimized for Railway)
     
+    // Helpers - WIB timezone (UTC+7) for Indonesia
+    function getWIBDateISO() {
+      const now = new Date();
+      const wibTime = new Date(now.getTime() + (7 * 60 * 60 * 1000)); // Add 7 hours
+      return wibTime.toISOString().split('T')[0];
+    }
+    
+    function getWIBDateDaysAgo(days) {
+      const now = new Date();
+      const wibTime = new Date(now.getTime() + (7 * 60 * 60 * 1000) - (days * 24 * 60 * 60 * 1000));
+      return wibTime.toISOString().split('T')[0];
+    }
+    
     // State
     let authToken = localStorage.getItem('ps3_token');
     let currentUnitId = null;
@@ -1410,8 +1423,8 @@
       document.getElementById('statActive').textContent = activeUnits.length;
       document.getElementById('totalUnits').textContent = `${units.length} unit`;
       
-      // Calculate today's income
-      const today = new Date().toISOString().split('T')[0];
+      // Calculate today's income (WIB timezone)
+      const today = getWIBDateISO();
       const todayIncome = transactions
         .filter(t => t.date === today)
         .reduce((sum, t) => sum + (t.paid || 0), 0);
@@ -1536,55 +1549,50 @@
     function renderReports() {
       const period = document.querySelector('.tab.active')?.dataset.period || 'today';
       
-      // Filter transactions
-      const now = new Date();
+      // Filter transactions (WIB timezone)
       let filtered = transactions;
       
       switch(period) {
         case 'today':
-          const todayKey = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+          const todayKey = getWIBDateISO();
           filtered = transactions.filter(t => t.date === todayKey);
           break;
         case 'week':
-          const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-          filtered = transactions.filter(t => t.endTime >= weekAgo);
+          const weekAgoWIB = getWIBDateDaysAgo(7);
+          filtered = transactions.filter(t => t.date >= weekAgoWIB);
           break;
         case 'month':
-          filtered = transactions.filter(t => {
-            const d = new Date(t.endTime);
-            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-          });
+          const wibNow = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
+          const currentMonthPrefix = wibNow.toISOString().split('T')[0].slice(0, 7); // YYYY-MM
+          filtered = transactions.filter(t => t.date && t.date.startsWith(currentMonthPrefix));
           break;
         case 'year':
-          filtered = transactions.filter(t => {
-            return new Date(t.endTime).getFullYear() === now.getFullYear();
-          });
+          const wibYearTx = new Date(new Date().getTime() + (7 * 60 * 60 * 1000)).getFullYear();
+          filtered = transactions.filter(t => t.date && t.date.startsWith(wibYearTx + '-'));
           break;
       }
       
       const income = filtered.reduce((sum, t) => sum + (t.paid || 0), 0);
       
-      // Filter expenses
+      // Filter expenses (WIB timezone)
       let filteredExpenses = expenses;
       switch(period) {
         case 'today':
-          const todayKeyExp = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+          const todayKeyExp = getWIBDateISO();
           filteredExpenses = expenses.filter(e => e.date === todayKeyExp);
           break;
         case 'week':
-          const weekAgoExp = Date.now() - 7 * 24 * 60 * 60 * 1000;
-          filteredExpenses = expenses.filter(e => new Date(e.date).getTime() >= weekAgoExp);
+          const weekAgoExpWIB = getWIBDateDaysAgo(7);
+          filteredExpenses = expenses.filter(e => e.date >= weekAgoExpWIB);
           break;
         case 'month':
-          filteredExpenses = expenses.filter(e => {
-            const d = new Date(e.date);
-            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-          });
+          const wibNowExp = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
+          const currentMonthPrefixExp = wibNowExp.toISOString().split('T')[0].slice(0, 7);
+          filteredExpenses = expenses.filter(e => e.date && e.date.startsWith(currentMonthPrefixExp));
           break;
         case 'year':
-          filteredExpenses = expenses.filter(e => {
-            return new Date(e.date).getFullYear() === now.getFullYear();
-          });
+          const wibYearExp = new Date(new Date().getTime() + (7 * 60 * 60 * 1000)).getFullYear();
+          filteredExpenses = expenses.filter(e => e.date && e.date.startsWith(wibYearExp + '-'));
           break;
       }
       
@@ -1626,7 +1634,7 @@
 
     function renderExpenses() {
       const container = document.getElementById('expensesList');
-      const today = new Date().toISOString().split('T')[0];
+      const today = getWIBDateISO(); // WIB timezone
       const todayExpenses = expenses.filter(e => e.date === today);
       
       if (todayExpenses.length === 0) {
@@ -1805,6 +1813,11 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: {
+            duration: 1000,
+            easing: 'easeOutQuart',
+            loop: false
+          },
           plugins: {
             legend: {
               labels: {
@@ -1910,8 +1923,7 @@
         return;
       }
       
-      const now = new Date();
-      const dateKey = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+      const dateKey = getWIBDateISO(); // WIB timezone
       
       try {
         await api('POST', '/expenses', { item, amount, date: dateKey, note });
