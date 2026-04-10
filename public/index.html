@@ -2506,17 +2506,19 @@
                 <button onclick="try { openEditExpenseModal('${e.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Edit pengeluaran">✏️</button>
               </div>
             </div>
-            <div class="transaction-meta" style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; margin-top: 8px;">
-              <div style="text-align: left; color: var(--ps3-muted);">
-                <div style="font-size: 0.9rem;">${formatDateOnlyWIB(e.created_at)}</div>
-                <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 2px;">${formatTimeOnlyWIB(e.created_at)}</div>
+            ${e.note ? `<div style="text-align: left; color: var(--ps3-muted); font-size: 0.85rem; margin-top: 4px; font-style: italic;">💬 ${e.note}</div>` : ''}
+            <div class="transaction-meta" style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">
+              <div style="text-align: left; color: var(--ps3-muted); font-size: 0.9rem;">
+                ${formatDateOnlyWIB(e.created_at)}
               </div>
-              <div style="display: flex; align-items: center; gap: 4px; justify-content: flex-end;">
+              <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
                 <span style="font-size: 0.6rem; color: var(--ps3-muted); text-transform: uppercase; letter-spacing: 0.05em;">TX ID:</span>
                 <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${e.id || ''}</span>
               </div>
+              <div style="text-align: left; color: var(--ps3-muted); font-size: 0.8rem; opacity: 0.8;">
+                ${formatTimeOnlyWIB(e.created_at)}
+              </div>
             </div>
-            ${e.note ? `<div style="text-align: left; color: var(--ps3-muted); font-size: 0.85rem; margin-top: 4px; font-style: italic;">💬 ${e.note}</div>` : ''}
           </div>
         `).join('');
       }
