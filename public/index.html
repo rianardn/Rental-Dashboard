@@ -3524,12 +3524,17 @@
         return;
       }
 
+      // Debug logging
+      console.log('Saving expense edit:', { id: currentEditExpenseId, updates, reason });
+
       try {
         const response = await api('PUT', `/expenses/${currentEditExpenseId}`, {
           updates,
           reason,
           editedBy: 'admin'
         });
+
+        console.log('Edit response:', response);
 
         if (response.ok) {
           showToast(`Pengeluaran diperbarui (${response.changes} perubahan)`, 'success');
@@ -3539,14 +3544,17 @@
           document.getElementById('editExpenseStep3').style.display = 'block';
           await loadExpenseEditHistory(currentEditExpenseId);
 
-          // Refresh data
+          // Refresh data - force full reload from server
+          console.log('Refreshing data after edit...');
           await loadData();
+          console.log('Data refreshed, expenses:', expenses.find(e => e.id === currentEditExpenseId));
           renderExpenses();
           renderReports();
         } else {
           showToast(response.error || 'Gagal mengupdate pengeluaran', 'error');
         }
       } catch (error) {
+        console.error('Edit error:', error);
         showToast(error.message || 'Terjadi kesalahan', 'error');
       }
     }

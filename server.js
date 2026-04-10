@@ -549,6 +549,8 @@ app.put('/api/expenses/:id', requireAuth, (req, res) => {
   const editReason = req.body.reason || req.body.editReason || '-';
   const editedBy = req.body.editedBy || 'admin';
   
+  console.log('[DEBUG] Expense edit request:', { id, inputUpdates, editReason });
+  
   // Map frontend field names to database columns
   const fieldMapping = {
     'category': 'category',
@@ -583,6 +585,7 @@ app.put('/api/expenses/:id', requireAuth, (req, res) => {
   
   if (dbFields.length > 0) {
     const setClause = dbFields.join(', ');
+    console.log('[DEBUG] Updating expense:', { id, setClause, dbValues, editLogs });
     db.prepare(`UPDATE expenses SET ${setClause} WHERE id = ?`).run(...dbValues, id);
     
     const logStmt = db.prepare(`
@@ -594,10 +597,13 @@ app.put('/api/expenses/:id', requireAuth, (req, res) => {
     }
   }
   
+  const updatedExp = db.prepare('SELECT * FROM expenses WHERE id = ?').get(id);
+  console.log('[DEBUG] Expense updated:', { id, updatedExp });
+  
   res.json({ 
     ok: true, 
     changes: editLogs.length,
-    exp: db.prepare('SELECT * FROM expenses WHERE id = ?').get(id) 
+    exp: updatedExp
   });
 });
 
