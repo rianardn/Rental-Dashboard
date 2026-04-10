@@ -126,6 +126,23 @@ if (unitCount === 0) {
   ['PS 1'].forEach(name => unitStmt.run(name));
 }
 
+// Runtime migration: Ensure edit_logs table exists (for existing databases)
+try {
+  db.prepare(`CREATE TABLE IF NOT EXISTS edit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    transactionId TEXT NOT NULL,
+    fieldName TEXT NOT NULL,
+    oldValue TEXT,
+    newValue TEXT,
+    editReason TEXT,
+    editedAt INTEGER,
+    editedBy TEXT
+  )`).run();
+  console.log('[DB] Migration: edit_logs table ready');
+} catch (e) {
+  console.error('[DB] Migration error:', e.message);
+}
+
 // ─── HELPERS ───────────────────────────────────────────────────
 function getSettings() {
   const rows = db.prepare('SELECT key, value FROM settings').all();
@@ -358,7 +375,7 @@ app.put('/api/transactions/:id', requireAuth, (req, res) => {
   // Map frontend field names to database columns
   const fieldMapping = {
     'customer': 'customer',
-    'paid': 'total',
+    'paid': 'paid',           // DB column is 'paid', not 'total'
     'duration': 'duration',
     'payment': 'payment'
   };
