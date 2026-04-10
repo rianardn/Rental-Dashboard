@@ -286,6 +286,232 @@
       50% { opacity: 0.5; }
     }
 
+    /* ═════════════════ Desktop Responsive ═════════════════ */
+    @media (min-width: 768px) {
+      /* Container untuk desktop */
+      #app {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      /* Pages lebih lebar di desktop */
+      .page {
+        max-width: 900px;
+        padding: 24px;
+      }
+
+      /* Stats grid 3 columns di desktop */
+      .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+
+      /* Font sizes lebih besar di desktop */
+      .stat-value {
+        font-size: 2rem;
+      }
+
+      .stat-label {
+        font-size: 0.75rem;
+      }
+
+      /* Section titles lebih besar */
+      .section-title {
+        font-size: 0.8rem;
+        margin-top: 28px;
+        margin-bottom: 16px;
+      }
+
+      /* Cards lebih spacious */
+      .card {
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+
+      .unit-card {
+        padding: 24px;
+        margin-bottom: 18px;
+      }
+
+      /* Timer lebih besar */
+      .timer-countdown {
+        font-size: 3.2rem;
+      }
+
+      /* Navigation lebih tinggi di desktop */
+      .nav-btn {
+        padding: 14px 8px 12px;
+        font-size: 0.75rem;
+      }
+
+      .nav-btn .nav-icon {
+        font-size: 24px;
+      }
+
+      /* Header lebih spacious */
+      .header {
+        padding: 16px 24px;
+      }
+
+      .header-title {
+        font-size: 1.2rem;
+      }
+
+      #clock {
+        font-size: 1rem;
+        padding: 8px 16px;
+      }
+
+      /* Login card lebih besar */
+      .login-card {
+        max-width: 420px;
+        padding: 48px 40px;
+      }
+
+      .login-logo-icon {
+        width: 100px;
+        height: 100px;
+        font-size: 48px;
+      }
+
+      .login-logo h1 {
+        font-size: 1.6rem;
+      }
+
+      /* Form inputs lebih besar */
+      .input-group input {
+        padding: 16px 18px;
+        font-size: 1.1rem;
+      }
+
+      .btn {
+        padding: 18px;
+        font-size: 0.9rem;
+      }
+
+      /* Modal lebih besar */
+      .modal-content {
+        max-width: 500px;
+      }
+
+      .modal-title {
+        font-size: 1.1rem;
+      }
+
+      /* Tables lebih readable */
+      .transactions-list th,
+      .transactions-list td {
+        padding: 14px 12px;
+        font-size: 0.9rem;
+      }
+
+      .expenses-list th,
+      .expenses-list td {
+        padding: 14px 12px;
+        font-size: 0.9rem;
+      }
+
+      /* Settings form lebih spacious */
+      .setting-item {
+        padding: 18px 0;
+      }
+
+      .setting-label {
+        font-size: 0.9rem;
+      }
+
+      .setting-input {
+        padding: 12px 14px;
+        font-size: 1rem;
+      }
+
+      /* Unit management buttons */
+      .unit-chip {
+        padding: 10px 18px;
+        font-size: 0.85rem;
+      }
+
+      /* Toast notifications */
+      .toast {
+        max-width: 400px;
+        padding: 16px 20px;
+        font-size: 0.9rem;
+      }
+    }
+
+    /* ═════════════════ Large Desktop ═════════════════ */
+    @media (min-width: 1200px) {
+      .page {
+        max-width: 1000px;
+        padding: 32px;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .header {
+        padding: 20px 32px;
+      }
+    }
+
+    /* ═════════════════ Mute Button ═════════════════ */
+    .mute-btn {
+      position: fixed;
+      top: 70px;
+      right: 16px;
+      background: linear-gradient(135deg, var(--ps3-red), #cc0010);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 10px 20px;
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(230, 0, 18, 0.4);
+      opacity: 0;
+      transform: translateY(-10px);
+      pointer-events: none;
+      transition: all 0.3s ease;
+      z-index: 9999;
+    }
+
+    .mute-btn.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+      animation: alarmPulse 1s infinite;
+    }
+
+    .mute-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(230, 0, 18, 0.6);
+    }
+
+    .mute-btn:active {
+      transform: scale(0.95);
+    }
+
+    @keyframes alarmPulse {
+      0%, 100% { box-shadow: 0 4px 15px rgba(230, 0, 18, 0.4); }
+      50% { box-shadow: 0 4px 25px rgba(230, 0, 18, 0.8); }
+    }
+
+    /* Desktop: position mute button differently */
+    @media (min-width: 768px) {
+      .mute-btn {
+        top: 80px;
+        right: 24px;
+        padding: 12px 24px;
+        font-size: 0.85rem;
+      }
+    }
+
     /* Navigation */
     .nav {
       position: fixed;
@@ -981,6 +1207,12 @@
 
   <!-- ═════════════════ MAIN APP ═════════════════ -->
   <div id="app">
+    <!-- Mute Button (Floating) -->
+    <button id="muteBtn" class="mute-btn" onclick="stopAlarm()" title="Matikan alarm">
+      <span>🔔</span>
+      <span>MATIKAN ALARM</span>
+    </button>
+
     <!-- Header -->
     <header class="header">
       <div class="header-left">
@@ -1338,61 +1570,127 @@
     // ═════════════════ Audio Warning System ═════════════════
     // Track which units have played warning sound (to avoid continuous playing)
     const warnedUnits = new Set();
+    let activeAudioContext = null;
+    let activeOscillators = [];
+    let activeGainNodes = [];
+    let alarmTimeout = null;
+    let isMuted = false;
     
-    // 4 Different jingle patterns for each unit (frequencies in Hz)
+    // 4 Different RELAXING jingle patterns for each unit (frequencies in Hz)
+    // Lower frequencies, longer durations, smoother tones - more "chill" vibe
     const JINGLE_PATTERNS = [
-      // Unit 1: High-pitched double beep
-      [880, 0, 880, 0, 1100],
-      // Unit 2: Descending tone
-      [1000, 900, 800, 700, 600],
-      // Unit 3: Rising tone
-      [600, 750, 900, 1100, 1300],
-      // Unit 4: Alternating pattern
-      [880, 660, 880, 660, 1100]
+      // Unit 1: Gentle ascending chime (meditation style)
+      [432, 0, 528, 0, 639, 0, 528],
+      // Unit 2: Soft descending bells (wind chime feel)
+      [600, 550, 500, 450, 400, 0, 400],
+      // Unit 3: Calm wave pattern (ocean vibe)
+      [396, 0, 417, 0, 396, 0, 417],
+      // Unit 4: Peaceful intervals (tibetan bowl inspired)
+      [432, 0, 432, 360, 432, 0, 288]
     ];
     
-    // Play jingle 3 times with 500ms gap between each
-    async function playWarningJingle(unitIndex) {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const pattern = JINGLE_PATTERNS[unitIndex % 4];
+    // Stop all alarm sounds
+    function stopAlarm() {
+      isMuted = true;
       
-      for (let repeat = 0; repeat < 3; repeat++) {
-        // Play the 5-tone pattern
+      // Stop all active oscillators
+      activeOscillators.forEach(osc => {
+        try { osc.stop(); } catch(e) {}
+      });
+      activeOscillators = [];
+      
+      // Disconnect gain nodes
+      activeGainNodes.forEach(gain => {
+        try { gain.disconnect(); } catch(e) {}
+      });
+      activeGainNodes = [];
+      
+      // Clear timeout
+      if (alarmTimeout) {
+        clearTimeout(alarmTimeout);
+        alarmTimeout = null;
+      }
+      
+      // Close audio context
+      if (activeAudioContext) {
+        try { activeAudioContext.close(); } catch(e) {}
+        activeAudioContext = null;
+      }
+      
+      // Hide mute button
+      document.getElementById('muteBtn')?.classList.remove('visible');
+    }
+    
+    // Play relaxing alarm for 30 seconds with graceful tones
+    async function playWarningJingle(unitIndex) {
+      // Reset mute state for new alarm
+      isMuted = false;
+      
+      // Show mute button
+      document.getElementById('muteBtn')?.classList.add('visible');
+      
+      activeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const pattern = JINGLE_PATTERNS[unitIndex % 4];
+      const startTime = Date.now();
+      const DURATION = 30000; // 30 seconds
+      
+      // Play continuous gentle pattern for 30 seconds
+      async function playPatternLoop() {
+        if (isMuted || Date.now() - startTime >= DURATION) {
+          stopAlarm();
+          return;
+        }
+        
+        // Play the relaxing pattern once
         for (let i = 0; i < pattern.length; i++) {
+          if (isMuted) break;
+          
           const freq = pattern[i];
           if (freq === 0) {
-            // Gap in pattern
-            await new Promise(r => setTimeout(r, 150));
+            await new Promise(r => setTimeout(r, 300));
             continue;
           }
           
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
+          const osc = activeAudioContext.createOscillator();
+          const gain = activeAudioContext.createGain();
           
           osc.connect(gain);
-          gain.connect(audioCtx.destination);
+          gain.connect(activeAudioContext.destination);
           
           osc.frequency.value = freq;
-          osc.type = 'sine';
+          osc.type = 'sine'; // Smooth sine wave for relaxing tone
           
-          // Short beep with quick fade
-          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+          // Gentle envelope - soft attack and release
+          const now = activeAudioContext.currentTime;
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.15, now + 0.3); // Soft attack
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2); // Long release
           
-          osc.start(audioCtx.currentTime);
-          osc.stop(audioCtx.currentTime + 0.15);
+          osc.start(now);
+          osc.stop(now + 1.3);
           
-          await new Promise(r => setTimeout(r, 180));
+          activeOscillators.push(osc);
+          activeGainNodes.push(gain);
+          
+          await new Promise(r => setTimeout(r, 400));
         }
         
-        // Gap between repeats
-        if (repeat < 2) {
-          await new Promise(r => setTimeout(r, 500));
+        // Small pause between pattern loops
+        if (!isMuted && Date.now() - startTime < DURATION) {
+          await new Promise(r => setTimeout(r, 200));
+          playPatternLoop();
+        } else {
+          stopAlarm();
         }
       }
       
-      // Close audio context after playing
-      setTimeout(() => audioCtx.close(), 1000);
+      // Start the loop
+      playPatternLoop();
+      
+      // Safety timeout
+      alarmTimeout = setTimeout(() => {
+        stopAlarm();
+      }, DURATION + 1000);
     }
 
     // ═════════════════ API Client ═════════════════
