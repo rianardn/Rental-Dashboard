@@ -376,7 +376,7 @@ app.put('/api/transactions/:id', requireAuth, (req, res) => {
   const fieldMapping = {
     'customer': 'customer',
     'paid': 'paid',           // DB column is 'paid', not 'total'
-    'duration': 'duration',
+    'duration': 'durationMin', // DB column is 'durationMin', not 'duration'
     'payment': 'payment'
   };
   
