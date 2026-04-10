@@ -465,7 +465,9 @@ app.get('/api/expenses', requireAuth, (req, res) => {
 });
 
 app.post('/api/expenses', requireAuth, (req, res) => {
-  const exp = { id: generateExpenseId(), ...req.body };
+  // Auto-generate date in WIB timezone (UTC+7) - no user input needed
+  const wibDate = new Date(Date.now() + (7 * 60 * 60 * 1000)).toISOString().split('T')[0];
+  const exp = { id: generateExpenseId(), ...req.body, date: wibDate };
   db.prepare('INSERT INTO expenses (id, item, amount, date, note) VALUES (?, ?, ?, ?, ?)')
     .run(exp.id, exp.item, exp.amount, exp.date, exp.note);
   res.json({ ok: true, exp });
