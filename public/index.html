@@ -1671,6 +1671,106 @@
     </div>
   </div>
 
+  <!-- Edit Expense Modal -->
+  <div id="modalEditExpense" class="modal">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title">✏️ Edit Pengeluaran</div>
+        <button class="modal-close" onclick="closeModal('modalEditExpense')">×</button>
+      </div>
+
+      <!-- Step 1: Select fields to edit -->
+      <div id="editExpenseStep1" style="padding: 20px;">
+        <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Pilih data yang ingin diedit:</p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+            <input type="checkbox" id="editExpenseCheckCategory" style="width: 18px; height: 18px;">
+            <span>Tipe & Sub-kategori Biaya</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+            <input type="checkbox" id="editExpenseCheckAmount" style="width: 18px; height: 18px;">
+            <span>Jumlah Pengeluaran</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+            <input type="checkbox" id="editExpenseCheckDateTime" style="width: 18px; height: 18px;">
+            <span>Tanggal & Waktu</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+            <input type="checkbox" id="editExpenseCheckNote" style="width: 18px; height: 18px;">
+            <span>Catatan</span>
+          </label>
+        </div>
+        <button class="btn" onclick="proceedToEditExpenseStep2()" style="margin-top: 20px; width: 100%;">Lanjutkan</button>
+      </div>
+
+      <!-- Step 2: Edit fields -->
+      <div id="editExpenseStep2" style="padding: 20px; display: none;">
+        <!-- Category & Sub-category -->
+        <div id="editExpenseFieldCategory" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Tipe Biaya</label>
+          <select id="editExpenseCategory" onchange="onEditExpenseCategoryChange()" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+            <option value="">-- Pilih Tipe --</option>
+            <option value="Listrik">⚡ Listrik</option>
+            <option value="Prive">💰 Prive</option>
+            <option value="Belanja">🛒 Belanja</option>
+            <option value="Makanan">🍽️ Makanan</option>
+            <option value="Internet">🌐 Internet</option>
+            <option value="Air">💧 Air</option>
+            <option value="Perawatan">🔧 Perawatan</option>
+            <option value="Custom">✏️ Custom (Input Manual)</option>
+          </select>
+          <div id="editExpenseSubCategoryContainer" style="display: none;">
+            <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Sub-Kategori</label>
+            <select id="editExpenseSubCategory" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+              <option value="">-- Pilih Sub --</option>
+            </select>
+          </div>
+          <div id="editExpenseCustomContainer" style="display: none;">
+            <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Nama Custom</label>
+            <input type="text" id="editExpenseCustomName" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+          </div>
+        </div>
+
+        <!-- Amount -->
+        <div id="editExpenseFieldAmount" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Jumlah (Rp)</label>
+          <input type="number" id="editExpenseAmount" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+        </div>
+
+        <!-- Date & Time -->
+        <div id="editExpenseFieldDateTime" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Tanggal & Waktu</label>
+          <input type="datetime-local" id="editExpenseDateTime" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+          <small style="color: var(--ps3-muted); display: block; margin-top: 4px;">Format: WIB (UTC+7)</small>
+        </div>
+
+        <!-- Note -->
+        <div id="editExpenseFieldNote" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Catatan</label>
+          <input type="text" id="editExpenseNote" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+        </div>
+
+        <!-- Reason -->
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Alasan Edit <span style="color: var(--ps3-red);">*</span></label>
+          <input type="text" id="editExpenseReason" placeholder="Mengapa data ini diedit?" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onclick="backToEditExpenseStep1()" style="flex: 1;">Kembali</button>
+          <button class="btn" onclick="saveExpenseEdit()" style="flex: 2;">Simpan Perubahan</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Edit History -->
+      <div id="editExpenseStep3" style="padding: 20px; display: none;">
+        <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Riwayat Perubahan:</p>
+        <div id="editExpenseHistoryList" style="max-height: 300px; overflow-y: auto;"></div>
+        <button class="btn" onclick="closeModal('modalEditExpense')" style="margin-top: 16px; width: 100%;">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ═══════════════════════════════════════════════════════════════
     // PS3 Rental Manager - Railway Production Client
@@ -2304,10 +2404,14 @@
         `;
       } else {
         container.innerHTML = filteredExpenses.map(e => `
-          <div class="transaction-item">
+          <div class="transaction-item" style="position: relative;" data-exp-id="${e.id || ''}">
             <div class="transaction-header">
               <div class="transaction-unit">${e.item}</div>
-              <div class="transaction-amount" style="color: var(--ps3-red);">${formatMoney(e.amount)}</div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div class="transaction-amount" style="color: var(--ps3-red);">${formatMoney(e.amount)}</div>
+                <button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1.1rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>
+                <button onclick="try { openEditExpenseModal('${e.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Edit pengeluaran">✏️</button>
+              </div>
             </div>
             <div class="transaction-meta" style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; margin-top: 8px;">
               <span style="text-align: left; color: var(--ps3-muted);">${formatDateWIB(e.created_at)}</span>
@@ -3213,6 +3317,291 @@
       
       // Load history
       await loadEditHistory(transactionId);
+    }
+
+    // ═════════════════ Expense Edit Functions ═════════════════
+    let currentEditExpenseId = null;
+    let currentEditExpenseCategory = null;
+
+    function openEditExpenseModal(expenseId) {
+      showToast('Membuka edit pengeluaran... ID: ' + expenseId, 'info');
+      
+      currentEditExpenseId = expenseId;
+      
+      if (!expenses || expenses.length === 0) {
+        showToast('Data pengeluaran belum dimuat. Tunggu sebentar...', 'error');
+        return;
+      }
+      
+      const expense = expenses.find(e => e.id == expenseId);
+      if (!expense) {
+        showToast('Pengeluaran tidak ditemukan (ID: ' + expenseId + '). Total: ' + expenses.length, 'error');
+        return;
+      }
+
+      // Reset steps
+      document.getElementById('editExpenseStep1').style.display = 'block';
+      document.getElementById('editExpenseStep2').style.display = 'none';
+      document.getElementById('editExpenseStep3').style.display = 'none';
+
+      // Reset checkboxes
+      document.getElementById('editExpenseCheckCategory').checked = false;
+      document.getElementById('editExpenseCheckAmount').checked = false;
+      document.getElementById('editExpenseCheckDateTime').checked = false;
+      document.getElementById('editExpenseCheckNote').checked = false;
+
+      // Pre-fill current values
+      currentEditExpenseCategory = expense.category || '';
+      document.getElementById('editExpenseCategory').value = expense.category || '';
+      document.getElementById('editExpenseAmount').value = expense.amount || 0;
+      document.getElementById('editExpenseNote').value = expense.note || '';
+      document.getElementById('editExpenseReason').value = '';
+      
+      // Parse and set datetime from created_at
+      if (expense.created_at) {
+        const wibTime = new Date(expense.created_at + (7 * 60 * 60 * 1000));
+        const yyyy = wibTime.getUTCFullYear();
+        const mm = String(wibTime.getUTCMonth() + 1).padStart(2, '0');
+        const dd = String(wibTime.getUTCDate()).padStart(2, '0');
+        const hh = String(wibTime.getUTCHours()).padStart(2, '0');
+        const min = String(wibTime.getUTCMinutes()).padStart(2, '0');
+        document.getElementById('editExpenseDateTime').value = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+      }
+      
+      // Handle sub-category
+      onEditExpenseCategoryChange();
+      if (expense.category && EXPENSE_SUB_CATEGORIES[expense.category]) {
+        document.getElementById('editExpenseSubCategory').value = expense.item || '';
+      } else if (expense.category === 'Custom') {
+        document.getElementById('editExpenseCustomName').value = expense.item || '';
+      }
+
+      // Load edit history
+      loadExpenseEditHistory(expenseId);
+
+      openModal('modalEditExpense');
+    }
+
+    function onEditExpenseCategoryChange() {
+      const category = document.getElementById('editExpenseCategory').value;
+      const subCatContainer = document.getElementById('editExpenseSubCategoryContainer');
+      const customContainer = document.getElementById('editExpenseCustomContainer');
+      const subCatSelect = document.getElementById('editExpenseSubCategory');
+      
+      if (EXPENSE_SUB_CATEGORIES[category]) {
+        subCatContainer.style.display = 'block';
+        customContainer.style.display = 'none';
+        
+        // Populate sub-categories
+        subCatSelect.innerHTML = '<option value="">-- Pilih Sub --</option>';
+        EXPENSE_SUB_CATEGORIES[category].forEach(sub => {
+          const option = document.createElement('option');
+          option.value = sub;
+          option.textContent = sub;
+          subCatSelect.appendChild(option);
+        });
+      } else if (category === 'Custom') {
+        subCatContainer.style.display = 'none';
+        customContainer.style.display = 'block';
+      } else {
+        subCatContainer.style.display = 'none';
+        customContainer.style.display = 'none';
+      }
+    }
+
+    function proceedToEditExpenseStep2() {
+      const fields = [
+        'editExpenseCheckCategory',
+        'editExpenseCheckAmount',
+        'editExpenseCheckDateTime',
+        'editExpenseCheckNote'
+      ];
+
+      const anySelected = fields.some(id => document.getElementById(id).checked);
+      if (!anySelected) {
+        showToast('Pilih minimal 1 data yang ingin diedit', 'error');
+        return;
+      }
+
+      // Hide/show fields based on selection
+      document.getElementById('editExpenseFieldCategory').style.display =
+        document.getElementById('editExpenseCheckCategory').checked ? 'block' : 'none';
+      document.getElementById('editExpenseFieldAmount').style.display =
+        document.getElementById('editExpenseCheckAmount').checked ? 'block' : 'none';
+      document.getElementById('editExpenseFieldDateTime').style.display =
+        document.getElementById('editExpenseCheckDateTime').checked ? 'block' : 'none';
+      document.getElementById('editExpenseFieldNote').style.display =
+        document.getElementById('editExpenseCheckNote').checked ? 'block' : 'none';
+
+      document.getElementById('editExpenseStep1').style.display = 'none';
+      document.getElementById('editExpenseStep2').style.display = 'block';
+    }
+
+    function backToEditExpenseStep1() {
+      document.getElementById('editExpenseStep1').style.display = 'block';
+      document.getElementById('editExpenseStep2').style.display = 'none';
+    }
+
+    async function saveExpenseEdit() {
+      const reason = document.getElementById('editExpenseReason').value.trim();
+      if (!reason) {
+        showToast('Alasan edit wajib diisi', 'error');
+        return;
+      }
+
+      const updates = {};
+
+      if (document.getElementById('editExpenseCheckCategory').checked) {
+        const category = document.getElementById('editExpenseCategory').value;
+        updates.category = category;
+        
+        // Determine item name based on category
+        if (EXPENSE_SUB_CATEGORIES[category]) {
+          const subCat = document.getElementById('editExpenseSubCategory').value;
+          if (subCat) {
+            updates.item = subCat;
+          } else {
+            showToast('Pilih sub-kategori', 'error');
+            return;
+          }
+        } else if (category === 'Custom') {
+          const customName = document.getElementById('editExpenseCustomName').value.trim();
+          if (customName) {
+            updates.item = customName;
+          } else {
+            showToast('Masukkan nama pengeluaran custom', 'error');
+            return;
+          }
+        } else {
+          updates.item = category;
+        }
+      }
+      
+      if (document.getElementById('editExpenseCheckAmount').checked) {
+        updates.amount = parseInt(document.getElementById('editExpenseAmount').value) || 0;
+      }
+      
+      if (document.getElementById('editExpenseCheckDateTime').checked) {
+        // Convert datetime-local to timestamp (WIB to UTC)
+        const dtLocal = document.getElementById('editExpenseDateTime').value;
+        if (dtLocal) {
+          const dt = new Date(dtLocal);
+          // Convert WIB to UTC (subtract 7 hours)
+          updates.created_at = dt.getTime() - (7 * 60 * 60 * 1000);
+          // Also update date field
+          updates.date = dtLocal.split('T')[0];
+        }
+      }
+      
+      if (document.getElementById('editExpenseCheckNote').checked) {
+        updates.note = document.getElementById('editExpenseNote').value.trim();
+      }
+
+      if (Object.keys(updates).length === 0) {
+        showToast('Tidak ada perubahan untuk disimpan', 'error');
+        return;
+      }
+
+      try {
+        const response = await api('PUT', `/expenses/${currentEditExpenseId}`, {
+          updates,
+          reason,
+          editedBy: 'admin'
+        });
+
+        if (response.ok) {
+          showToast(`Pengeluaran diperbarui (${response.changes} perubahan)`, 'success');
+
+          // Show history after successful edit
+          document.getElementById('editExpenseStep2').style.display = 'none';
+          document.getElementById('editExpenseStep3').style.display = 'block';
+          await loadExpenseEditHistory(currentEditExpenseId);
+
+          // Refresh data
+          await loadData();
+          renderExpenses();
+          renderReports();
+        } else {
+          showToast(response.error || 'Gagal mengupdate pengeluaran', 'error');
+        }
+      } catch (error) {
+        showToast(error.message || 'Terjadi kesalahan', 'error');
+      }
+    }
+
+    async function loadExpenseEditHistory(expenseId) {
+      try {
+        const response = await api('GET', `/expenses/${expenseId}/edits`);
+        const container = document.getElementById('editExpenseHistoryList');
+
+        if (!response.ok || !response.logs || response.logs.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: var(--ps3-muted);">
+              <div style="font-size: 2rem; margin-bottom: 10px;">📝</div>
+              <div>Belum ada riwayat edit untuk pengeluaran ini</div>
+            </div>
+          `;
+          return;
+        }
+
+        const fieldLabels = {
+          'category': 'Kategori',
+          'item': 'Item',
+          'amount': 'Jumlah',
+          'date': 'Tanggal',
+          'note': 'Catatan',
+          'created_at': 'Waktu'
+        };
+
+        container.innerHTML = response.logs.map(log => {
+          const editedAtWIB = new Date(log.editedAt + (7 * 60 * 60 * 1000));
+          const dateStr = editedAtWIB.toLocaleString('id-ID', { 
+            day: 'numeric', 
+            month: 'short', 
+            hour: '2-digit', 
+            minute: '2-digit',
+            timeZone: 'UTC'
+          });
+          
+          return `
+            <div style="border-left: 3px solid var(--ps3-chrome); padding: 12px; margin-bottom: 12px; background: rgba(255,255,255,0.05);">
+              <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 6px;">
+                ${dateStr} • oleh ${log.editedBy || 'admin'}
+              </div>
+              <div style="font-weight: 600; margin-bottom: 4px; color: var(--ps3-text);">
+                ${fieldLabels[log.fieldName] || log.fieldName}
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
+                <span style="text-decoration: line-through; color: var(--ps3-red);">${log.oldValue || '(kosong)'}</span>
+                <span style="color: var(--ps3-muted);">→</span>
+                <span style="color: var(--ps3-green); font-weight: 500;">${log.newValue || '(kosong)'}</span>
+              </div>
+              ${log.editReason ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 6px; font-style: italic;">💬 ${log.editReason}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('Error loading expense edit history:', error);
+      }
+    }
+
+    async function viewExpenseEditHistory(expenseId, itemName) {
+      if (!expenseId) {
+        showToast('ID pengeluaran tidak valid', 'error');
+        return;
+      }
+      
+      currentEditExpenseId = expenseId;
+      
+      // Show history modal
+      document.querySelector('#modalEditExpense .modal-title').textContent = `📋 Riwayat Edit: ${itemName}`;
+      document.getElementById('editExpenseStep1').style.display = 'none';
+      document.getElementById('editExpenseStep2').style.display = 'none';
+      document.getElementById('editExpenseStep3').style.display = 'block';
+      openModal('modalEditExpense');
+      
+      // Load history
+      await loadExpenseEditHistory(expenseId);
     }
 
     function showLoading(show) {

@@ -98,6 +98,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS expenses (
     id TEXT PRIMARY KEY,
     item TEXT,
+    category TEXT,
     amount REAL,
     date TEXT,
     note TEXT,
@@ -116,17 +117,19 @@ db.exec(`
     last_number INTEGER DEFAULT 0
   );
 
-  -- Migration: Create edit_logs table for audit trail
+  -- Migration: Create edit_logs table for audit trail (supports both transactions and expenses)
   CREATE TABLE IF NOT EXISTS edit_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    transactionId TEXT NOT NULL,
+    transactionId TEXT,
+    expenseId TEXT,
     fieldName TEXT NOT NULL,
     oldValue TEXT,
     newValue TEXT,
     editReason TEXT,
     editedAt INTEGER,
     editedBy TEXT,
-    FOREIGN KEY (transactionId) REFERENCES transactions(id)
+    FOREIGN KEY (transactionId) REFERENCES transactions(id),
+    FOREIGN KEY (expenseId) REFERENCES expenses(id)
   );
 `);
 
@@ -150,11 +153,13 @@ if (unitCount === 0) {
   ['PS 1'].forEach(name => unitStmt.run(name));
 }
 
-// Runtime migration: Ensure edit_logs table exists (for existing databases)
+// Runtime migration: Ensure edit_logs table exists with expense support (for existing databases)
 try {
+  // Try to create new table structure first (fresh databases)
   db.prepare(`CREATE TABLE IF NOT EXISTS edit_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    transactionId TEXT NOT NULL,
+    transactionId TEXT,
+    expenseId TEXT,
     fieldName TEXT NOT NULL,
     oldValue TEXT,
     newValue TEXT,
@@ -163,8 +168,26 @@ try {
     editedBy TEXT
   )`).run();
   console.log('[DB] Migration: edit_logs table ready');
+  
+  // For existing databases, try to add expenseId column
+  try {
+    db.prepare(`ALTER TABLE edit_logs ADD COLUMN expenseId TEXT`).run();
+    console.log('[DB] Migration: Added expenseId column to edit_logs');
+  } catch (e) {
+    // Column might already exist, ignore error
+  }
 } catch (e) {
   console.error('[DB] Migration error:', e.message);
+}
+
+// For existing databases, try to add category column to expenses
+if (db) {
+  try {
+    db.prepare(`ALTER TABLE expenses ADD COLUMN category TEXT`).run();
+    console.log('[DB] Migration: Added category column to expenses');
+  } catch (e) {
+    // Column might already exist, ignore error
+  }
 }
 
 // ─── HELPERS ───────────────────────────────────────────────────
@@ -468,14 +491,84 @@ app.post('/api/expenses', requireAuth, (req, res) => {
   // Auto-generate date in WIB timezone (UTC+7) - no user input needed
   const wibDate = new Date(Date.now() + (7 * 60 * 60 * 1000)).toISOString().split('T')[0];
   const exp = { id: generateExpenseId(), ...req.body, date: wibDate };
-  db.prepare('INSERT INTO expenses (id, item, amount, date, note) VALUES (?, ?, ?, ?, ?)')
-    .run(exp.id, exp.item, exp.amount, exp.date, exp.note);
+  db.prepare('INSERT INTO expenses (id, item, category, amount, date, note) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(exp.id, exp.item, exp.category || '', exp.amount, exp.date, exp.note);
   res.json({ ok: true, exp });
 });
 
 app.delete('/api/expenses/:id', requireAuth, (req, res) => {
   db.prepare('DELETE FROM expenses WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
+});
+
+// PUT update expense with audit trail logging
+app.put('/api/expenses/:id', requireAuth, (req, res) => {
+  const id = req.params.id;
+  const exp = db.prepare('SELECT * FROM expenses WHERE id = ?').get(id);
+  if (!exp) return res.status(404).json({ error: 'Expense not found' });
+  
+  const inputUpdates = req.body.updates || req.body;
+  const editReason = req.body.reason || req.body.editReason || '-';
+  const editedBy = req.body.editedBy || 'admin';
+  
+  // Map frontend field names to database columns
+  const fieldMapping = {
+    'category': 'category',
+    'item': 'item',
+    'amount': 'amount',
+    'date': 'date',
+    'note': 'note',
+    'created_at': 'created_at'  // For editing timestamp
+  };
+  
+  const dbFields = [];
+  const dbValues = [];
+  const editLogs = [];
+  
+  for (const [field, value] of Object.entries(inputUpdates)) {
+    if (field === 'id' || typeof value === 'object') continue;
+    const dbField = fieldMapping[field] || field;
+    if (exp[dbField] !== value) {
+      dbFields.push(`${dbField} = ?`);
+      dbValues.push(value);
+      editLogs.push({
+        expenseId: id,
+        fieldName: field,
+        oldValue: String(exp[dbField] || ''),
+        newValue: String(value),
+        editReason,
+        editedAt: Date.now(),
+        editedBy
+      });
+    }
+  }
+  
+  if (dbFields.length > 0) {
+    const setClause = dbFields.join(', ');
+    db.prepare(`UPDATE expenses SET ${setClause} WHERE id = ?`).run(...dbValues, id);
+    
+    const logStmt = db.prepare(`
+      INSERT INTO edit_logs (expenseId, fieldName, oldValue, newValue, editReason, editedAt, editedBy)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const log of editLogs) {
+      logStmt.run(log.expenseId, log.fieldName, log.oldValue, log.newValue, log.editReason, log.editedAt, log.editedBy);
+    }
+  }
+  
+  res.json({ 
+    ok: true, 
+    changes: editLogs.length,
+    exp: db.prepare('SELECT * FROM expenses WHERE id = ?').get(id) 
+  });
+});
+
+// GET edit history for an expense
+app.get('/api/expenses/:id/edits', requireAuth, (req, res) => {
+  const logs = db.prepare(
+    'SELECT * FROM edit_logs WHERE expenseId = ? ORDER BY editedAt DESC'
+  ).all(req.params.id);
+  res.json({ ok: true, logs });
 });
 
 // ─── REPORTS ─────────────────────────────────────────────────
