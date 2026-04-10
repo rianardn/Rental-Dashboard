@@ -987,11 +987,18 @@
         </div>
       </div>
 
-      <!-- Unit Management Section -->
+      <!-- Available Units Section (pindah ke atas) -->
+      <div class="section-title">
+        <span>Unit Tersedia</span>
+        <span id="totalUnits">0 unit</span>
+      </div>
+      <div id="unitsList" style="margin-bottom: 20px;"></div>
+
+      <!-- Unit Management Section (pindah ke bawah) -->
       <div class="section-title">
         <span>Manajemen Unit</span>
       </div>
-      <div class="card" style="margin-bottom: 16px;">
+      <div class="card">
         <div style="display: flex; gap: 10px; margin-bottom: 12px;">
           <input type="text" id="dashNewUnitName" placeholder="Nama unit baru (contoh: TV 5)" 
                  style="flex: 1; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); 
@@ -1002,12 +1009,6 @@
         </div>
         <div id="dashUnitsManagement" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
       </div>
-
-      <div class="section-title">
-        <span>Unit Tersedia</span>
-        <span id="totalUnits">0 unit</span>
-      </div>
-      <div id="unitsList"></div>
     </div>
 
     <!-- Reports Page -->
@@ -1248,7 +1249,7 @@
 
     // Configuration
     const API_URL = ''; // Same origin (Railway serves both frontend and API)
-    const POLL_INTERVAL = 3000; // 3 seconds for real-time updates
+    const POLL_INTERVAL = 1000; // 1 second for real-time updates (optimized for Railway)
     
     // State
     let authToken = localStorage.getItem('ps3_token');

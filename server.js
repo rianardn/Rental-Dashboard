@@ -301,7 +301,7 @@ app.post('/api/units/:id/stop', requireAuth, (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .run(tx.id, tx.unitId, tx.unitName, tx.customer, tx.startTime, tx.endTime, tx.durationMin, tx.paid, tx.payment, tx.note, tx.date);
   
-  db.prepare('UPDATE units SET active = 0, startTime = NULL, customer = "", duration = 0, note = "" WHERE id = ?').run(id);
+  db.prepare("UPDATE units SET active = 0, startTime = NULL, customer = '', duration = 0, note = '' WHERE id = ?").run(id);
   
   res.json({ ok: true, tx });
 });
