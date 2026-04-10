@@ -155,26 +155,64 @@ if (unitCount === 0) {
 
 // Runtime migration: Ensure edit_logs table exists with expense support (for existing databases)
 try {
-  // Try to create new table structure first (fresh databases)
-  db.prepare(`CREATE TABLE IF NOT EXISTS edit_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    transactionId TEXT,
-    expenseId TEXT,
-    fieldName TEXT NOT NULL,
-    oldValue TEXT,
-    newValue TEXT,
-    editReason TEXT,
-    editedAt INTEGER,
-    editedBy TEXT
-  )`).run();
-  console.log('[DB] Migration: edit_logs table ready');
+  // Check if old table exists with NOT NULL constraint issue
+  const tableInfo = db.prepare(`PRAGMA table_info(edit_logs)`).all();
+  const transactionIdCol = tableInfo.find(c => c.name === 'transactionId');
+  const expenseIdCol = tableInfo.find(c => c.name === 'expenseId');
   
-  // For existing databases, try to add expenseId column
-  try {
-    db.prepare(`ALTER TABLE edit_logs ADD COLUMN expenseId TEXT`).run();
-    console.log('[DB] Migration: Added expenseId column to edit_logs');
-  } catch (e) {
-    // Column might already exist, ignore error
+  // If table exists and transactionId has NOT NULL (notnull=1), we need to recreate
+  if (tableInfo.length > 0 && transactionIdCol && transactionIdCol.notnull === 1) {
+    console.log('[DB] Migration: Recreating edit_logs table to fix NOT NULL constraints');
+    
+    // Step 1: Create backup table with correct schema
+    db.prepare(`CREATE TABLE edit_logs_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      transactionId TEXT,
+      expenseId TEXT,
+      fieldName TEXT NOT NULL,
+      oldValue TEXT,
+      newValue TEXT,
+      editReason TEXT,
+      editedAt INTEGER,
+      editedBy TEXT
+    )`).run();
+    
+    // Step 2: Copy existing data (convert transactionId to allow NULL)
+    db.prepare(`INSERT INTO edit_logs_new (id, transactionId, fieldName, oldValue, newValue, editReason, editedAt, editedBy)
+      SELECT id, transactionId, fieldName, oldValue, newValue, editReason, editedAt, editedBy 
+      FROM edit_logs WHERE transactionId IS NOT NULL`).run();
+    
+    // Step 3: Drop old table
+    db.prepare(`DROP TABLE edit_logs`).run();
+    
+    // Step 4: Rename new table
+    db.prepare(`ALTER TABLE edit_logs_new RENAME TO edit_logs`).run();
+    
+    console.log('[DB] Migration: edit_logs table recreated with nullable transactionId');
+  } else if (tableInfo.length === 0) {
+    // Fresh database - create table with correct schema
+    db.prepare(`CREATE TABLE IF NOT EXISTS edit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      transactionId TEXT,
+      expenseId TEXT,
+      fieldName TEXT NOT NULL,
+      oldValue TEXT,
+      newValue TEXT,
+      editReason TEXT,
+      editedAt INTEGER,
+      editedBy TEXT
+    )`).run();
+    console.log('[DB] Migration: edit_logs table created');
+  }
+  
+  // For existing databases, try to add expenseId column if missing
+  if (!expenseIdCol) {
+    try {
+      db.prepare(`ALTER TABLE edit_logs ADD COLUMN expenseId TEXT`).run();
+      console.log('[DB] Migration: Added expenseId column to edit_logs');
+    } catch (e) {
+      // Column might already exist, ignore error
+    }
   }
 } catch (e) {
   console.error('[DB] Migration error:', e.message);
