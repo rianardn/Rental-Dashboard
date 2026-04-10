@@ -3272,12 +3272,13 @@
 
         container.innerHTML = response.logs.map(log => {
           const fieldName = fieldLabels[log.fieldName] || log.fieldName;
-          const editDate = new Date(log.editedAt).toLocaleString('id-ID', {
+          const editedAtWIB = new Date(log.editedAt + (7 * 60 * 60 * 1000));
+          const dateStr = editedAtWIB.toLocaleString('id-ID', {
             day: 'numeric',
             month: 'short',
-            year: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            timeZone: 'UTC'
           });
 
           let oldValue = log.oldValue;
@@ -3295,22 +3296,19 @@
           }
 
           return `
-            <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                <span style="font-weight: 600; color: var(--ps3-red);">${fieldName}</span>
-                <span style="font-size: 0.75rem; color: var(--ps3-muted);">${editDate}</span>
+            <div style="border-left: 3px solid var(--ps3-red); padding: 12px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border-radius: 0 10px 10px 0;">
+              <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 6px;">
+                ${dateStr} • oleh ${log.editedBy || 'admin'}
               </div>
-              <div style="font-size: 0.85rem; margin-bottom: 4px;">
-                <span style="color: var(--ps3-muted);">Sebelum:</span>
-                <span style="text-decoration: line-through; color: var(--ps3-muted);">${oldValue}</span>
+              <div style="font-weight: 600; margin-bottom: 4px; color: var(--ps3-text);">
+                ${fieldName}
               </div>
-              <div style="font-size: 0.85rem; margin-bottom: 8px;">
-                <span style="color: var(--ps3-muted);">Sesudah:</span>
-                <span style="color: var(--ps3-green); font-weight: 500;">${newValue}</span>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
+                <span style="text-decoration: line-through; color: var(--ps3-red);">${oldValue || '(kosong)'}</span>
+                <span style="color: var(--ps3-muted);">→</span>
+                <span style="color: var(--ps3-green); font-weight: 500;">${newValue || '(kosong)'}</span>
               </div>
-              <div style="font-size: 0.75rem; color: var(--ps3-muted); border-top: 1px solid var(--ps3-border); padding-top: 8px;">
-                Alasan: ${log.editReason || '-'}
-              </div>
+              ${log.editReason ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 6px; font-style: italic;">💬 ${log.editReason}</div>` : ''}
             </div>
           `;
         }).join('');
