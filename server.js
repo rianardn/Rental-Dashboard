@@ -339,6 +339,8 @@ app.put('/api/transactions/:id', requireAuth, (req, res) => {
   
   // Support both formats: {updates: {...}, reason: ...} or direct field updates
   const inputUpdates = req.body.updates || req.body;
+  const editReason = req.body.reason || req.body.editReason || '-';
+  const editedBy = req.body.editedBy || 'admin';
   
   // Map frontend field names to database columns
   const fieldMapping = {
@@ -348,23 +350,58 @@ app.put('/api/transactions/:id', requireAuth, (req, res) => {
     'payment': 'payment'
   };
   
-  // Build update fields with proper mapping
+  // Build update fields with proper mapping + track changes for audit log
   const dbFields = [];
   const dbValues = [];
+  const editLogs = [];
   
   for (const [field, value] of Object.entries(inputUpdates)) {
     if (field === 'id' || typeof value === 'object') continue;
     const dbField = fieldMapping[field] || field;
-    dbFields.push(`${dbField} = ?`);
-    dbValues.push(value);
+    // Only update if value actually changed
+    if (tx[dbField] !== value) {
+      dbFields.push(`${dbField} = ?`);
+      dbValues.push(value);
+      // Log the edit for audit trail
+      editLogs.push({
+        transactionId: id,
+        fieldName: field,
+        oldValue: String(tx[dbField] || ''),
+        newValue: String(value),
+        editReason,
+        editedAt: Date.now(),
+        editedBy
+      });
+    }
   }
   
   if (dbFields.length > 0) {
     const setClause = dbFields.join(', ');
     db.prepare(`UPDATE transactions SET ${setClause} WHERE id = ?`).run(...dbValues, id);
+    
+    // Insert edit logs to audit trail
+    const logStmt = db.prepare(`
+      INSERT INTO edit_logs (transactionId, fieldName, oldValue, newValue, editReason, editedAt, editedBy)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const log of editLogs) {
+      logStmt.run(log.transactionId, log.fieldName, log.oldValue, log.newValue, log.editReason, log.editedAt, log.editedBy);
+    }
   }
   
-  res.json({ ok: true, tx: db.prepare('SELECT * FROM transactions WHERE id = ?').get(id) });
+  res.json({ 
+    ok: true, 
+    changes: editLogs.length,
+    tx: db.prepare('SELECT * FROM transactions WHERE id = ?').get(id) 
+  });
+});
+
+// GET edit history for a transaction
+app.get('/api/transactions/:id/edits', requireAuth, (req, res) => {
+  const logs = db.prepare(
+    'SELECT * FROM edit_logs WHERE transactionId = ? ORDER BY editedAt DESC'
+  ).all(req.params.id);
+  res.json({ ok: true, logs });
 });
 
 // ─── EXPENSES ─────────────────────────────────────────────────
