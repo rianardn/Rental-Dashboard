@@ -241,8 +241,28 @@
 
     #clock {
       font-family: 'DM Mono', monospace;
-      font-size: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--ps3-text);
+      background: var(--ps3-surface);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--ps3-border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    #clock .time {
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    
+    #clock .timezone {
+      font-size: 0.65rem;
       color: var(--ps3-muted);
+      background: rgba(192,192,192,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
     }
 
     .sync-indicator {
@@ -968,7 +988,10 @@
         <div class="header-title">PS3 <span>RENTAL</span></div>
       </div>
       <div class="header-right">
-        <div id="clock">00:00</div>
+        <div id="clock">
+          <span class="time">00:00:00</span>
+          <span class="timezone">WIB</span>
+        </div>
         <div id="syncIndicator" class="sync-indicator"></div>
       </div>
     </header>
@@ -1131,16 +1154,40 @@
 
       <div class="card" style="margin-top: 20px;">
         <div class="section-title">Manajemen Data</div>
-        <button class="btn" onclick="document.getElementById('importFile').click()" style="margin-bottom: 10px;">
-          📥 Import Data (JSON)
-        </button>
-        <input type="file" id="importFile" accept=".json" onchange="importData(event)">
         <button class="btn" onclick="exportFullBackup()">
           💾 Export Backup (JSON)
         </button>
-        <small style="display: block; margin-top: 10px;">
-          Import akan MENGGANTI semua data saat ini. Pastikan backup sudah dibuat.
-        </small>
+        <div style="margin-top: 15px; text-align: center;">
+          <a href="#" onclick="showImportConfirm(); return false;" style="font-size: 0.75rem; color: var(--ps3-muted); text-decoration: underline; opacity: 0.7;">
+            📥 Import Data (JSON)
+          </a>
+          <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+        </div>
+      </div>
+      
+      <!-- Import Confirmation Modal -->
+      <div id="modalImportConfirm" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+          <div class="modal-header" style="background: rgba(230,0,18,0.2); border-color: var(--ps3-red);">
+            <h3>⚠️ PERINGATAN KEAMANAN</h3>
+          </div>
+          <div class="modal-body">
+            <div style="background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+              <p style="color: var(--ps3-red); font-weight: 600; margin-bottom: 8px;">Import akan MENGHAPUS semua data saat ini!</p>
+              <ul style="font-size: 0.8rem; color: var(--ps3-text); margin: 0; padding-left: 16px;">
+                <li>Semua unit aktif akan terhapus</li>
+                <li>Semua transaksi akan terhapus</li>
+                <li>Data yang dihapus TIDAK dapat dikembalikan</li>
+              </ul>
+            </div>
+            <p style="font-size: 0.8rem; margin-bottom: 8px;">Untuk melanjutkan, ketik <strong style="color: var(--ps3-red);">SAYA SETUJU</strong> di bawah:</p>
+            <input type="text" id="importConfirmText" placeholder="Ketik SAYA SETUJU disini" style="width: 100%; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; color: var(--ps3-text); font-family: var(--font-body); text-transform: uppercase;">
+          </div>
+          <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modalImportConfirm')">Batal</button>
+            <button class="btn btn-red" onclick="confirmImport()">Lanjutkan Import</button>
+          </div>
+        </div>
       </div>
 
       <div class="card" style="margin-top: 20px;">
@@ -1191,10 +1238,24 @@
           <input type="text" id="startCustomer" placeholder="Nama pelanggan">
         </div>
         <div class="form-group">
-          <label>Durasi (menit)</label>
-          <input type="number" id="startDuration" placeholder="Kosong = tanpa batas">
-          <small>Kosongkan untuk sewa terbuka (tanpa batas waktu)</small>
+          <label>Durasi Sewa</label>
+          <select id="startDurationPreset" onchange="handleDurationChange()" style="width: 100%; padding: 14px 16px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; color: var(--ps3-text); font-family: var(--font-body); font-size: 1rem; margin-bottom: 10px;">
+            <option value="">Pilih durasi...</option>
+            <option value="60">1 Jam</option>
+            <option value="120">2 Jam</option>
+            <option value="180">3 Jam</option>
+            <option value="240">4 Jam</option>
+            <option value="300">5 Jam</option>
+            <option value="custom">Custom (menit)</option>
+            <option value="unlimited">Tanpa Batas (Terbuka)</option>
+          </select>
+          <div id="customDurationContainer" style="display: none; margin-top: 10px;">
+            <input type="number" id="startDurationCustom" placeholder="Masukkan durasi dalam menit" min="1">
+          </div>
+          <small>Pilih durasi sewa atau pilih Custom untuk input manual</small>
         </div>
+        <!-- Hidden input untuk nilai durasi final -->
+        <input type="hidden" id="startDuration" value="">
         <div class="form-group">
           <label>Catatan (opsional)</label>
           <input type="text" id="startNote" placeholder="Catatan khusus...">
@@ -1273,6 +1334,66 @@
     let expenses = [];
     let pollTimer = null;
     let isOnline = true;
+    
+    // ═════════════════ Audio Warning System ═════════════════
+    // Track which units have played warning sound (to avoid continuous playing)
+    const warnedUnits = new Set();
+    
+    // 4 Different jingle patterns for each unit (frequencies in Hz)
+    const JINGLE_PATTERNS = [
+      // Unit 1: High-pitched double beep
+      [880, 0, 880, 0, 1100],
+      // Unit 2: Descending tone
+      [1000, 900, 800, 700, 600],
+      // Unit 3: Rising tone
+      [600, 750, 900, 1100, 1300],
+      // Unit 4: Alternating pattern
+      [880, 660, 880, 660, 1100]
+    ];
+    
+    // Play jingle 3 times with 500ms gap between each
+    async function playWarningJingle(unitIndex) {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const pattern = JINGLE_PATTERNS[unitIndex % 4];
+      
+      for (let repeat = 0; repeat < 3; repeat++) {
+        // Play the 5-tone pattern
+        for (let i = 0; i < pattern.length; i++) {
+          const freq = pattern[i];
+          if (freq === 0) {
+            // Gap in pattern
+            await new Promise(r => setTimeout(r, 150));
+            continue;
+          }
+          
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          
+          osc.frequency.value = freq;
+          osc.type = 'sine';
+          
+          // Short beep with quick fade
+          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+          
+          osc.start(audioCtx.currentTime);
+          osc.stop(audioCtx.currentTime + 0.15);
+          
+          await new Promise(r => setTimeout(r, 180));
+        }
+        
+        // Gap between repeats
+        if (repeat < 2) {
+          await new Promise(r => setTimeout(r, 500));
+        }
+      }
+      
+      // Close audio context after playing
+      setTimeout(() => audioCtx.close(), 1000);
+    }
 
     // ═════════════════ API Client ═════════════════
     async function api(method, endpoint, body = null) {
@@ -1491,6 +1612,17 @@
           const warnMs = settings.warnBefore * 60000;
           const isWarning = remaining < warnMs && remaining > 0;
           const isExpired = remaining <= 0;
+          
+          // Play warning jingle when entering warning state (only once per session)
+          if (isWarning && !warnedUnits.has(unit.id)) {
+            warnedUnits.add(unit.id);
+            const unitIndex = units.findIndex(u => u.id === unit.id);
+            playWarningJingle(unitIndex);
+          }
+          // Clear warning flag when session ends
+          if (!isWarning && warnedUnits.has(unit.id)) {
+            warnedUnits.delete(unit.id);
+          }
           
           timerHTML = `
             <div class="timer-display">
@@ -1878,19 +2010,68 @@
     }
 
     // ═════════════════ Session Actions ═════════════════
+    function handleDurationChange() {
+      const preset = document.getElementById('startDurationPreset').value;
+      const customContainer = document.getElementById('customDurationContainer');
+      const hiddenInput = document.getElementById('startDuration');
+      const customInput = document.getElementById('startDurationCustom');
+      
+      if (preset === 'custom') {
+        customContainer.style.display = 'block';
+        hiddenInput.value = customInput.value || '';
+      } else if (preset === 'unlimited') {
+        customContainer.style.display = 'none';
+        hiddenInput.value = '0';
+      } else {
+        customContainer.style.display = 'none';
+        hiddenInput.value = preset;
+      }
+    }
+    
+    // Update hidden input when custom value changes
+    document.getElementById('startDurationCustom')?.addEventListener('input', function() {
+      document.getElementById('startDuration').value = this.value;
+    });
+
     function startSession(unitId, unitName) {
       currentUnitId = unitId;
       document.getElementById('startUnitName').textContent = unitName;
       document.getElementById('startCustomer').value = '';
+      document.getElementById('startDurationPreset').value = '';
+      document.getElementById('startDurationCustom').value = '';
       document.getElementById('startDuration').value = '';
+      document.getElementById('customDurationContainer').style.display = 'none';
       document.getElementById('startNote').value = '';
       openModal('modalStart');
     }
 
     async function confirmStartSession() {
       const customer = document.getElementById('startCustomer').value;
-      const duration = parseInt(document.getElementById('startDuration').value) || 0;
+      const preset = document.getElementById('startDurationPreset').value;
+      let duration = 0;
+      
+      if (preset === 'custom') {
+        duration = parseInt(document.getElementById('startDurationCustom').value) || 0;
+      } else if (preset !== 'unlimited' && preset !== '') {
+        duration = parseInt(preset) || 0;
+      }
+      
       const note = document.getElementById('startNote').value;
+      
+      if (!customer.trim()) {
+        showToast('Nama pelanggan wajib diisi', 'error');
+        return;
+      }
+      
+      if (preset === '') {
+        showToast('Pilih durasi sewa terlebih dahulu', 'error');
+        return;
+      }
+      
+      if (preset === 'custom' && duration <= 0) {
+        showToast('Masukkan durasi valid dalam menit', 'error');
+        return;
+      }
       
       try {
         await api('POST', `/units/${currentUnitId}/start`, { customer, duration, note });
@@ -1927,6 +2108,8 @@
       
       try {
         await api('POST', `/units/${currentUnitId}/stop`, { paid, payment });
+        // Clear warning flag for this unit
+        warnedUnits.delete(currentUnitId);
         closeModal('modalStop');
         await loadData();
         renderAll();
@@ -2055,14 +2238,28 @@
     }
 
     // ═════════════════ Import / Export ═════════════════
+    let pendingImportFile = null;
+    
+    function showImportConfirm() {
+      pendingImportFile = null;
+      document.getElementById('importConfirmText').value = '';
+      openModal('modalImportConfirm');
+    }
+    
+    function confirmImport() {
+      const input = document.getElementById('importConfirmText').value.trim().toUpperCase();
+      if (input !== 'SAYA SETUJU') {
+        showToast('Konfirmasi tidak valid. Ketik "SAYA SETUJU" untuk melanjutkan.', 'error');
+        return;
+      }
+      closeModal('modalImportConfirm');
+      // Trigger file picker
+      document.getElementById('importFile').click();
+    }
+    
     async function importData(event) {
       const file = event.target.files[0];
       if (!file) return;
-      
-      if (!confirm('⚠️ PERINGATAN: Import akan MENGGANTI semua data saat ini.\n\nPastikan Anda sudah membackup data terlebih dahulu.\n\nLanjutkan?')) {
-        event.target.value = '';
-        return;
-      }
       
       showLoading(true);
       
@@ -2205,7 +2402,19 @@
 
     function updateClock() {
       const now = new Date();
-      document.getElementById('clock').textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      // Convert to WIB timezone (UTC+7)
+      const wibTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+      const hours = String(wibTime.getUTCHours()).padStart(2, '0');
+      const minutes = String(wibTime.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(wibTime.getUTCSeconds()).padStart(2, '0');
+      
+      const clockEl = document.getElementById('clock');
+      if (clockEl) {
+        const timeEl = clockEl.querySelector('.time');
+        if (timeEl) {
+          timeEl.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+      }
     }
 
     // ═════════════════ Format Helpers ═════════════════
