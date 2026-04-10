@@ -469,6 +469,18 @@
       opacity: 0.5;
     }
 
+    .sound-badge {
+      font-size: 0.8em;
+      margin-left: 8px;
+      animation: pulse 1s infinite;
+      display: inline-block;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
     /* Customer Info */
     .customer-info {
       background: var(--ps3-surface);
@@ -1120,7 +1132,7 @@
         <div class="form-group">
           <label>Peringatan Menjelang (menit)</label>
           <input type="number" id="settingWarn" value="1">
-          <small>Tampilkan peringatan saat waktu tersisa kurang dari ini</small>
+          <small>Tampilkan peringatan + mainkan nada suara saat waktu tersisa kurang dari ini. Setiap unit punya nada unik!</small>
         </div>
         <div class="form-group">
           <label>Nama Bisnis</label>
@@ -1150,6 +1162,22 @@
           <input type="text" id="newUnitName" placeholder="Contoh: TV 5">
         </div>
         <button class="btn" onclick="addUnit()">Tambah Unit</button>
+      </div>
+
+      <div class="card" style="margin-top: 20px;">
+        <div class="section-title">🔔 Nada Peringatan</div>
+        <small style="display: block; margin-bottom: 12px;">
+          Saat waktu tersisa kurang dari <b>Peringatan Menjelang</b>, setiap unit memainkan nada unik. Klik untuk test:
+        </small>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn" onclick="playWarningSound(0)" style="flex: 1; min-width: 70px;">Unit 1 ♪</button>
+          <button class="btn" onclick="playWarningSound(1)" style="flex: 1; min-width: 70px;">Unit 2 ♫</button>
+          <button class="btn" onclick="playWarningSound(2)" style="flex: 1; min-width: 70px;">Unit 3 ♬</button>
+          <button class="btn" onclick="playWarningSound(3)" style="flex: 1; min-width: 70px;">Unit 4 ♩</button>
+        </div>
+        <small style="display: block; margin-top: 10px; color: var(--ps3-muted);">
+          Unit 1 = Beep-beep | Unit 2 = Descending | Unit 3 = Alarm | Unit 4 = Double chime
+        </small>
       </div>
 
       <div class="card" style="margin-top: 20px;">
@@ -1191,9 +1219,21 @@
           <input type="text" id="startCustomer" placeholder="Nama pelanggan">
         </div>
         <div class="form-group">
-          <label>Durasi (menit)</label>
-          <input type="number" id="startDuration" placeholder="Kosong = tanpa batas">
-          <small>Kosongkan untuk sewa terbuka (tanpa batas waktu)</small>
+          <label>Durasi Sewa</label>
+          <select id="durationPreset" onchange="handleDurationChange()" style="width: 100%; padding: 14px 16px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; color: var(--ps3-text); font-family: var(--font-body); font-size: 1rem;">
+            <option value="">-- Pilih Durasi --</option>
+            <option value="60">1 Jam</option>
+            <option value="120">2 Jam</option>
+            <option value="180">3 Jam</option>
+            <option value="240">4 Jam</option>
+            <option value="300">5 Jam</option>
+            <option value="custom">Custom (menit)</option>
+            <option value="0">∞ Terbuka (tanpa batas)</option>
+          </select>
+        </div>
+        <div class="form-group" id="customDurationGroup" style="display: none;">
+          <label>Durasi Custom (menit)</label>
+          <input type="number" id="startDuration" placeholder="Masukkan menit" min="1">
         </div>
         <div class="form-group">
           <label>Catatan (opsional)</label>
@@ -1273,6 +1313,92 @@
     let expenses = [];
     let pollTimer = null;
     let isOnline = true;
+    let audioContext = null;
+    let playedWarnings = new Set(); // Track which units have played warning sound
+
+    // ═════════════════ Audio Alert System ═════════════════
+    // 4 Unique warning sounds for different units
+    function initAudio() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playWarningSound(unitIndex) {
+      initAudio();
+      if (!audioContext) return;
+
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+
+      const now = audioContext.currentTime;
+      
+      // 4 distinct sounds for up to 4 units
+      switch (unitIndex % 4) {
+        case 0: // Unit 1: High pitch beep-beep-beep
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now); // A5
+          osc.frequency.setValueAtTime(0, now + 0.1);
+          osc.frequency.setValueAtTime(880, now + 0.2);
+          osc.frequency.setValueAtTime(0, now + 0.3);
+          osc.frequency.setValueAtTime(880, now + 0.4);
+          gain.gain.setValueAtTime(0.5, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+          osc.start(now);
+          osc.stop(now + 0.5);
+          break;
+          
+        case 1: // Unit 2: Descending tone
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(660, now); // E5
+          osc.frequency.exponentialRampToValueAtTime(330, now + 0.6); // E4
+          gain.gain.setValueAtTime(0.5, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+          osc.start(now);
+          osc.stop(now + 0.6);
+          break;
+          
+        case 2: // Unit 3: Alarm pulse
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(440, now); // A4
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.setValueAtTime(0.4, now + 0.05);
+          gain.gain.setValueAtTime(0, now + 0.1);
+          gain.gain.setValueAtTime(0.4, now + 0.15);
+          gain.gain.setValueAtTime(0, now + 0.2);
+          gain.gain.setValueAtTime(0.4, now + 0.25);
+          gain.gain.setValueAtTime(0, now + 0.3);
+          gain.gain.setValueAtTime(0.4, now + 0.35);
+          gain.gain.setValueAtTime(0.01, now + 0.5);
+          osc.start(now);
+          osc.stop(now + 0.5);
+          break;
+          
+        case 3: // Unit 4: Double chime
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          gain.gain.setValueAtTime(0.5, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.2);
+          
+          // Second chime
+          const osc2 = audioContext.createOscillator();
+          const gain2 = audioContext.createGain();
+          osc2.connect(gain2);
+          gain2.connect(audioContext.destination);
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(659.25, now + 0.25); // E5
+          gain2.gain.setValueAtTime(0.5, now + 0.25);
+          gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+          osc2.start(now + 0.25);
+          osc2.stop(now + 0.45);
+          break;
+      }
+    }
 
     // ═════════════════ API Client ═════════════════
     async function api(method, endpoint, body = null) {
@@ -1436,6 +1562,14 @@
         .reduce((sum, t) => sum + (t.paid || 0), 0);
       document.getElementById('statIncome').textContent = formatMoney(todayIncome);
       
+      // Clean up playedWarnings for inactive units
+      const activeIds = new Set(activeUnits.map(u => u.id));
+      for (const id of playedWarnings) {
+        if (!activeIds.has(id)) {
+          playedWarnings.delete(id);
+        }
+      }
+      
       // Render unit cards
       const container = document.getElementById('unitsList');
       container.innerHTML = units.map(unit => renderUnitCard(unit)).join('');
@@ -1492,10 +1626,18 @@
           const isWarning = remaining < warnMs && remaining > 0;
           const isExpired = remaining <= 0;
           
+          // Play warning sound once when entering warning state
+          if (isWarning && !playedWarnings.has(unit.id)) {
+            const unitIndex = units.findIndex(u => u.id === unit.id);
+            playWarningSound(unitIndex);
+            playedWarnings.add(unit.id);
+          }
+          
           timerHTML = `
             <div class="timer-display">
               <div class="timer-countdown ${isWarning ? 'warning' : ''} ${isExpired ? 'expired' : ''}">
                 ${isExpired ? 'WAKTU HABIS' : formatTime(remaining)}
+                ${isWarning ? `<span class="sound-badge" title="Nada peringatan aktif!">🔔</span>` : ''}
               </div>
               <div class="timer-elapsed">${formatTime(elapsed)}</div>
             </div>
@@ -1882,14 +2024,37 @@
       currentUnitId = unitId;
       document.getElementById('startUnitName').textContent = unitName;
       document.getElementById('startCustomer').value = '';
+      document.getElementById('durationPreset').value = '';
       document.getElementById('startDuration').value = '';
+      document.getElementById('customDurationGroup').style.display = 'none';
       document.getElementById('startNote').value = '';
       openModal('modalStart');
     }
 
+    function handleDurationChange() {
+      const preset = document.getElementById('durationPreset').value;
+      const customGroup = document.getElementById('customDurationGroup');
+      const customInput = document.getElementById('startDuration');
+      
+      if (preset === 'custom') {
+        customGroup.style.display = 'block';
+        customInput.focus();
+      } else {
+        customGroup.style.display = 'none';
+      }
+    }
+
     async function confirmStartSession() {
       const customer = document.getElementById('startCustomer').value;
-      const duration = parseInt(document.getElementById('startDuration').value) || 0;
+      const preset = document.getElementById('durationPreset').value;
+      let duration = 0;
+      
+      if (preset === 'custom') {
+        duration = parseInt(document.getElementById('startDuration').value) || 0;
+      } else if (preset !== '' && preset !== '0') {
+        duration = parseInt(preset);
+      }
+      
       const note = document.getElementById('startNote').value;
       
       try {
@@ -1928,6 +2093,8 @@
       try {
         await api('POST', `/units/${currentUnitId}/stop`, { paid, payment });
         closeModal('modalStop');
+        // Clear warning sound tracking for this unit so it can play again next time
+        playedWarnings.delete(currentUnitId);
         await loadData();
         renderAll();
         showToast('Sewa selesai!', 'success');
