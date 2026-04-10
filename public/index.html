@@ -3395,8 +3395,8 @@
         subCatSelect.innerHTML = '<option value="">-- Pilih Sub --</option>';
         EXPENSE_SUB_CATEGORIES[category].forEach(sub => {
           const option = document.createElement('option');
-          option.value = sub;
-          option.textContent = sub;
+          option.value = sub.value;
+          option.textContent = sub.label;
           subCatSelect.appendChild(option);
         });
       } else if (category === 'Custom') {
