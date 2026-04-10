@@ -2197,11 +2197,12 @@
         `;
       } else {
         container.innerHTML = filtered.map(t => `
-          <div class="transaction-item" style="position: relative;">
+          <div class="transaction-item" style="position: relative;" data-tx-id="${t.id || ''}">
             <div class="transaction-header">
               <div class="transaction-unit">${t.unitName}</div>
-              <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
                 <div class="transaction-amount">${formatMoney(t.paid)}</div>
+                <button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1.1rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>
                 <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Edit transaksi">✏️</button>
               </div>
             </div>
@@ -2952,6 +2953,11 @@
 
     function closeModal(id) {
       document.getElementById(id).classList.remove('active');
+      
+      // Reset edit modal title when closing
+      if (id === 'modalEditTransaction') {
+        document.querySelector('#modalEditTransaction .modal-title').textContent = '✏️ Edit Transaksi';
+      }
     }
 
     // ═════════════════ Transaction Edit Functions ═════════════════
@@ -3159,6 +3165,26 @@
           </div>
         `;
       }
+    }
+
+    // View edit history from transaction list
+    async function viewEditHistory(transactionId, customerName, unitName) {
+      if (!transactionId) {
+        showToast('ID transaksi tidak valid', 'error');
+        return;
+      }
+      
+      currentEditTransactionId = transactionId;
+      
+      // Show history modal
+      document.querySelector('#modalEditTransaction .modal-title').textContent = `📋 Riwayat Edit: ${unitName} - ${customerName}`;
+      document.getElementById('editStep1').style.display = 'none';
+      document.getElementById('editStep2').style.display = 'none';
+      document.getElementById('editStep3').style.display = 'block';
+      openModal('modalEditTransaction');
+      
+      // Load history
+      await loadEditHistory(transactionId);
     }
 
     function showLoading(show) {
