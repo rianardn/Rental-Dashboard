@@ -95,8 +95,8 @@ db.exec(`
 
 // Insert default settings
 const defaultSettings = {
-  ratePerHour: 5000,
-  warnBefore: 10,
+  ratePerHour: 4000,
+  warnBefore: 1,
   businessName: 'PS3 Rental',
   theme: 'ps3'
 };
@@ -110,7 +110,7 @@ Object.entries(defaultSettings).forEach(([key, value]) => {
 const unitCount = db.prepare('SELECT COUNT(*) as count FROM units').get().count;
 if (unitCount === 0) {
   const unitStmt = db.prepare('INSERT INTO units (name, active) VALUES (?, 0)');
-  ['TV 1', 'TV 2', 'TV 3', 'TV 4'].forEach(name => unitStmt.run(name));
+  ['PS 1', 'PS 2', 'PS 3', 'PS 4'].forEach(name => unitStmt.run(name));
 }
 
 // ─── HELPERS ───────────────────────────────────────────────────

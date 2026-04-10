@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>PS3 Rental Manager - Railway</title>
+  <title id="pageTitle">PS3 Rental Manager</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
@@ -1114,12 +1114,12 @@
         <div class="section-title">Tarif & Pengaturan</div>
         <div class="form-group">
           <label>Tarif per Jam (Rp)</label>
-          <input type="number" id="settingRate" value="5000">
+          <input type="number" id="settingRate" value="4000">
           <small>Harga sewa per jam untuk semua unit</small>
         </div>
         <div class="form-group">
           <label>Peringatan Menjelang (menit)</label>
-          <input type="number" id="settingWarn" value="10">
+          <input type="number" id="settingWarn" value="1">
           <small>Tampilkan peringatan saat waktu tersisa kurang dari ini</small>
         </div>
         <div class="form-group">
@@ -1396,6 +1396,12 @@
       units = data.units;
       transactions = data.transactions;
       expenses = data.expenses;
+      
+      // Update page title with business name from settings
+      if (settings && settings.businessName) {
+        document.getElementById('pageTitle').textContent = settings.businessName + ' - Manager';
+        document.querySelector('.header-title').innerHTML = settings.businessName.replace(/(.+?)\s*(\S+)$/, '$1 <span>$2</span>') || settings.businessName;
+      }
     }
 
     function startPolling() {
@@ -1504,11 +1510,33 @@
           `;
         }
         
+        // Calculate estimated revenue based on elapsed time
+        const elapsedMin = Math.floor(elapsed / 60000);
+        const estimatedRevenue = Math.round((elapsedMin / 60) * (settings.ratePerHour || 4000));
+        
+        // Calculate end time
+        const startDate = new Date(unit.startTime);
+        const endDate = unit.duration > 0 ? new Date(unit.startTime + (unit.duration * 60000)) : null;
+        
         timerHTML += `
           <div class="customer-info">
             <div class="customer-info-row">
               <span class="customer-info-label">Pelanggan</span>
               <span class="customer-info-value">${unit.customer || '-'}</span>
+            </div>
+            <div class="customer-info-row">
+              <span class="customer-info-label">Waktu Mulai</span>
+              <span class="customer-info-value">${startDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</span>
+            </div>
+            ${endDate ? `
+            <div class="customer-info-row">
+              <span class="customer-info-label">Waktu Akhir</span>
+              <span class="customer-info-value">${endDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</span>
+            </div>
+            ` : ''}
+            <div class="customer-info-row">
+              <span class="customer-info-label">Estimasi Pendapatan</span>
+              <span class="customer-info-value" style="color: var(--ps3-green); font-weight: 600;">${formatMoney(estimatedRevenue)}</span>
             </div>
             ${unit.duration > 0 ? `
             <div class="customer-info-row">
@@ -1813,11 +1841,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: {
-            duration: 1000,
-            easing: 'easeOutQuart',
-            loop: false
-          },
+          animation: false,
           plugins: {
             legend: {
               labels: {
@@ -1946,6 +1970,11 @@
       try {
         await api('PUT', '/settings', { ratePerHour: rate, warnBefore: warn, businessName: business });
         await loadData();
+        
+        // Update page title immediately
+        document.getElementById('pageTitle').textContent = business + ' - Manager';
+        document.querySelector('.header-title').innerHTML = business.replace(/(.+?)\s*(\S+)$/, '$1 <span>$2</span>') || business;
+        
         showToast('Pengaturan disimpan', 'success');
       } catch (error) {
         showToast(error.message, 'error');
@@ -2134,9 +2163,14 @@
       
       if (pageId === 'pageSettings') {
         // Populate settings
-        document.getElementById('settingRate').value = settings.ratePerHour || 5000;
-        document.getElementById('settingWarn').value = settings.warnBefore || 10;
+        document.getElementById('settingRate').value = settings.ratePerHour || 4000;
+        document.getElementById('settingWarn').value = settings.warnBefore || 1;
         document.getElementById('settingBusiness').value = settings.businessName || 'PS3 Rental';
+        
+        // Update page title with business name
+        const businessName = settings.businessName || 'PS3 Rental';
+        document.getElementById('pageTitle').textContent = businessName + ' - Manager';
+        document.querySelector('.header-title').innerHTML = businessName.replace(/\s+/, ' <span>$2</span>');
       }
     }
 
