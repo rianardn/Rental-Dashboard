@@ -110,7 +110,7 @@ Object.entries(defaultSettings).forEach(([key, value]) => {
 const unitCount = db.prepare('SELECT COUNT(*) as count FROM units').get().count;
 if (unitCount === 0) {
   const unitStmt = db.prepare('INSERT INTO units (name, active) VALUES (?, 0)');
-  ['PS 1', 'PS 2', 'PS 3', 'PS 4'].forEach(name => unitStmt.run(name));
+  ['PS 1'].forEach(name => unitStmt.run(name));
 }
 
 // ─── HELPERS ───────────────────────────────────────────────────

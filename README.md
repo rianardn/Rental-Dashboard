@@ -187,8 +187,8 @@ Edit CSS variables in `public/index.html`:
 const POLL_INTERVAL = 5000; // 5 seconds instead of 3
 ```
 
-### Add More Units
-Go to Settings → "Manajemen Unit" → "Tambah Unit"
+### Default Units
+Starts with 1 unit (PS 1). Add more units via Settings → "Manajemen Unit" → "Tambah Unit"
 
 ## 🐛 Troubleshooting
 

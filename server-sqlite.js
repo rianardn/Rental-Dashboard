@@ -74,8 +74,7 @@ initSettings.run('businessName', 'PS3 Rental');
 const unitCount = db.prepare('SELECT COUNT(*) as count FROM units').get().count;
 if (unitCount === 0) {
   const initUnits = db.prepare('INSERT INTO units (id, name, active, startTime, customer, duration, note) VALUES (?, ?, ?, ?, ?, ?, ?)');
-  initUnits.run(1, 'TV 1', 0, null, '', 0, '');
-  initUnits.run(2, 'TV 2', 0, null, '', 0, '');
+  initUnits.run(1, 'PS 1', 0, null, '', 0, '');
 }
 
 // ─── DB HELPERS ────────────────────────────────────────────────
