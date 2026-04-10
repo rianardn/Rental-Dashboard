@@ -2098,10 +2098,10 @@
       document.getElementById('reportExpenses').textContent = formatMoney(totalExpenses);
       document.getElementById('reportProfit').textContent = formatMoney(income - totalExpenses);
       document.getElementById('reportTransactions').textContent = filtered.length;
-      
+
       // Render chart
       renderFinanceChart(period, filtered, filteredExpenses);
-      
+
       // Render transactions list
       const container = document.getElementById('transactionsList');
       if (filtered.length === 0) {
@@ -2127,6 +2127,9 @@
         `).join('');
       }
     }
+
+    // Alias for backward compatibility
+    const updateReportStats = renderReports;
 
     function renderExpenses() {
       const container = document.getElementById('expensesList');
