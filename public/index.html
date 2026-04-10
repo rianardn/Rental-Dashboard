@@ -481,6 +481,12 @@
       50% { transform: scale(1.2); }
     }
 
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+
     /* Customer Info */
     .customer-info {
       background: var(--ps3-surface);
@@ -1143,16 +1149,15 @@
 
       <div class="card" style="margin-top: 20px;">
         <div class="section-title">Manajemen Data</div>
-        <button class="btn" onclick="document.getElementById('importFile').click()" style="margin-bottom: 10px;">
-          📥 Import Data (JSON)
-        </button>
-        <input type="file" id="importFile" accept=".json" onchange="importData(event)">
         <button class="btn" onclick="exportFullBackup()">
           💾 Export Backup (JSON)
         </button>
-        <small style="display: block; margin-top: 10px;">
-          Import akan MENGGANTI semua data saat ini. Pastikan backup sudah dibuat.
-        </small>
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--ps3-border);">
+          <a href="#" onclick="showImportWarning(); return false;" style="font-size: 0.75rem; color: var(--ps3-red); text-decoration: underline; opacity: 0.7;">
+            ⚠️ Import Data (JSON) - Berbahaya
+          </a>
+        </div>
+        <input type="file" id="importFile" accept=".json" style="display: none;">
       </div>
 
       <div class="card" style="margin-top: 20px;">
@@ -1282,6 +1287,45 @@
     </div>
   </div>
 
+  <!-- ═════════════════ MODAL: IMPORT WARNING ═════════════════ -->
+  <div id="modalImportWarning" class="modal">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #cc0010, #e60012, #cc0010);">
+        <h3>⚠️ PERINGATAN BERBAHAYA</h3>
+      </div>
+      <div class="modal-body">
+        <div style="background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+          <p style="margin: 0 0 10px 0; color: var(--ps3-red); font-weight: 600;">
+            Import data akan MENGHAPUS SEMUA DATA SAAT INI!
+          </p>
+          <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+            <li>Semua transaksi akan hilang</li>
+            <li>Semua unit aktif akan terhapus</li>
+            <li>Data pengeluaran akan dihapus</li>
+            <li>Pengaturan akan diganti</li>
+          </ul>
+        </div>
+        
+        <p style="font-size: 0.9rem; margin-bottom: 12px;">
+          Untuk melanjutkan, ketik <b style="color: var(--ps3-red);">SAYA SETUJU</b> di bawah ini:
+        </p>
+        
+        <div class="form-group" style="margin-bottom: 10px;">
+          <input type="text" id="importConfirmText" placeholder="Ketik SAYA SETUJU" 
+                 style="text-align: center; font-weight: 600; letter-spacing: 1px;">
+        </div>
+        
+        <div id="importError" style="display: none; color: var(--ps3-red); font-size: 0.85rem; text-align: center; margin-top: 8px;">
+          ❌ Anda harus mengetik "SAYA SETUJU" dengan benar!
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modalImportWarning')">Batal</button>
+        <button class="btn btn-red" onclick="confirmImportWarning()">Lanjutkan Import</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ═══════════════════════════════════════════════════════════════
     // PS3 Rental Manager - Railway Production Client
@@ -1328,62 +1372,70 @@
       initAudio();
       if (!audioContext) return;
 
+      const now = audioContext.currentTime;
+      
+      // Play sound 3 times with 1 second gap between each
+      for (let i = 0; i < 3; i++) {
+        const playTime = now + (i * 1.5); // 1.5 second gap between repeats
+        playSingleWarningSound(unitIndex, playTime);
+      }
+    }
+
+    function playSingleWarningSound(unitIndex, startTime) {
       const osc = audioContext.createOscillator();
       const gain = audioContext.createGain();
       
       osc.connect(gain);
       gain.connect(audioContext.destination);
 
-      const now = audioContext.currentTime;
-      
       // 4 distinct sounds for up to 4 units
       switch (unitIndex % 4) {
         case 0: // Unit 1: High pitch beep-beep-beep
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(880, now); // A5
-          osc.frequency.setValueAtTime(0, now + 0.1);
-          osc.frequency.setValueAtTime(880, now + 0.2);
-          osc.frequency.setValueAtTime(0, now + 0.3);
-          osc.frequency.setValueAtTime(880, now + 0.4);
-          gain.gain.setValueAtTime(0.5, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-          osc.start(now);
-          osc.stop(now + 0.5);
+          osc.frequency.setValueAtTime(880, startTime); // A5
+          osc.frequency.setValueAtTime(0, startTime + 0.1);
+          osc.frequency.setValueAtTime(880, startTime + 0.2);
+          osc.frequency.setValueAtTime(0, startTime + 0.3);
+          osc.frequency.setValueAtTime(880, startTime + 0.4);
+          gain.gain.setValueAtTime(0.5, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+          osc.start(startTime);
+          osc.stop(startTime + 0.5);
           break;
           
         case 1: // Unit 2: Descending tone
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(660, now); // E5
-          osc.frequency.exponentialRampToValueAtTime(330, now + 0.6); // E4
-          gain.gain.setValueAtTime(0.5, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-          osc.start(now);
-          osc.stop(now + 0.6);
+          osc.frequency.setValueAtTime(660, startTime); // E5
+          osc.frequency.exponentialRampToValueAtTime(330, startTime + 0.6); // E4
+          gain.gain.setValueAtTime(0.5, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.6);
+          osc.start(startTime);
+          osc.stop(startTime + 0.6);
           break;
           
         case 2: // Unit 3: Alarm pulse
           osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(440, now); // A4
-          gain.gain.setValueAtTime(0, now);
-          gain.gain.setValueAtTime(0.4, now + 0.05);
-          gain.gain.setValueAtTime(0, now + 0.1);
-          gain.gain.setValueAtTime(0.4, now + 0.15);
-          gain.gain.setValueAtTime(0, now + 0.2);
-          gain.gain.setValueAtTime(0.4, now + 0.25);
-          gain.gain.setValueAtTime(0, now + 0.3);
-          gain.gain.setValueAtTime(0.4, now + 0.35);
-          gain.gain.setValueAtTime(0.01, now + 0.5);
-          osc.start(now);
-          osc.stop(now + 0.5);
+          osc.frequency.setValueAtTime(440, startTime); // A4
+          gain.gain.setValueAtTime(0, startTime);
+          gain.gain.setValueAtTime(0.4, startTime + 0.05);
+          gain.gain.setValueAtTime(0, startTime + 0.1);
+          gain.gain.setValueAtTime(0.4, startTime + 0.15);
+          gain.gain.setValueAtTime(0, startTime + 0.2);
+          gain.gain.setValueAtTime(0.4, startTime + 0.25);
+          gain.gain.setValueAtTime(0, startTime + 0.3);
+          gain.gain.setValueAtTime(0.4, startTime + 0.35);
+          gain.gain.setValueAtTime(0.01, startTime + 0.5);
+          osc.start(startTime);
+          osc.stop(startTime + 0.5);
           break;
           
         case 3: // Unit 4: Double chime
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(523.25, now); // C5
-          gain.gain.setValueAtTime(0.5, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-          osc.start(now);
-          osc.stop(now + 0.2);
+          osc.frequency.setValueAtTime(523.25, startTime); // C5
+          gain.gain.setValueAtTime(0.5, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2);
+          osc.start(startTime);
+          osc.stop(startTime + 0.2);
           
           // Second chime
           const osc2 = audioContext.createOscillator();
@@ -1391,11 +1443,11 @@
           osc2.connect(gain2);
           gain2.connect(audioContext.destination);
           osc2.type = 'sine';
-          osc2.frequency.setValueAtTime(659.25, now + 0.25); // E5
-          gain2.gain.setValueAtTime(0.5, now + 0.25);
-          gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
-          osc2.start(now + 0.25);
-          osc2.stop(now + 0.45);
+          osc2.frequency.setValueAtTime(659.25, startTime + 0.25); // E5
+          gain2.gain.setValueAtTime(0.5, startTime + 0.25);
+          gain2.gain.exponentialRampToValueAtTime(0.01, startTime + 0.45);
+          osc2.start(startTime + 0.25);
+          osc2.stop(startTime + 0.45);
           break;
       }
     }
@@ -2222,14 +2274,52 @@
     }
 
     // ═════════════════ Import / Export ═════════════════
-    async function importData(event) {
+    let pendingImportFile = null;
+
+    function showImportWarning() {
+      pendingImportFile = null;
+      document.getElementById('importConfirmText').value = '';
+      document.getElementById('importError').style.display = 'none';
+      // Reset file input
+      document.getElementById('importFile').value = '';
+      // Trigger file picker
+      document.getElementById('importFile').click();
+    }
+
+    // Listen for file selection
+    document.getElementById('importFile').addEventListener('change', function(event) {
       const file = event.target.files[0];
       if (!file) return;
       
-      if (!confirm('⚠️ PERINGATAN: Import akan MENGGANTI semua data saat ini.\n\nPastikan Anda sudah membackup data terlebih dahulu.\n\nLanjutkan?')) {
-        event.target.value = '';
+      pendingImportFile = file;
+      document.getElementById('importConfirmText').value = '';
+      document.getElementById('importError').style.display = 'none';
+      openModal('modalImportWarning');
+    });
+
+    function confirmImportWarning() {
+      const input = document.getElementById('importConfirmText').value.trim();
+      
+      if (input !== 'SAYA SETUJU') {
+        document.getElementById('importError').style.display = 'block';
+        // Shake animation effect
+        const modalContent = document.querySelector('#modalImportWarning .modal-content');
+        modalContent.style.animation = 'shake 0.5s';
+        setTimeout(() => {
+          modalContent.style.animation = '';
+        }, 500);
         return;
       }
+      
+      document.getElementById('importError').style.display = 'none';
+      closeModal('modalImportWarning');
+      
+      // Proceed with import
+      processImport(pendingImportFile);
+    }
+
+    async function processImport(file) {
+      if (!file) return;
       
       showLoading(true);
       
@@ -2248,13 +2338,30 @@
           renderAll();
           showLoading(false);
           showToast(`Import berhasil! ${data.units.length} unit, ${data.transactions.length} transaksi`, 'success');
+          pendingImportFile = null;
         } catch (error) {
           showLoading(false);
           showToast('Import gagal: ' + error.message, 'error');
+          pendingImportFile = null;
         }
       };
+      reader.onerror = () => {
+        showLoading(false);
+        showToast('Gagal membaca file', 'error');
+        pendingImportFile = null;
+      };
       reader.readAsText(file);
-      event.target.value = '';
+    }
+
+    // Legacy function - kept for compatibility
+    async function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      pendingImportFile = file;
+      document.getElementById('importConfirmText').value = '';
+      document.getElementById('importError').style.display = 'none';
+      openModal('modalImportWarning');
     }
 
     async function exportFullBackup() {
