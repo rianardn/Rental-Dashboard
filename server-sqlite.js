@@ -73,6 +73,14 @@ try {
   // Column already exists
 }
 
+// Migration: Add category column if not exists (for expense type tracking)
+try {
+  db.exec(`ALTER TABLE expenses ADD COLUMN category TEXT`);
+  console.log('[DB] Migration: Added category column to expenses table');
+} catch (e) {
+  // Column already exists
+}
+
 
 // Initialize default settings
 const initSettings = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
@@ -144,10 +152,16 @@ function addTransaction(tx) {
 
 function addExpense(expense) {
   const stmt = db.prepare(`
-    INSERT INTO expenses (description, amount, timestamp, note)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO expenses (description, amount, timestamp, note, category)
+    VALUES (?, ?, ?, ?, ?)
   `);
-  const result = stmt.run(expense.description, expense.amount, expense.timestamp, expense.note || '');
+  const result = stmt.run(
+    expense.description,
+    expense.amount,
+    expense.timestamp,
+    expense.note || '',
+    expense.category || ''
+  );
   return { ...expense, id: result.lastInsertRowid };
 }
 
@@ -215,7 +229,8 @@ app.post('/api/expenses', (req, res) => {
     description: req.body.item || req.body.description,
     amount: req.body.amount,
     timestamp: req.body.timestamp || new Date(req.body.date).getTime() || Date.now(),
-    note: req.body.note
+    note: req.body.note,
+    category: req.body.category || ''
   });
   broadcast({ type: 'expenses', data: db.prepare('SELECT * FROM expenses ORDER BY timestamp DESC').all() });
   res.json({ ok: true, expense });

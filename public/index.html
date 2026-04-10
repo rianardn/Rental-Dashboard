@@ -1343,26 +1343,53 @@
         <span>💸 Catat Pengeluaran</span>
       </div>
       <div class="card">
+        <!-- Baris 1: Tipe Biaya & Sub-kategori -->
         <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group">
-            <label>Nama Pengeluaran</label>
-            <input type="text" id="expenseItem" placeholder="Contoh: Beli CD Game">
+            <label>Tipe Biaya Pengeluaran</label>
+            <select id="expenseCategory" onchange="onExpenseCategoryChange()" style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem;">
+              <option value="">-- Pilih Tipe --</option>
+              <option value="Listrik">⚡ Listrik</option>
+              <option value="Prive">💰 Prive</option>
+              <option value="Unit PS Baru">🎮 Unit PS Baru</option>
+              <option value="TV/Monitor Baru">📺 TV/Monitor Baru</option>
+              <option value="Servis/Perawatan">🔧 Servis/Perawatan</option>
+              <option value="Aksesoris">🎧 Aksesoris</option>
+              <option value="Custom">✏️ Custom (Input Manual)</option>
+            </select>
           </div>
-          <div class="form-group">
-            <label>Jumlah (Rp)</label>
-            <input type="number" id="expenseAmount" placeholder="50000">
+          <div class="form-group" id="expenseSubCategoryGroup" style="display: none;">
+            <label>Sub-Kategori</label>
+            <select id="expenseSubCategory" style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem;">
+              <option value="">-- Pilih Sub --</option>
+            </select>
+          </div>
+          <div class="form-group" id="expenseCustomGroup" style="display: none;">
+            <label>Nama Pengeluaran Custom</label>
+            <input type="text" id="expenseCustomName" placeholder="Contoh: Beli CD Game" style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem;">
           </div>
         </div>
+
+        <!-- Baris 2: Jumlah & Tanggal -->
         <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
           <div class="form-group">
-            <label>Tanggal Pengeluaran</label>
-            <input type="date" id="expenseDate">
+            <label>Jumlah (Rp)</label>
+            <input type="number" id="expenseAmount" placeholder="50000" style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem;">
           </div>
           <div class="form-group">
-            <label>Catatan (opsional)</label>
-            <input type="text" id="expenseNote" placeholder="Catatan tambahan...">
+            <label>Tanggal Pengeluaran</label>
+            <input type="date" id="expenseDate" style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem;">
           </div>
         </div>
+
+        <!-- Baris 3: Catatan -->
+        <div class="form-row" style="margin-top: 12px;">
+          <div class="form-group">
+            <label>Catatan (opsional)</label>
+            <input type="text" id="expenseNote" placeholder="Catatan tambahan..." style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem;">
+          </div>
+        </div>
+
         <button class="btn btn-red" onclick="addExpense()" style="margin-top: 16px;">
           Tambah Pengeluaran
         </button>
@@ -2475,31 +2502,129 @@
       }
     }
 
+    // ═════════════════ Expense Category Management ═════════════════
+    const EXPENSE_SUB_CATEGORIES = {
+      'Servis/Perawatan': [
+        { value: 'Unit PS', label: '🎮 Unit PS' },
+        { value: 'TV/Monitor', label: '📺 TV/Monitor' },
+        { value: 'Stik', label: '🎮 Stik' },
+        { value: 'Kabel Charger', label: '🔌 Kabel Charger' },
+        { value: 'Game', label: '💿 Game' },
+        { value: 'Furnitur', label: '🪑 Furnitur' },
+        { value: 'Lainnya', label: '📦 Lainnya' }
+      ],
+      'Aksesoris': [
+        { value: 'Stik', label: '🎮 Stik' },
+        { value: 'Kabel Charger', label: '🔌 Kabel Charger' },
+        { value: 'Game', label: '💿 Game' },
+        { value: 'Furnitur', label: '🪑 Furnitur' },
+        { value: 'Lainnya', label: '📦 Lainnya' }
+      ]
+    };
+
+    function onExpenseCategoryChange() {
+      const category = document.getElementById('expenseCategory').value;
+      const subGroup = document.getElementById('expenseSubCategoryGroup');
+      const subSelect = document.getElementById('expenseSubCategory');
+      const customGroup = document.getElementById('expenseCustomGroup');
+
+      // Reset sub-dropdown
+      subSelect.innerHTML = '<option value="">-- Pilih Sub --</option>';
+
+      // Check if this category has sub-categories
+      if (EXPENSE_SUB_CATEGORIES[category]) {
+        subGroup.style.display = 'block';
+        customGroup.style.display = 'none';
+        
+        // Populate sub-categories
+        EXPENSE_SUB_CATEGORIES[category].forEach(sub => {
+          const option = document.createElement('option');
+          option.value = sub.value;
+          option.textContent = sub.label;
+          subSelect.appendChild(option);
+        });
+      } else if (category === 'Custom') {
+        subGroup.style.display = 'none';
+        customGroup.style.display = 'block';
+      } else {
+        subGroup.style.display = 'none';
+        customGroup.style.display = 'none';
+      }
+    }
+
+    function getExpenseDisplayName() {
+      const category = document.getElementById('expenseCategory').value;
+      const subCategory = document.getElementById('expenseSubCategory').value;
+      const customName = document.getElementById('expenseCustomName').value.trim();
+
+      if (!category) return null;
+
+      // For categories with sub-categories
+      if (EXPENSE_SUB_CATEGORIES[category] && subCategory) {
+        return `${category} - ${subCategory}`;
+      }
+
+      // For Custom
+      if (category === 'Custom') {
+        return customName || 'Custom';
+      }
+
+      // For simple categories (Listrik, Prive, etc.)
+      return category;
+    }
+
     // ═════════════════ Data Management ═════════════════
     async function addExpense() {
-      const item = document.getElementById('expenseItem').value;
+      const category = document.getElementById('expenseCategory').value;
       const amount = parseInt(document.getElementById('expenseAmount').value);
       const dateInput = document.getElementById('expenseDate').value;
       const note = document.getElementById('expenseNote').value;
-      
-      if (!item || !amount) {
-        showToast('Nama dan jumlah pengeluaran wajib diisi', 'error');
+
+      // Validate category selection
+      if (!category) {
+        showToast('Pilih tipe biaya pengeluaran terlebih dahulu', 'error');
         return;
       }
-      
+
+      // Get the display name based on category/sub-category/custom
+      const item = getExpenseDisplayName();
+
+      // Validate sub-category if required
+      if (EXPENSE_SUB_CATEGORIES[category] && !document.getElementById('expenseSubCategory').value) {
+        showToast('Pilih sub-kategori untuk ' + category, 'error');
+        return;
+      }
+
+      // Validate custom name if Custom selected
+      if (category === 'Custom' && !document.getElementById('expenseCustomName').value.trim()) {
+        showToast('Masukkan nama pengeluaran custom', 'error');
+        return;
+      }
+
+      if (!amount) {
+        showToast('Jumlah pengeluaran wajib diisi', 'error');
+        return;
+      }
+
       // Use selected date or default to today in WIB timezone
       const dateKey = dateInput || getWIBDateISO();
-      
+
       try {
-        await api('POST', '/expenses', { item, amount, date: dateKey, note });
-        document.getElementById('expenseItem').value = '';
+        await api('POST', '/expenses', { item, amount, date: dateKey, note, category });
+
+        // Reset form
+        document.getElementById('expenseCategory').value = '';
+        document.getElementById('expenseSubCategory').value = '';
+        document.getElementById('expenseCustomName').value = '';
         document.getElementById('expenseAmount').value = '';
         document.getElementById('expenseNote').value = '';
-        // Keep the date as is for easier multiple entries
+        document.getElementById('expenseSubCategoryGroup').style.display = 'none';
+        document.getElementById('expenseCustomGroup').style.display = 'none';
+
         await loadData();
         renderExpenses();
         updateReportStats();
-        showToast('Pengeluaran ditambahkan', 'success');
+        showToast('Pengeluaran ditambahkan: ' + item, 'success');
       } catch (error) {
         showToast(error.message, 'error');
       }
