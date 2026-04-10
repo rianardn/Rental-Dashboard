@@ -1337,28 +1337,40 @@
           <span>Backup JSON</span>
         </button>
       </div>
-    </div>
 
-    <!-- Expenses Page -->
-    <div id="pageExpenses" class="page">
+      <!-- Expense Management Section -->
+      <div class="section-title" style="margin-top: 24px;">
+        <span>💸 Catat Pengeluaran</span>
+      </div>
       <div class="card">
-        <div class="form-group">
-          <label>Nama Pengeluaran</label>
-          <input type="text" id="expenseItem" placeholder="Contoh: Beli CD">
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Nama Pengeluaran</label>
+            <input type="text" id="expenseItem" placeholder="Contoh: Beli CD Game">
+          </div>
+          <div class="form-group">
+            <label>Jumlah (Rp)</label>
+            <input type="number" id="expenseAmount" placeholder="50000">
+          </div>
         </div>
-        <div class="form-group">
-          <label>Jumlah (Rp)</label>
-          <input type="number" id="expenseAmount" placeholder="50000">
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+          <div class="form-group">
+            <label>Tanggal Pengeluaran</label>
+            <input type="date" id="expenseDate">
+          </div>
+          <div class="form-group">
+            <label>Catatan (opsional)</label>
+            <input type="text" id="expenseNote" placeholder="Catatan tambahan...">
+          </div>
         </div>
-        <div class="form-group">
-          <label>Catatan (opsional)</label>
-          <input type="text" id="expenseNote" placeholder="Catatan tambahan...">
-        </div>
-        <button class="btn" onclick="addExpense()">Tambah Pengeluaran</button>
+        <button class="btn btn-red" onclick="addExpense()" style="margin-top: 16px;">
+          Tambah Pengeluaran
+        </button>
       </div>
 
-      <div class="section-title">
-        <span>Daftar Pengeluaran Hari Ini</span>
+      <!-- Expense List -->
+      <div class="section-title" style="margin-top: 20px;">
+        <span>Daftar Pengeluaran Periode Ini</span>
       </div>
       <div id="expensesList"></div>
     </div>
@@ -1446,10 +1458,6 @@
       <button class="nav-btn" onclick="showPage('pageReports')">
         <span class="nav-icon">📊</span>
         <span>Laporan</span>
-      </button>
-      <button class="nav-btn" onclick="showPage('pageExpenses')">
-        <span class="nav-icon">💸</span>
-        <span>Pengeluaran</span>
       </button>
       <button class="nav-btn" onclick="showPage('pageSettings')">
         <span class="nav-icon">⚙️</span>
@@ -2095,24 +2103,71 @@
 
     function renderExpenses() {
       const container = document.getElementById('expensesList');
-      const today = getWIBDateISO(); // WIB timezone
-      const todayExpenses = expenses.filter(e => e.date === today);
+      const currentPeriod = document.querySelector('.tab.active')?.dataset.period || 'today';
       
-      if (todayExpenses.length === 0) {
+      // Filter expenses based on current report period
+      let filteredExpenses = [];
+      const now = new Date();
+      
+      switch(currentPeriod) {
+        case 'today': {
+          const today = getWIBDateISO();
+          filteredExpenses = expenses.filter(e => e.date === today);
+          break;
+        }
+        case 'week': {
+          const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+          filteredExpenses = expenses.filter(e => new Date(e.date) >= weekAgo);
+          break;
+        }
+        case 'month': {
+          const thisMonth = now.getMonth();
+          const thisYear = now.getFullYear();
+          filteredExpenses = expenses.filter(e => {
+            const d = new Date(e.date);
+            return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+          });
+          break;
+        }
+        case 'year': {
+          const thisYear = now.getFullYear();
+          filteredExpenses = expenses.filter(e => new Date(e.date).getFullYear() === thisYear);
+          break;
+        }
+        case 'all':
+        default:
+          filteredExpenses = expenses;
+          break;
+      }
+      
+      // Sort by date descending
+      filteredExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      if (filteredExpenses.length === 0) {
+        const periodLabels = {
+          'today': 'hari ini',
+          'week': 'minggu ini',
+          'month': 'bulan ini',
+          'year': 'tahun ini',
+          'all': 'semua periode'
+        };
         container.innerHTML = `
           <div class="empty-state">
             <div class="empty-state-icon">💸</div>
-            <div class="empty-state-text">Belum ada pengeluaran hari ini</div>
+            <div class="empty-state-text">Belum ada pengeluaran ${periodLabels[currentPeriod] || 'pada periode ini'}</div>
           </div>
         `;
       } else {
-        container.innerHTML = todayExpenses.map(e => `
+        container.innerHTML = filteredExpenses.map(e => `
           <div class="transaction-item">
             <div class="transaction-header">
               <div class="transaction-unit">${e.item}</div>
               <div class="transaction-amount" style="color: var(--ps3-red);">${formatMoney(e.amount)}</div>
             </div>
-            ${e.note ? `<div style="font-size: 0.7rem; color: var(--ps3-muted);">${e.note}</div>` : ''}
+            <div class="transaction-meta">
+              <span>${formatDate(new Date(e.date).getTime())}</span>
+              ${e.note ? `<span style="color: var(--ps3-muted);">• ${e.note}</span>` : ''}
+            </div>
           </div>
         `).join('');
       }
@@ -2424,6 +2479,7 @@
     async function addExpense() {
       const item = document.getElementById('expenseItem').value;
       const amount = parseInt(document.getElementById('expenseAmount').value);
+      const dateInput = document.getElementById('expenseDate').value;
       const note = document.getElementById('expenseNote').value;
       
       if (!item || !amount) {
@@ -2431,15 +2487,18 @@
         return;
       }
       
-      const dateKey = getWIBDateISO(); // WIB timezone
+      // Use selected date or default to today in WIB timezone
+      const dateKey = dateInput || getWIBDateISO();
       
       try {
         await api('POST', '/expenses', { item, amount, date: dateKey, note });
         document.getElementById('expenseItem').value = '';
         document.getElementById('expenseAmount').value = '';
         document.getElementById('expenseNote').value = '';
+        // Keep the date as is for easier multiple entries
         await loadData();
         renderExpenses();
+        updateReportStats();
         showToast('Pengeluaran ditambahkan', 'success');
       } catch (error) {
         showToast(error.message, 'error');
@@ -2748,6 +2807,7 @@
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         renderReports();
+        renderExpenses(); // Re-render expenses for new period
       });
     });
 
@@ -2769,6 +2829,11 @@
     (async function init() {
       updateClock();
       setInterval(updateClock, 1000);
+      
+      // Set default expense date to today (WIB timezone)
+      const today = getWIBDateISO();
+      const dateInput = document.getElementById('expenseDate');
+      if (dateInput) dateInput.value = today;
       
       const serverReady = await checkServer();
       if (serverReady && authToken) {

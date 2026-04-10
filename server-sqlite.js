@@ -60,9 +60,19 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     description TEXT,
     amount INTEGER,
-    timestamp INTEGER
+    timestamp INTEGER,
+    note TEXT
   );
 `);
+
+// Migration: Add note column if not exists (for existing databases)
+try {
+  db.exec(`ALTER TABLE expenses ADD COLUMN note TEXT`);
+  console.log('[DB] Migration: Added note column to expenses table');
+} catch (e) {
+  // Column already exists
+}
+
 
 // Initialize default settings
 const initSettings = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
@@ -134,10 +144,10 @@ function addTransaction(tx) {
 
 function addExpense(expense) {
   const stmt = db.prepare(`
-    INSERT INTO expenses (description, amount, timestamp)
-    VALUES (?, ?, ?)
+    INSERT INTO expenses (description, amount, timestamp, note)
+    VALUES (?, ?, ?, ?)
   `);
-  const result = stmt.run(expense.description, expense.amount, expense.timestamp);
+  const result = stmt.run(expense.description, expense.amount, expense.timestamp, expense.note || '');
   return { ...expense, id: result.lastInsertRowid };
 }
 
@@ -200,7 +210,13 @@ app.get('/api/expenses', (req, res) => {
 });
 
 app.post('/api/expenses', (req, res) => {
-  const expense = addExpense(req.body);
+  // Convert frontend fields to database fields
+  const expense = addExpense({
+    description: req.body.item || req.body.description,
+    amount: req.body.amount,
+    timestamp: req.body.timestamp || new Date(req.body.date).getTime() || Date.now(),
+    note: req.body.note
+  });
   broadcast({ type: 'expenses', data: db.prepare('SELECT * FROM expenses ORDER BY timestamp DESC').all() });
   res.json({ ok: true, expense });
 });
