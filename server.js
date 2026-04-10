@@ -337,12 +337,31 @@ app.put('/api/transactions/:id', requireAuth, (req, res) => {
   const tx = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
   if (!tx) return res.status(404).json({ error: 'Transaction not found' });
   
-  const updates = req.body;
-  const fields = Object.keys(updates).filter(k => k !== 'id');
-  if (fields.length > 0) {
-    const setClause = fields.map(f => `${f} = ?`).join(', ');
-    const values = fields.map(f => updates[f]);
-    db.prepare(`UPDATE transactions SET ${setClause} WHERE id = ?`).run(...values, id);
+  // Support both formats: {updates: {...}, reason: ...} or direct field updates
+  const inputUpdates = req.body.updates || req.body;
+  
+  // Map frontend field names to database columns
+  const fieldMapping = {
+    'customer': 'customer',
+    'paid': 'total',
+    'duration': 'duration',
+    'payment': 'payment'
+  };
+  
+  // Build update fields with proper mapping
+  const dbFields = [];
+  const dbValues = [];
+  
+  for (const [field, value] of Object.entries(inputUpdates)) {
+    if (field === 'id' || typeof value === 'object') continue;
+    const dbField = fieldMapping[field] || field;
+    dbFields.push(`${dbField} = ?`);
+    dbValues.push(value);
+  }
+  
+  if (dbFields.length > 0) {
+    const setClause = dbFields.join(', ');
+    db.prepare(`UPDATE transactions SET ${setClause} WHERE id = ?`).run(...dbValues, id);
   }
   
   res.json({ ok: true, tx: db.prepare('SELECT * FROM transactions WHERE id = ?').get(id) });
