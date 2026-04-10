@@ -401,6 +401,12 @@ app.get('/api/reports/summary', requireAuth, (req, res) => {
   });
 });
 
+// ─── ERROR HANDLING MIDDLEWARE ───────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: err.message || 'Internal server error' });
+});
+
 // ─── HEALTH CHECK ─────────────────────────────────────────────
 app.get('/ping', (req, res) => {
   res.json({ 
