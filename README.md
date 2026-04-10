@@ -7,17 +7,17 @@ A complete rental management solution for PlayStation 3 rental businesses.
 
 ## ✨ Features
 
-- 📱 **Responsive Mobile & Desktop UI**: Optimized untuk HP, tablet, dan laptop
-- 🔐 **Secure Authentication**: Password-protected dengan JWT
-- 💾 **Persistent Storage**: SQLite database (auto-migrated), data persist via volume
+- 📱 **Responsive Mobile & Desktop UI**: Optimized for mobile, tablet, and desktop
+- 🔐 **Secure Authentication**: Password-protected with JWT
+- 💾 **Persistent Storage**: SQLite database (auto-migrated) with volume persistence
 - 📊 **Real-time Dashboard**: Auto-refreshing timers & stats (1s polling)
-- ⏱️ **Real-time WIB Clock**: Jam Indonesia (UTC+7) di header
+- ⏱️ **Real-time WIB Clock**: Indonesia timezone (UTC+7) in header
 - 📈 **Reports & Analytics**: Daily, weekly, monthly, yearly views
-- 💾 **Import/Export**: JSON backup & CSV export dengan konfirmasi "SAYA SETUJU"
+- 💾 **Import/Export**: JSON backup & CSV export with "I AGREE" confirmation
 - 💸 **Expense Tracking**: Track business expenses
-- 🔔 **Audio Alert System**: Jingle chill/relaxing di 30 detik terakhir
-- 🔕 **Mute Button**: Tombol matikan alarm saat sedang berbunyi
-- ⏲️ **Flexible Duration**: Dropdown 1-5 Jam, Custom menit, atau Tanpa Batas
+- 🔔 **Audio Alert System**: Chill/relaxing jingles in the final 30 seconds
+- 🔕 **Mute Button**: Stop alarm button appears when jingle is playing
+- ⏲️ **Flexible Duration**: Dropdown 1-5 Hours, Custom minutes, or Unlimited
 
 ## 🎨 PS3 2006-2007 Design
 
@@ -32,7 +32,7 @@ Authentic PlayStation 3 aesthetic with:
 
 ### Fly.io (Production)
 ```bash
-# Deploy ke Fly.io (region Singapore)
+# Deploy to Fly.io (Singapore region)
 fly deploy
 
 # Check status
@@ -80,21 +80,21 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ### Dashboard
 - View all units at a glance
 - Start/stop rental sessions
-- Real-time countdown/count-up timers dengan WIB timezone
+- Real-time countdown/count-up timers with WIB timezone
 - Customer notes & session details
-- **Pilih durasi**: 1-5 Jam, Custom (menit), atau Tanpa Batas
+- **Select duration**: 1-5 Hours, Custom (minutes), or Unlimited
 
 ### Audio Alert System
 - **4 Chill Jingles**: Meditation chimes, wind chimes, ocean waves, Tibetan bowl
-- **30-Second Final Alert**: Jingle berbunyi hanya di 30 detik terakhir sebelum waktu habis
-- **Mute Button**: Tombol "MATIKAN ALARM" muncul saat jingle berbunyi
-- Auto-stop setelah 30 detik atau bisa di-mute manual
-- Pattern cycle untuk unlimited units (Unit 5+ pakai jingle 1, 2, dst.)
+- **30-Second Final Alert**: Jingle plays only in the last 30 seconds before time expires
+- **Mute Button**: "STOP ALARM" button appears when jingle is playing
+- Auto-stop after 30 seconds or can be muted manually
+- Pattern cycles for unlimited units (Unit 5+ uses jingle 1, 2, etc.)
 
 ### Import Safety
-- Konfirmasi "SAYA SETUJU" sebelum import data
-- Mencegah overwrite data yang tidak disengaja
-- JSON validation sebelum import
+- "I AGREE" confirmation before importing data
+- Prevents accidental data overwrite
+- JSON validation before import
 
 ### Reports
 - Filter by date period
@@ -105,9 +105,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ### Settings
 - Configure rental rates
 - Add/remove/rename units
-- Import/export data dengan safety check
+- Import/export data with safety check
 - Manage business settings
-- **Warning threshold**: Setting peringatan visual (menit)
+- **Warning threshold**: Visual warning setting (minutes)
 
 ## 🏗️ Architecture
 
@@ -163,8 +163,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ### Tables
 - `settings` - Business configuration (rate per hour, warnBefore, businessName)
-- `units` - Rental units (TVs/PS3s) dengan active status
-- `transactions` - Rental history dengan WIB date
+- `units` - Rental units (TVs/PS3s) with active status
+- `transactions` - Rental history with WIB date
 - `expenses` - Business expenses
 - `sessions` - Active login tokens
 
@@ -172,7 +172,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 - WAL mode for concurrent access
 - Automatic schema migrations
 - Single-file database (easy backup)
-- Volume persistence di Fly.io (`ps3_data` → `/app/data`)
+- Volume persistence on Fly.io (`ps3_data` → `/app/data`)
 
 ## 📦 Tech Stack
 
@@ -201,7 +201,7 @@ curl -X POST http://localhost:3000/api/auth/login \
 
 ### Audio Testing
 ```javascript
-// Test jingle di browser console
+// Test jingle in browser console
 playWarningJingle(0); // Jingle 1
 playWarningJingle(1); // Jingle 2
 playWarningJingle(2); // Jingle 3
@@ -232,7 +232,7 @@ Edit CSS variables in `public/index.html`:
 ```
 
 ### Change Audio Patterns
-Edit `JINGLE_PATTERNS` array di `public/index.html`:
+Edit `JINGLE_PATTERNS` array in `public/index.html`:
 ```javascript
 const JINGLE_PATTERNS = [
   [432, 0, 528, 0, 639],  // Unit 1
@@ -243,11 +243,11 @@ const JINGLE_PATTERNS = [
 
 ### Change Final Alert Duration
 ```javascript
-const FINAL_ALERT_SECONDS = 30; // Ubah ke 60 untuk 1 menit
+const FINAL_ALERT_SECONDS = 30; // Change to 60 for 1 minute
 ```
 
 ### Default Units
-Starts with 1 unit (PS 1). Add more units via Settings → "Manajemen Unit" → "Tambah Unit"
+Starts with 1 unit (PS 1). Add more units via Settings → "Unit Management" → "Add Unit"
 
 ## 🐛 Troubleshooting
 
@@ -256,9 +256,9 @@ Starts with 1 unit (PS 1). Add more units via Settings → "Manajemen Unit" → 
 | Can't login | Check `ADMIN_PASSWORD` env var |
 | Database locked | Restart app (WAL auto-recover) |
 | Sync not working | Check browser console for errors |
-| Audio tidak bunyi | Pastikan browser tidak mute tab (autoplay policy) |
-| Alarm tidak berhenti | Klik tombol "MATIKAN ALARM" atau tunggu 30 detik |
-| Import gagal | Pastikan JSON valid dan klik "SAYA SETUJU" |
+| Audio not playing | Ensure browser tab is not muted (autoplay policy) |
+| Alarm won't stop | Click "STOP ALARM" button or wait 30 seconds |
+| Import failed | Ensure JSON is valid and click "I AGREE" |
 
 ## 🤝 Contributing
 
@@ -276,7 +276,7 @@ MIT - Feel free to use for your rental business!
 
 - Design inspired by PlayStation 3 XMB (2006-2007)
 - Fonts by Google Fonts (Orbitron, Rajdhani)
-- Audio jingles menggunakan Web Audio API
+- Audio jingles using Web Audio API
 
 ---
 
