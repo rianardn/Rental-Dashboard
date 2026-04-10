@@ -81,6 +81,33 @@ try {
   // Column already exists
 }
 
+// Migration: Add payment method column to transactions
+try {
+  db.exec(`ALTER TABLE transactions ADD COLUMN payment TEXT DEFAULT 'cash'`);
+  console.log('[DB] Migration: Added payment column to transactions table');
+} catch (e) {
+  // Column already exists
+}
+
+// Migration: Create edit_logs table for audit trail
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS edit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      transactionId INTEGER,
+      fieldName TEXT,
+      oldValue TEXT,
+      newValue TEXT,
+      editReason TEXT,
+      editedAt INTEGER,
+      editedBy TEXT
+    )
+  `);
+  console.log('[DB] Migration: Created edit_logs table');
+} catch (e) {
+  console.error('[DB] Error creating edit_logs table:', e);
+}
+
 
 // Initialize default settings
 const initSettings = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
@@ -143,11 +170,73 @@ function addUnit(unit) {
 
 function addTransaction(tx) {
   const stmt = db.prepare(`
-    INSERT INTO transactions (unitId, unitName, customer, duration, rate, total, timestamp, note)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO transactions (unitId, unitName, customer, duration, rate, total, timestamp, note, payment)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  const result = stmt.run(tx.unitId, tx.unitName, tx.customer, tx.duration, tx.rate, tx.total, tx.timestamp, tx.note || '');
+  const result = stmt.run(tx.unitId, tx.unitName, tx.customer, tx.duration, tx.rate, tx.total, tx.timestamp, tx.note || '', tx.payment || 'cash');
   return { ...tx, id: result.lastInsertRowid };
+}
+
+function updateTransaction(id, updates, editReason, editedBy) {
+  // Get current transaction data
+  const current = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
+  if (!current) throw new Error('Transaction not found');
+
+  const dbFields = [];
+  const dbValues = [];
+  const editLogs = [];
+
+  // Map frontend field names to database columns
+  const fieldMapping = {
+    'customer': 'customer',
+    'paid': 'total',  // paid maps to total
+    'duration': 'duration',
+    'payment': 'payment'
+  };
+
+  for (const [field, value] of Object.entries(updates)) {
+    const dbField = fieldMapping[field];
+    if (dbField && current[dbField] !== value) {
+      dbFields.push(`${dbField} = ?`);
+      dbValues.push(value);
+      // Log the edit
+      editLogs.push({
+        transactionId: id,
+        fieldName: field,
+        oldValue: String(current[dbField] || ''),
+        newValue: String(value),
+        editReason,
+        editedAt: Date.now(),
+        editedBy: editedBy || 'admin'
+      });
+    }
+  }
+
+  if (dbFields.length === 0) {
+    return { updated: false, message: 'No changes detected' };
+  }
+
+  // Update transaction
+  dbValues.push(id);
+  const stmt = db.prepare(`UPDATE transactions SET ${dbFields.join(', ')} WHERE id = ?`);
+  stmt.run(...dbValues);
+
+  // Insert edit logs
+  const logStmt = db.prepare(`
+    INSERT INTO edit_logs (transactionId, fieldName, oldValue, newValue, editReason, editedAt, editedBy)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  for (const log of editLogs) {
+    logStmt.run(log.transactionId, log.fieldName, log.oldValue, log.newValue, log.editReason, log.editedAt, log.editedBy);
+  }
+
+  return { updated: true, id, changes: editLogs.length, logs: editLogs };
+}
+
+function getTransactionEditLogs(transactionId) {
+  return db.prepare(
+    'SELECT * FROM edit_logs WHERE transactionId = ? ORDER BY editedAt DESC'
+  ).all(transactionId);
 }
 
 function addExpense(expense) {
@@ -216,6 +305,26 @@ app.post('/api/transactions', (req, res) => {
   const tx = addTransaction(req.body);
   broadcast({ type: 'transactions', data: db.prepare('SELECT * FROM transactions ORDER BY timestamp DESC').all() });
   res.json({ ok: true, transaction: tx });
+});
+
+app.put('/api/transactions/:id', (req, res) => {
+  try {
+    const { updates, reason } = req.body;
+    const result = updateTransaction(parseInt(req.params.id), updates, reason, req.body.editedBy);
+    broadcast({ type: 'transactions', data: db.prepare('SELECT * FROM transactions ORDER BY timestamp DESC').all() });
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
+app.get('/api/transactions/:id/edits', (req, res) => {
+  try {
+    const logs = getTransactionEditLogs(parseInt(req.params.id));
+    res.json({ ok: true, logs });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
 });
 
 // ── Expenses ───────────────────────────────────────────────────

@@ -1570,6 +1570,84 @@
     </div>
   </div>
 
+  <!-- Edit Transaction Modal -->
+  <div id="modalEditTransaction" class="modal">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title">✏️ Edit Transaksi</div>
+        <button class="modal-close" onclick="closeModal('modalEditTransaction')">×</button>
+      </div>
+
+      <!-- Step 1: Select fields to edit -->
+      <div id="editStep1" style="padding: 20px;">
+        <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Pilih data yang ingin diedit:</p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+            <input type="checkbox" id="editCheckCustomer" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <span>Nama Penyewa</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+            <input type="checkbox" id="editCheckPaid" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <span>Jumlah Pendapatan</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+            <input type="checkbox" id="editCheckDuration" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <span>Durasi Penyewaan (menit)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+            <input type="checkbox" id="editCheckPayment" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <span>Metode Pembayaran</span>
+          </label>
+        </div>
+        <button class="btn btn-red" onclick="proceedToEditStep2()" style="margin-top: 20px; width: 100%;">Lanjutkan</button>
+      </div>
+
+      <!-- Step 2: Edit fields -->
+      <div id="editStep2" style="padding: 20px; display: none;">
+        <div id="editFieldCustomer" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Nama Penyewa</label>
+          <input type="text" id="editCustomer" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+        </div>
+
+        <div id="editFieldPaid" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Jumlah Pendapatan (Rp)</label>
+          <input type="number" id="editPaid" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+        </div>
+
+        <div id="editFieldDuration" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Durasi (menit)</label>
+          <input type="number" id="editDuration" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+        </div>
+
+        <div id="editFieldPayment" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Metode Pembayaran</label>
+          <select id="editPayment" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+            <option value="cash">Tunai (Cash)</option>
+            <option value="transfer">Transfer</option>
+            <option value="qris">QRIS</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-red);">Alasan Edit *</label>
+          <input type="text" id="editReason" placeholder="Contoh: Koreksi harga, Perubahan durasi, dll." style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 12px;">
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-cancel" onclick="backToEditStep1()" style="flex: 1;">Kembali</button>
+          <button class="btn btn-red" onclick="saveTransactionEdit()" style="flex: 2;">Simpan Perubahan</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Edit History -->
+      <div id="editStep3" style="padding: 20px; display: none;">
+        <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Riwayat Perubahan:</p>
+        <div id="editHistoryList" style="max-height: 300px; overflow-y: auto;"></div>
+        <button class="btn" onclick="closeModal('modalEditTransaction')" style="margin-top: 16px; width: 100%;">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ═══════════════════════════════════════════════════════════════
     // PS3 Rental Manager - Railway Production Client
@@ -2113,10 +2191,13 @@
         `;
       } else {
         container.innerHTML = filtered.map(t => `
-          <div class="transaction-item">
+          <div class="transaction-item" style="position: relative;">
             <div class="transaction-header">
               <div class="transaction-unit">${t.unitName}</div>
-              <div class="transaction-amount">${formatMoney(t.paid)}</div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="transaction-amount">${formatMoney(t.paid)}</div>
+                <button onclick="openEditModal(${t.id})" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1rem; cursor: pointer; padding: 4px;" title="Edit transaksi">✏️</button>
+              </div>
             </div>
             <div class="transaction-details">
               <span>${t.customer || 'No name'}</span>
@@ -2865,6 +2946,202 @@
 
     function closeModal(id) {
       document.getElementById(id).classList.remove('active');
+    }
+
+    // ═════════════════ Transaction Edit Functions ═════════════════
+    let currentEditTransactionId = null;
+
+    function openEditModal(transactionId) {
+      currentEditTransactionId = transactionId;
+      const transaction = transactions.find(t => t.id === transactionId);
+      if (!transaction) {
+        showToast('Transaksi tidak ditemukan', 'error');
+        return;
+      }
+
+      // Reset steps
+      document.getElementById('editStep1').style.display = 'block';
+      document.getElementById('editStep2').style.display = 'none';
+      document.getElementById('editStep3').style.display = 'none';
+
+      // Reset checkboxes
+      document.getElementById('editCheckCustomer').checked = false;
+      document.getElementById('editCheckPaid').checked = false;
+      document.getElementById('editCheckDuration').checked = false;
+      document.getElementById('editCheckPayment').checked = false;
+
+      // Pre-fill current values (hidden until step 2)
+      document.getElementById('editCustomer').value = transaction.customer || '';
+      document.getElementById('editPaid').value = transaction.paid || transaction.total || 0;
+      document.getElementById('editDuration').value = transaction.duration || 0;
+      document.getElementById('editPayment').value = transaction.payment || 'cash';
+      document.getElementById('editReason').value = '';
+
+      // Load edit history
+      loadEditHistory(transactionId);
+
+      openModal('modalEditTransaction');
+    }
+
+    function proceedToEditStep2() {
+      const fields = [
+        'editCheckCustomer',
+        'editCheckPaid',
+        'editCheckDuration',
+        'editCheckPayment'
+      ];
+
+      const anySelected = fields.some(id => document.getElementById(id).checked);
+      if (!anySelected) {
+        showToast('Pilih minimal 1 data yang ingin diedit', 'error');
+        return;
+      }
+
+      // Hide/show fields based on selection
+      document.getElementById('editFieldCustomer').style.display =
+        document.getElementById('editCheckCustomer').checked ? 'block' : 'none';
+      document.getElementById('editFieldPaid').style.display =
+        document.getElementById('editCheckPaid').checked ? 'block' : 'none';
+      document.getElementById('editFieldDuration').style.display =
+        document.getElementById('editCheckDuration').checked ? 'block' : 'none';
+      document.getElementById('editFieldPayment').style.display =
+        document.getElementById('editCheckPayment').checked ? 'block' : 'none';
+
+      document.getElementById('editStep1').style.display = 'none';
+      document.getElementById('editStep2').style.display = 'block';
+    }
+
+    function backToEditStep1() {
+      document.getElementById('editStep1').style.display = 'block';
+      document.getElementById('editStep2').style.display = 'none';
+    }
+
+    async function saveTransactionEdit() {
+      const reason = document.getElementById('editReason').value.trim();
+      if (!reason) {
+        showToast('Alasan edit wajib diisi', 'error');
+        return;
+      }
+
+      const updates = {};
+
+      if (document.getElementById('editCheckCustomer').checked) {
+        updates.customer = document.getElementById('editCustomer').value.trim();
+      }
+      if (document.getElementById('editCheckPaid').checked) {
+        updates.paid = parseInt(document.getElementById('editPaid').value) || 0;
+      }
+      if (document.getElementById('editCheckDuration').checked) {
+        updates.duration = parseInt(document.getElementById('editDuration').value) || 0;
+      }
+      if (document.getElementById('editCheckPayment').checked) {
+        updates.payment = document.getElementById('editPayment').value;
+      }
+
+      if (Object.keys(updates).length === 0) {
+        showToast('Tidak ada perubahan untuk disimpan', 'error');
+        return;
+      }
+
+      try {
+        const response = await api('PUT', `/transactions/${currentEditTransactionId}`, {
+          updates,
+          reason,
+          editedBy: 'admin'
+        });
+
+        if (response.ok) {
+          showToast(`Transaksi diperbarui (${response.changes} perubahan)`, 'success');
+
+          // Show history after successful edit
+          document.getElementById('editStep2').style.display = 'none';
+          document.getElementById('editStep3').style.display = 'block';
+          await loadEditHistory(currentEditTransactionId);
+
+          // Refresh data
+          await loadData();
+          renderReports();
+        } else {
+          showToast(response.error || 'Gagal mengupdate transaksi', 'error');
+        }
+      } catch (error) {
+        showToast(error.message || 'Terjadi kesalahan', 'error');
+      }
+    }
+
+    async function loadEditHistory(transactionId) {
+      try {
+        const response = await api('GET', `/transactions/${transactionId}/edits`);
+        const container = document.getElementById('editHistoryList');
+
+        if (!response.ok || !response.logs || response.logs.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: var(--ps3-muted);">
+              <div style="font-size: 2rem; margin-bottom: 10px;">📝</div>
+              <div>Belum ada riwayat edit untuk transaksi ini</div>
+            </div>
+          `;
+          return;
+        }
+
+        const fieldLabels = {
+          'customer': 'Nama Penyewa',
+          'paid': 'Jumlah Pendapatan',
+          'duration': 'Durasi',
+          'payment': 'Metode Pembayaran'
+        };
+
+        container.innerHTML = response.logs.map(log => {
+          const fieldName = fieldLabels[log.fieldName] || log.fieldName;
+          const editDate = new Date(log.editedAt).toLocaleString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          let oldValue = log.oldValue;
+          let newValue = log.newValue;
+
+          // Format currency for paid field
+          if (log.fieldName === 'paid') {
+            oldValue = formatMoney(parseInt(oldValue) || 0);
+            newValue = formatMoney(parseInt(newValue) || 0);
+          }
+          // Format duration with minutes
+          if (log.fieldName === 'duration') {
+            oldValue = oldValue + ' menit';
+            newValue = newValue + ' menit';
+          }
+
+          return `
+            <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-weight: 600; color: var(--ps3-red);">${fieldName}</span>
+                <span style="font-size: 0.75rem; color: var(--ps3-muted);">${editDate}</span>
+              </div>
+              <div style="font-size: 0.85rem; margin-bottom: 4px;">
+                <span style="color: var(--ps3-muted);">Sebelum:</span>
+                <span style="text-decoration: line-through; color: var(--ps3-muted);">${oldValue}</span>
+              </div>
+              <div style="font-size: 0.85rem; margin-bottom: 8px;">
+                <span style="color: var(--ps3-muted);">Sesudah:</span>
+                <span style="color: var(--ps3-green); font-weight: 500;">${newValue}</span>
+              </div>
+              <div style="font-size: 0.75rem; color: var(--ps3-muted); border-top: 1px solid var(--ps3-border); padding-top: 8px;">
+                Alasan: ${log.editReason || '-'}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        document.getElementById('editHistoryList').innerHTML = `
+          <div style="text-align: center; padding: 20px; color: var(--ps3-muted);">
+            Gagal memuat riwayat edit
+          </div>
+        `;
+      }
     }
 
     function showLoading(show) {
