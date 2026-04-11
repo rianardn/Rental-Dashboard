@@ -710,9 +710,161 @@ app.get('/api/transactions/:id/edits', requireAuth, (req, res) => {
 });
 
 // ─── EXPENSES ─────────────────────────────────────────────────
+// Enhanced GET with Discord-like search & filter capabilities
+// Query params:
+//   - search: partial TX ID match (e.g., "PSK0001")
+//   - category: expense category filter (partial match, case-insensitive)
+//   - item: expense item filter (partial match, case-insensitive)
+//   - amountMin/amountMax: expense amount range
+//   - dateFrom/dateTo: date range (YYYY-MM-DD format, WIB timezone)
+//   - note: note text filter (partial match)
+//   - sortBy: 'date' | 'amount' | 'category' | 'item' | 'created' (default: date)
+//   - sortOrder: 'asc' | 'desc' (default: desc)
+//   - limit/offset: pagination
 app.get('/api/expenses', requireAuth, (req, res) => {
-  const { limit = 100 } = req.query;
-  res.json(db.prepare('SELECT * FROM expenses ORDER BY created_at DESC LIMIT ?').all(limit));
+  const {
+    search,
+    category,
+    item,
+    amountMin,
+    amountMax,
+    dateFrom,
+    dateTo,
+    note,
+    sortBy = 'date',
+    sortOrder = 'desc',
+    limit = 100,
+    offset = 0
+  } = req.query;
+
+  const conditions = [];
+  const params = [];
+
+  // TX ID partial search
+  if (search && search.trim()) {
+    conditions.push("id LIKE ? COLLATE NOCASE");
+    params.push(`%${search.trim()}%`);
+  }
+
+  // Category filter (partial match, case-insensitive)
+  if (category && category.trim()) {
+    conditions.push("category LIKE ? COLLATE NOCASE");
+    params.push(`%${category.trim()}%`);
+  }
+
+  // Item filter (partial match, case-insensitive)
+  if (item && item.trim()) {
+    conditions.push("item LIKE ? COLLATE NOCASE");
+    params.push(`%${item.trim()}%`);
+  }
+
+  // Amount range filter
+  if (amountMin !== undefined && amountMin !== '') {
+    conditions.push("amount >= ?");
+    params.push(parseFloat(amountMin));
+  }
+  if (amountMax !== undefined && amountMax !== '') {
+    conditions.push("amount <= ?");
+    params.push(parseFloat(amountMax));
+  }
+
+  // Date range filter (WIB dates stored as YYYY-MM-DD in DB)
+  if (dateFrom && dateFrom.trim()) {
+    conditions.push("date >= ?");
+    params.push(dateFrom.trim());
+  }
+  if (dateTo && dateTo.trim()) {
+    conditions.push("date <= ?");
+    params.push(dateTo.trim());
+  }
+
+  // Note filter (partial match)
+  if (note && note.trim()) {
+    conditions.push("note LIKE ? COLLATE NOCASE");
+    params.push(`%${note.trim()}%`);
+  }
+
+  // Build WHERE clause
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  // Build ORDER BY clause
+  const sortColumnMap = {
+    'date': 'date',
+    'amount': 'amount',
+    'category': 'category',
+    'item': 'item',
+    'created': 'created_at',
+    'id': 'id'
+  };
+  const sortColumn = sortColumnMap[sortBy] || 'date';
+  const order = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+  // Execute count query for pagination info
+  const countQuery = `SELECT COUNT(*) as total FROM expenses ${whereClause}`;
+  const countResult = db.prepare(countQuery).get(...params);
+  const totalCount = countResult.total;
+
+  // Execute main query
+  const query = `SELECT * FROM expenses ${whereClause} ORDER BY ${sortColumn} ${order} LIMIT ? OFFSET ?`;
+  const expenses = db.prepare(query).all(...params, parseInt(limit), parseInt(offset));
+
+  res.json({
+    expenses,
+    pagination: {
+      total: totalCount,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      hasMore: totalCount > parseInt(offset) + expenses.length
+    },
+    filters: {
+      search: search || null,
+      category: category || null,
+      item: item || null,
+      amountMin: amountMin || null,
+      amountMax: amountMax || null,
+      dateFrom: dateFrom || null,
+      dateTo: dateTo || null,
+      note: note || null
+    }
+  });
+});
+
+// GET expense categories for autocomplete
+app.get('/api/expense-categories', requireAuth, (req, res) => {
+  const { search, limit = 10 } = req.query;
+  
+  let query = "SELECT DISTINCT category FROM expenses WHERE category IS NOT NULL AND category != ''";
+  const params = [];
+  
+  if (search && search.trim()) {
+    query += " AND category LIKE ? COLLATE NOCASE";
+    params.push(`%${search.trim()}%`);
+  }
+  
+  query += " ORDER BY category ASC LIMIT ?";
+  params.push(parseInt(limit));
+  
+  const categories = db.prepare(query).all(...params);
+  res.json(categories.map(c => c.category));
+});
+
+// GET expense items for autocomplete
+app.get('/api/expense-items', requireAuth, (req, res) => {
+  const { search, limit = 10 } = req.query;
+  
+  let query = "SELECT DISTINCT item FROM expenses WHERE item IS NOT NULL AND item != ''";
+  const params = [];
+  
+  if (search && search.trim()) {
+    query += " AND item LIKE ? COLLATE NOCASE";
+    params.push(`%${search.trim()}%`);
+  }
+  
+  query += " ORDER BY item ASC LIMIT ?";
+  params.push(parseInt(limit));
+  
+  const items = db.prepare(query).all(...params);
+  res.json(items.map(i => i.item));
 });
 
 app.post('/api/expenses', requireAuth, (req, res) => {

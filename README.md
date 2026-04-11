@@ -131,18 +131,22 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ### Search & Filter (Discord-style)
 
-Advanced search and filtering for income transactions with Discord-like query capabilities:
+Advanced search and filtering for both income transactions and expenses with Discord-like query capabilities:
 
 **Frontend UI Features:**
 - 🔍 Real-time TX ID search with debounce (300ms)
 - 👤 Customer dropdown filter (auto-populated from existing customers)
-- 💳 Payment method filter (Cash, QRIS, Transfer)
+- 💳 Payment method filter (Cash, QRIS, Transfer) - Income only
+- 🏷️ Category filter with autocomplete (Expense only)
+- 📦 Item filter with autocomplete (Expense only)
+- 📝 Note text search (Expense only)
 - 💰 Amount range filter (min/max)
 - 📅 Date range picker (from/to)
-- 📊 Sort options (date, amount, customer, TX ID)
-- 📄 Pagination (50 items per page)
+- 📊 Sort options (date, amount, customer/TX ID)
+- 📄 Pagination (20-50 items per page)
 - 🏷️ Active filter count badge
 - 🔄 One-click reset all filters
+- ⚡ Instant autocomplete highlight (bright red #e60012)
 
 **Backend SQL Capabilities:**
 - Case-insensitive partial matching (COLLATE NOCASE)
@@ -252,7 +256,55 @@ GET /api/transactions?search=PSM&customer=Asep&payment=qris&sortBy=amount&sortOr
   }
 }
 ```
-| GET | `/api/expenses` | List expenses |
+
+### Search & Filter Expenses (Discord-style)
+
+The `GET /api/expenses` endpoint supports the same Discord-like search and filtering capabilities as transactions:
+
+**Query Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `search` | string | Partial TX ID match (e.g., `PSK0001`) - case insensitive |
+| `category` | string | Expense category filter (partial match, case insensitive) |
+| `item` | string | Expense item filter (partial match, case insensitive) |
+| `amountMin` | number | Minimum expense amount |
+| `amountMax` | number | Maximum expense amount |
+| `dateFrom` | string | Start date (YYYY-MM-DD, WIB timezone) |
+| `dateTo` | string | End date (YYYY-MM-DD, WIB timezone) |
+| `note` | string | Search in notes (partial match, case insensitive) |
+| `sortBy` | string | Sort column: `date` (default), `amount`, `category`, `item`, `id`, `created` |
+| `sortOrder` | string | Sort direction: `desc` (default), `asc` |
+| `limit` | number | Results per page (default: 100, max: 1000) |
+| `offset` | number | Pagination offset (default: 0) |
+
+**Autocomplete Endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/expense-categories?search=&limit=10` | Get unique categories for autocomplete |
+| GET | `/api/expense-items?search=&limit=10` | Get unique items for autocomplete |
+
+**Example Requests:**
+
+```bash
+# Search by TX ID
+GET /api/expenses?search=PSK0001
+
+# Filter by category
+GET /api/expenses?category=Makanan
+
+# Date range with amount range
+GET /api/expenses?dateFrom=2025-01-01&dateTo=2025-01-31&amountMin=10000&amountMax=50000
+
+# Search in notes
+GET /api/expenses?note=sparepart
+
+# Combined filters with pagination
+GET /api/expenses?category=Operasional&item=Listrik&sortBy=amount&sortOrder=desc&limit=20&offset=0
+```
+
+| GET | `/api/expenses` | List expenses with optional search/filter |
 | POST | `/api/expenses` | Add expense |
 | DELETE | `/api/expenses/:id` | Delete expense (requires `{reason}`) |
 | PUT | `/api/expenses/:id` | Update expense |
