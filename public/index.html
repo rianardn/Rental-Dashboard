@@ -4452,12 +4452,21 @@
 
     // Get sub-category emoji from EXPENSE_SUB_CATEGORIES
     function getSubCategoryEmoji(category, subCategory) {
-      if (!category || !subCategory) return '📦';
-      const catKey = Object.keys(EXPENSE_SUB_CATEGORIES).find(k => k.toLowerCase() === category.toLowerCase().trim());
-      if (!catKey) return '📦';
+      if (!category || !subCategory) return '';
+
+      // Normalize inputs
+      const catNorm = category.toLowerCase().trim();
+      const subNorm = subCategory.toLowerCase().trim();
+
+      // Find matching category key
+      const catKey = Object.keys(EXPENSE_SUB_CATEGORIES).find(k => k.toLowerCase() === catNorm);
+      if (!catKey) return '';
+
+      // Find matching sub-category
       const subCats = EXPENSE_SUB_CATEGORIES[catKey];
-      if (!subCats) return '📦';
-      const sub = subCats.find(s => s.value.toLowerCase().trim() === subCategory.toLowerCase().trim());
+      const sub = subCats.find(s => s.value.toLowerCase().trim() === subNorm);
+
+      // Return emoji (first char of label which is the emoji)
       return sub ? sub.label.charAt(0) : '📦';
     }
 
