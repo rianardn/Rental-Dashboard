@@ -3096,7 +3096,9 @@
           </div>
         `;
       } else {
-        container.innerHTML = latest5Expenses.map(e => `
+        container.innerHTML = latest5Expenses.map(e => {
+          const catInfo = getExpenseCategoryInfo(e.item, e.category);
+          return `
           <div class="transaction-item" style="position: relative;" data-exp-id="${e.id || ''}">
             <div class="transaction-header">
               <div class="transaction-unit">${e.item}</div>
@@ -3108,8 +3110,9 @@
               </div>
             </div>
             <div class="transaction-meta" style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">
-              <div style="text-align: left; color: var(--ps3-muted); font-size: 0.9rem;">
-                ${formatDateOnlyWIB(e.created_at)}
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; font-size: 0.85rem;">
+                <span style="text-align: left; color: var(--ps3-chrome);">${catInfo.fullDisplay}</span>
+                <span style="text-align: right; color: var(--ps3-muted);">${formatDateOnlyWIB(e.created_at)}</span>
               </div>
               <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; color: var(--ps3-muted); font-size: 0.8rem;">
                 <div style="text-align: left;">
@@ -3120,12 +3123,12 @@
                   <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${e.id || ''}</span>
                 </div>
                 <div style="text-align: right; font-style: italic;">
-                  ${e.note ? `💬 ${e.note}` : ' '}
+                  ${e.note ? `💬 ${e.note}` : (catInfo.subCategory ? `📂 ${catInfo.subCategory}` : ' ')}
                 </div>
               </div>
             </div>
           </div>
-        `).join('') + (hasMoreExpenses ? `
+        `}).join('') + (hasMoreExpenses ? `
           <div style="text-align: center; margin-top: 16px;">
             <button onclick="openAllExpensesModal()" style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); color: var(--ps3-text); padding: 12px 24px; border-radius: 10px; cursor: pointer; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px;">
               <span>📋</span> Lihat Semua (${filteredExpenses.length} Pengeluaran)
@@ -3753,7 +3756,9 @@
         return;
       }
 
-      container.innerHTML = expenses.map(e => `
+      container.innerHTML = expenses.map(e => {
+        const catInfo = getExpenseCategoryInfo(e.item, e.category);
+        return `
         <div class="transaction-item" style="position: relative; margin-bottom: 12px;" data-exp-id="${e.id || ''}">
           <div class="transaction-header">
             <div class="transaction-unit">${e.item || 'No item'}</div>
@@ -3766,7 +3771,7 @@
           </div>
           <div class="transaction-details" style="display: flex; flex-direction: column; gap: 4px;">
             <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; font-size: 0.9rem;">
-              <span style="text-align: left; color: var(--ps3-text);">${e.category || 'Uncategorized'}</span>
+              <span style="text-align: left; color: var(--ps3-chrome); font-weight: 500;">${catInfo.fullDisplay}</span>
               <span style="text-align: right; color: var(--ps3-muted);">${formatDate(new Date(e.date).getTime())}</span>
             </div>
             <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; color: var(--ps3-muted); font-size: 0.8rem;">
@@ -3777,13 +3782,13 @@
                 <span style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
                 <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${e.id || ''}</span>
               </div>
-              <div style="text-align: right; color: var(--ps3-muted);">
-                ${e.category || '-'}
+              <div style="text-align: right; color: var(--ps3-text);">
+                ${catInfo.subCategory ? `📂 ${catInfo.subCategory}` : (catInfo.category !== e.item ? catInfo.icon : '—')}
               </div>
             </div>
           </div>
         </div>
-      `).join('');
+      `}).join('');
     }
 
     // Update pagination UI
@@ -4291,6 +4296,85 @@
         { value: 'Lainnya', label: '📦 Lainnya' }
       ]
     };
+
+    // Category mapping for legacy records and item-to-category inference
+    const EXPENSE_CATEGORY_MAP = {
+      // Simple categories (no sub-categories)
+      'Listrik': { category: 'Operasional', icon: '⚡', hasSub: false },
+      'Prive': { category: 'Pengambilan Pribadi', icon: '💰', hasSub: false },
+      'Unit PS Baru': { category: 'Investasi - Unit PS', icon: '🎮', hasSub: false },
+      'TV/Monitor Baru': { category: 'Investasi - TV/Monitor', icon: '📺', hasSub: false },
+      
+      // Categories with sub-categories (format: "Category - SubCategory")
+      'Servis/Perawatan': { category: 'Servis/Perawatan', icon: '🔧', hasSub: true },
+      'Aksesoris': { category: 'Aksesoris', icon: '🎧', hasSub: true }
+    };
+
+    // Infer category details from item name for legacy records or display purposes
+    function getExpenseCategoryInfo(item, storedCategory) {
+      if (!item) return { category: storedCategory || 'Uncategorized', subCategory: null, icon: '', fullDisplay: storedCategory || 'Uncategorized' };
+      
+      // If we have a stored category, use it as base
+      if (storedCategory && storedCategory.trim() !== '') {
+        // Check if it's a category with sub-categories (contains " - ")
+        if (item.includes(' - ')) {
+          const parts = item.split(' - ');
+          const mainCat = parts[0];
+          const subCat = parts[1];
+          const catInfo = EXPENSE_CATEGORY_MAP[mainCat] || { icon: '📦' };
+          return {
+            category: mainCat,
+            subCategory: subCat,
+            icon: catInfo.icon,
+            fullDisplay: `${catInfo.icon || '📦'} ${mainCat} › ${subCat}`
+          };
+        }
+        
+        // Simple category
+        const catInfo = EXPENSE_CATEGORY_MAP[storedCategory] || { icon: '📦' };
+        return {
+          category: storedCategory,
+          subCategory: null,
+          icon: catInfo.icon,
+          fullDisplay: `${catInfo.icon || '📦'} ${storedCategory}`
+        };
+      }
+      
+      // Try to infer from item name (for legacy records)
+      // Check for "Category - SubCategory" format first
+      if (item.includes(' - ')) {
+        const parts = item.split(' - ');
+        const mainCat = parts[0];
+        const subCat = parts[1];
+        const catInfo = EXPENSE_CATEGORY_MAP[mainCat] || { category: mainCat, icon: '📦' };
+        return {
+          category: mainCat,
+          subCategory: subCat,
+          icon: catInfo.icon,
+          fullDisplay: `${catInfo.icon || '📦'} ${mainCat} › ${subCat}`
+        };
+      }
+      
+      // Check if item matches a known simple category
+      for (const [key, info] of Object.entries(EXPENSE_CATEGORY_MAP)) {
+        if (item === key || item.startsWith(key)) {
+          return {
+            category: info.category,
+            subCategory: null,
+            icon: info.icon,
+            fullDisplay: `${info.icon} ${info.category}`
+          };
+        }
+      }
+      
+      // Fallback: use item as category
+      return {
+        category: item,
+        subCategory: null,
+        icon: '📝',
+        fullDisplay: `📝 ${item}`
+      };
+    }
 
     function onExpenseCategoryChange() {
       const category = document.getElementById('expenseCategory').value;
@@ -5074,9 +5158,28 @@
       document.getElementById('editExpenseCheckDateTime').checked = false;
       document.getElementById('editExpenseCheckNote').checked = false;
 
+      // Get inferred category info for display
+      const catInfo = getExpenseCategoryInfo(expense.item, expense.category);
+      
       // Pre-fill current values
-      currentEditExpenseCategory = expense.category || '';
-      document.getElementById('editExpenseCategory').value = expense.category || '';
+      // For legacy records with empty category, infer from item name
+      let categoryToUse = expense.category || '';
+      if (!categoryToUse && catInfo.category) {
+        // Try to reverse-map the inferred category back to a dropdown value
+        for (const [key, info] of Object.entries(EXPENSE_CATEGORY_MAP)) {
+          if (info.category === catInfo.category || key === catInfo.category) {
+            categoryToUse = key;
+            break;
+          }
+        }
+        // If no match found, use the item itself if it's a simple category
+        if (!categoryToUse && !catInfo.subCategory) {
+          categoryToUse = catInfo.category;
+        }
+      }
+      
+      currentEditExpenseCategory = categoryToUse;
+      document.getElementById('editExpenseCategory').value = categoryToUse;
       document.getElementById('editExpenseAmount').value = expense.amount || 0;
       document.getElementById('editExpenseNote').value = expense.note || '';
       document.getElementById('editExpenseReason').value = '';
@@ -5094,9 +5197,18 @@
       
       // Handle sub-category
       onEditExpenseCategoryChange();
-      if (expense.category && EXPENSE_SUB_CATEGORIES[expense.category]) {
-        document.getElementById('editExpenseSubCategory').value = expense.item || '';
-      } else if (expense.category === 'Custom') {
+      if (catInfo.subCategory && EXPENSE_SUB_CATEGORIES[categoryToUse]) {
+        // Set sub-category from parsed item (format: "Category - SubCategory")
+        document.getElementById('editExpenseSubCategory').value = catInfo.subCategory;
+      } else if (categoryToUse && EXPENSE_SUB_CATEGORIES[categoryToUse]) {
+        // Try to extract sub-category from item if it contains " - "
+        if (expense.item && expense.item.includes(' - ')) {
+          const parts = expense.item.split(' - ');
+          if (parts.length >= 2) {
+            document.getElementById('editExpenseSubCategory').value = parts[1];
+          }
+        }
+      } else if (categoryToUse === 'Custom') {
         document.getElementById('editExpenseCustomName').value = expense.item || '';
       }
 
