@@ -7058,9 +7058,12 @@
           <div style="background: ${highlight.bg}; border: 2px solid ${highlight.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
               <div>
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                   <span style="font-weight: 600;">${s.customer}</span>
-                  ${s.scheduleId ? `<span style="font-size: 0.7rem; padding: 2px 6px; background: var(--ps3-silver); color: #000; border-radius: 4px; font-weight: 500; font-family: monospace;">${s.scheduleId}</span>` : ''}
+                  ${s.scheduleId ? `
+                    <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
+                    <span onclick="copyToClipboard('${s.scheduleId}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${s.scheduleId}</span>
+                  ` : ''}
                 </div>
                 ${s.phone ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">📞 ${s.phone}</div>` : ''}
               </div>
