@@ -6512,8 +6512,16 @@
     async function loadSchedules() {
       try {
         const response = await api('GET', '/schedules');
-        // Ensure schedules is always an array
-        schedules = Array.isArray(response) ? response : [];
+        // API returns { ok: true, schedules: [...] }
+        // Extract schedules array from response
+        if (response && response.ok && Array.isArray(response.schedules)) {
+          schedules = response.schedules;
+        } else if (Array.isArray(response)) {
+          // Fallback if API returns array directly
+          schedules = response;
+        } else {
+          schedules = [];
+        }
       } catch (error) {
         console.error('Failed to load schedules:', error);
         schedules = [];
