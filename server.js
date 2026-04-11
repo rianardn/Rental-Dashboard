@@ -502,10 +502,10 @@ app.get('/api/transactions', requireAuth, (req, res) => {
     params.push(`%${search.trim()}%`);
   }
 
-  // Customer name filter (exact match, case-insensitive)
+  // Customer name filter (partial match, case-insensitive)
   if (customer && customer.trim()) {
-    conditions.push("customer = ? COLLATE NOCASE");
-    params.push(customer.trim());
+    conditions.push("customer LIKE ? COLLATE NOCASE");
+    params.push(`%${customer.trim()}%`);
   }
 
   // Amount range filter

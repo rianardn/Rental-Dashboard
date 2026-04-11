@@ -835,6 +835,142 @@
       margin-top: 8px;
     }
 
+    /* ═════════════════ Transaction Filter Grid ═════════════════ */
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 480px) {
+      .filter-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+    }
+
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .filter-field label {
+      font-size: 0.75rem;
+      color: var(--ps3-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .filter-field input,
+    .filter-field select {
+      width: 100%;
+      background: var(--ps3-surface);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      font-family: var(--font-body);
+      transition: all 0.2s;
+      min-height: 40px;
+    }
+
+    .filter-field input:focus,
+    .filter-field select:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+      box-shadow: 0 0 0 2px rgba(230,0,18,0.15);
+    }
+
+    .filter-field.amount-range,
+    .filter-field.date-range {
+      grid-column: span 1;
+    }
+
+    @media (max-width: 480px) {
+      .filter-field.amount-range,
+      .filter-field.date-range {
+        grid-column: span 1;
+      }
+    }
+
+    .range-inputs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .range-inputs input {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+    }
+
+    .range-separator {
+      color: var(--ps3-muted);
+      font-size: 0.9rem;
+      padding: 0 2px;
+      flex-shrink: 0;
+    }
+
+    /* Autocomplete Dropdown */
+    .autocomplete-wrapper {
+      position: relative;
+    }
+
+    .suggestions-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--ps3-card);
+      border: 1px solid var(--ps3-border);
+      border-radius: 8px;
+      margin-top: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .suggestion-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--ps3-text);
+      border-bottom: 1px solid var(--ps3-border);
+      transition: all 0.15s;
+    }
+
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+
+    .suggestion-item:hover,
+    .suggestion-item.active {
+      background: rgba(230,0,18,0.15);
+    }
+
+    .suggestion-item mark {
+      background: rgba(230,0,18,0.3);
+      color: var(--ps3-text);
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+
+    .suggestion-empty {
+      padding: 12px;
+      text-align: center;
+      color: var(--ps3-muted);
+      font-size: 0.85rem;
+    }
+
     /* Report Tabs */
     .tabs {
       display: flex;
@@ -1956,19 +2092,21 @@
 
           <!-- Expandable Filter Panel -->
           <div id="txFilterPanel" style="display: none; border-top: 1px solid var(--ps3-border); padding-top: 12px;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
-              <!-- Customer Filter -->
-              <div>
-                <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 4px;">👤 Nama Penyewa</label>
-                <select id="txFilterCustomer" onchange="searchTransactions()" style="width: 100%; background: var(--ps3-bg); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.9rem;">
-                  <option value="">Semua Penyewa</option>
-                </select>
+            <!-- Optimized Filter Grid -->
+            <div class="filter-grid">
+              <!-- Customer Filter (Text Input with Autocomplete) -->
+              <div class="filter-field">
+                <label>👤 Nama Penyewa</label>
+                <div class="autocomplete-wrapper">
+                  <input type="text" id="txFilterCustomer" placeholder="Ketik nama..." oninput="debouncedCustomerSearch()" onfocus="showCustomerSuggestions()" autocomplete="off">
+                  <div id="customerSuggestions" class="suggestions-dropdown" style="display: none;"></div>
+                </div>
               </div>
 
               <!-- Payment Method Filter -->
-              <div>
-                <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 4px;">💳 Metode Pembayaran</label>
-                <select id="txFilterPayment" onchange="searchTransactions()" style="width: 100%; background: var(--ps3-bg); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.9rem;">
+              <div class="filter-field">
+                <label>💳 Metode Pembayaran</label>
+                <select id="txFilterPayment" onchange="searchTransactions()">
                   <option value="">Semua Metode</option>
                   <option value="cash">💵 Tunai</option>
                   <option value="qris">📱 QRIS</option>
@@ -1977,20 +2115,22 @@
               </div>
 
               <!-- Amount Range -->
-              <div>
-                <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 4px;">💰 Jumlah (Rp)</label>
-                <div style="display: flex; gap: 8px;">
-                  <input type="number" id="txFilterAmountMin" placeholder="Min" onchange="searchTransactions()" style="flex: 1; background: var(--ps3-bg); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.9rem;">
-                  <input type="number" id="txFilterAmountMax" placeholder="Max" onchange="searchTransactions()" style="flex: 1; background: var(--ps3-bg); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.9rem;">
+              <div class="filter-field amount-range">
+                <label>💰 Jumlah (Rp)</label>
+                <div class="range-inputs">
+                  <input type="number" id="txFilterAmountMin" placeholder="Min" onchange="searchTransactions()">
+                  <span class="range-separator">~</span>
+                  <input type="number" id="txFilterAmountMax" placeholder="Max" onchange="searchTransactions()">
                 </div>
               </div>
 
               <!-- Date Range -->
-              <div>
-                <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 4px;">📅 Rentang Tanggal</label>
-                <div style="display: flex; gap: 8px;">
-                  <input type="date" id="txFilterDateFrom" onchange="searchTransactions()" style="flex: 1; background: var(--ps3-bg); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.85rem;">
-                  <input type="date" id="txFilterDateTo" onchange="searchTransactions()" style="flex: 1; background: var(--ps3-bg); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.85rem;">
+              <div class="filter-field date-range">
+                <label>📅 Rentang Tanggal</label>
+                <div class="range-inputs">
+                  <input type="date" id="txFilterDateFrom" onchange="searchTransactions()">
+                  <span class="range-separator">→</span>
+                  <input type="date" id="txFilterDateTo" onchange="searchTransactions()">
                 </div>
               </div>
             </div>
@@ -2881,8 +3021,8 @@
         total: 0
       };
 
-      // Populate customer dropdown with unique customers from transactions
-      populateTxCustomerDropdown();
+      // Setup customer autocomplete
+      setupCustomerAutocomplete();
 
       // Sync UI with state
       syncTxSearchUI();
@@ -2901,21 +3041,88 @@
       openModal('modalAllTransactions');
     }
 
-    // Populate customer dropdown from global transactions data
-    function populateTxCustomerDropdown() {
-      const select = document.getElementById('txFilterCustomer');
-      const uniqueCustomers = [...new Set(transactions.map(t => t.customer).filter(Boolean))].sort();
+    // Customer autocomplete state
+    let customerAutocompleteTimer = null;
+    let uniqueCustomers = [];
 
-      // Keep the first option ("Semua Penyewa")
-      select.innerHTML = '<option value="">Semua Penyewa</option>';
+    // Setup customer autocomplete from global transactions data
+    function setupCustomerAutocomplete() {
+      uniqueCustomers = [...new Set(transactions.map(t => t.customer).filter(Boolean))].sort();
+    }
 
-      // Add customer options
-      uniqueCustomers.forEach(customer => {
-        const option = document.createElement('option');
-        option.value = customer;
-        option.textContent = customer;
-        select.appendChild(option);
-      });
+    // Debounced customer search input handler
+    function debouncedCustomerSearch() {
+      if (customerAutocompleteTimer) {
+        clearTimeout(customerAutocompleteTimer);
+      }
+      customerAutocompleteTimer = setTimeout(() => {
+        updateTxSearchStateFromUI();
+        searchTransactions();
+      }, 300);
+    }
+
+    // Show autocomplete suggestions
+    function showCustomerSuggestions() {
+      const input = document.getElementById('txFilterCustomer');
+      const dropdown = document.getElementById('customerSuggestions');
+      const value = input.value.trim().toLowerCase();
+
+      // Filter customers that match input (case-insensitive)
+      const matches = value
+        ? uniqueCustomers.filter(c => c.toLowerCase().includes(value))
+        : uniqueCustomers.slice(0, 10); // Show first 10 if empty
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = '<div class="suggestion-empty">Tidak ditemukan</div>';
+      } else {
+        dropdown.innerHTML = matches.map(customer => {
+          // Highlight matching text
+          const highlighted = value
+            ? customer.replace(new RegExp(`(${escapeRegex(value)})`, 'gi'), '<mark>$1</mark>')
+            : customer;
+          return `<div class="suggestion-item" onclick="selectCustomer('${escapeHtml(customer)}')">${highlighted}</div>`;
+        }).join('');
+      }
+
+      dropdown.style.display = 'block';
+
+      // Close dropdown when clicking outside
+      setTimeout(() => {
+        document.addEventListener('click', hideCustomerSuggestionsOnClickOutside, { once: true });
+      }, 10);
+    }
+
+    // Hide suggestions when clicking outside
+    function hideCustomerSuggestionsOnClickOutside(e) {
+      const wrapper = document.querySelector('.autocomplete-wrapper');
+      if (!wrapper.contains(e.target)) {
+        hideCustomerSuggestions();
+      }
+    }
+
+    // Hide autocomplete dropdown
+    function hideCustomerSuggestions() {
+      document.getElementById('customerSuggestions').style.display = 'none';
+    }
+
+    // Select a customer from suggestions
+    function selectCustomer(customer) {
+      document.getElementById('txFilterCustomer').value = customer;
+      hideCustomerSuggestions();
+      updateTxSearchStateFromUI();
+      searchTransactions();
+    }
+
+    // Utility: escape regex special chars
+    function escapeRegex(str) {
+      return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // Utility: escape HTML
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
     }
 
     // Sync UI elements with search state
@@ -3000,6 +3207,7 @@
         total: 0
       };
       syncTxSearchUI();
+      hideCustomerSuggestions();
       document.getElementById('txFilterPanel').style.display = 'none';
       searchTransactions();
     }
