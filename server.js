@@ -1105,26 +1105,101 @@ app.get('/api/schedules', requireAuth, (req, res) => {
 });
 
 app.post('/api/schedules', requireAuth, (req, res) => {
+  const { customer, phone, unitId, unitName, scheduledDate, scheduledTime, duration, note, status } = req.body;
+  const durationMinutes = parseInt(duration) || 0;
+  
+  // Conflict detection: Check if unit is already booked for overlapping time
+  if (unitId && scheduledDate && scheduledTime && durationMinutes > 0) {
+    // Calculate new booking time range in minutes from midnight
+    const [newHour, newMin] = scheduledTime.split(':').map(Number);
+    const newStartMinutes = newHour * 60 + newMin;
+    const newEndMinutes = newStartMinutes + durationMinutes;
+    
+    // Get existing schedules for same date and unit
+    const existingSchedules = db.prepare(
+      'SELECT * FROM schedules WHERE scheduledDate = ? AND unitId = ? AND status != ?'
+    ).all(scheduledDate, unitId, 'cancelled');
+    
+    for (const existing of existingSchedules) {
+      if (!existing.scheduledTime || !existing.duration) continue;
+      
+      // Calculate existing booking time range
+      const [existHour, existMin] = existing.scheduledTime.split(':').map(Number);
+      const existStartMinutes = existHour * 60 + existMin;
+      const existEndMinutes = existStartMinutes + (existing.duration || 0);
+      
+      // Check for overlap: (StartA < EndB) && (EndA > StartB)
+      const overlap = (newStartMinutes < existEndMinutes) && (newEndMinutes > existStartMinutes);
+      
+      if (overlap) {
+        const existEndTime = String(Math.floor(existEndMinutes / 60)).padStart(2, '0') + ':' + 
+                            String(existEndMinutes % 60).padStart(2, '0');
+        return res.status(409).json({
+          ok: false,
+          error: `Unit sudah dibooking oleh ${existing.customer} pukul ${existing.scheduledTime}-${existEndTime}. Silakan pilih unit lain atau waktu berbeda.`
+        });
+      }
+    }
+  }
+  
   const stmt = db.prepare(`
     INSERT INTO schedules (customer, phone, unitId, unitName, scheduledDate, scheduledTime, duration, note, status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
-    req.body.customer,
-    req.body.phone || '',
-    req.body.unitId || null,
-    req.body.unitName || '',
-    req.body.scheduledDate,
-    req.body.scheduledTime || '',
-    req.body.duration || 0,
-    req.body.note || '',
-    req.body.status || 'pending'
+    customer,
+    phone || '',
+    unitId || null,
+    unitName || '',
+    scheduledDate,
+    scheduledTime || '',
+    durationMinutes,
+    note || '',
+    status || 'pending'
   );
   const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(result.lastInsertRowid);
   res.json({ ok: true, schedule });
 });
 
 app.put('/api/schedules/:id', requireAuth, (req, res) => {
+  const scheduleId = req.params.id;
+  const { customer, phone, unitId, unitName, scheduledDate, scheduledTime, duration, note, status } = req.body;
+  const durationMinutes = parseInt(duration) || 0;
+  
+  // Conflict detection for updates: Check if unit is already booked for overlapping time (excluding current schedule)
+  if (unitId && scheduledDate && scheduledTime && durationMinutes > 0) {
+    // Calculate new booking time range in minutes from midnight
+    const [newHour, newMin] = scheduledTime.split(':').map(Number);
+    const newStartMinutes = newHour * 60 + newMin;
+    const newEndMinutes = newStartMinutes + durationMinutes;
+    
+    // Get existing schedules for same date and unit (excluding current schedule)
+    const existingSchedules = db.prepare(
+      'SELECT * FROM schedules WHERE scheduledDate = ? AND unitId = ? AND status != ? AND id != ?'
+    ).all(scheduledDate, unitId, 'cancelled', scheduleId);
+    
+    for (const existing of existingSchedules) {
+      if (!existing.scheduledTime || !existing.duration) continue;
+      
+      // Calculate existing booking time range
+      const [existHour, existMin] = existing.scheduledTime.split(':').map(Number);
+      const existStartMinutes = existHour * 60 + existMin;
+      const existEndMinutes = existStartMinutes + (existing.duration || 0);
+      
+      // Check for overlap: (StartA < EndB) && (EndA > StartB)
+      const overlap = (newStartMinutes < existEndMinutes) && (newEndMinutes > existStartMinutes);
+      
+      if (overlap) {
+        const existEndTime = String(Math.floor(existEndMinutes / 60)).padStart(2, '0') + ':' + 
+                            String(existEndMinutes % 60).padStart(2, '0');
+        return res.status(409).json({
+          ok: false,
+          error: `Unit sudah dibooking oleh ${existing.customer} pukul ${existing.scheduledTime}-${existEndTime}. Silakan pilih unit lain atau waktu berbeda.`
+        });
+      }
+    }
+  }
+  
   const stmt = db.prepare(`
     UPDATE schedules SET
       customer = ?, phone = ?, unitId = ?, unitName = ?, scheduledDate = ?, scheduledTime = ?,
@@ -1132,18 +1207,18 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
     WHERE id = ?
   `);
   stmt.run(
-    req.body.customer,
-    req.body.phone || '',
-    req.body.unitId || null,
-    req.body.unitName || '',
-    req.body.scheduledDate,
-    req.body.scheduledTime || '',
-    req.body.duration || 0,
-    req.body.note || '',
-    req.body.status || 'pending',
-    req.params.id
+    customer,
+    phone || '',
+    unitId || null,
+    unitName || '',
+    scheduledDate,
+    scheduledTime || '',
+    durationMinutes,
+    note || '',
+    status || 'pending',
+    scheduleId
   );
-  const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(req.params.id);
+  const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
   res.json({ ok: true, schedule });
 });
 
