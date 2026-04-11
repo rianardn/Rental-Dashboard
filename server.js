@@ -622,8 +622,38 @@ app.post('/api/expenses', requireAuth, (req, res) => {
 });
 
 app.delete('/api/expenses/:id', requireAuth, (req, res) => {
-  db.prepare('DELETE FROM expenses WHERE id = ?').run(req.params.id);
-  res.json({ ok: true });
+  const { id } = req.params;
+  const { reason, deletedBy = 'admin' } = req.body;
+  
+  // Validate deletion reason
+  if (!reason || reason.trim().length < 3) {
+    return res.status(400).json({ error: 'Deletion reason is required (minimum 3 characters)' });
+  }
+  
+  // Get the expense before deleting (for audit log)
+  const exp = db.prepare('SELECT * FROM expenses WHERE id = ?').get(id);
+  if (!exp) {
+    return res.status(404).json({ error: 'Expense not found' });
+  }
+  
+  // Log the deletion before actually deleting
+  const logStmt = db.prepare(`
+    INSERT INTO deletion_logs (recordType, recordId, recordData, deleteReason, deletedAt, deletedBy)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  logStmt.run(
+    'expense',
+    id,
+    JSON.stringify(exp),
+    reason.trim(),
+    Date.now(),
+    deletedBy
+  );
+  
+  // Now delete the expense
+  db.prepare('DELETE FROM expenses WHERE id = ?').run(id);
+  
+  res.json({ ok: true, deletedId: id });
 });
 
 // PUT update expense with audit trail logging

@@ -18,6 +18,8 @@ A complete rental management solution for PlayStation 3 rental businesses.
 - 🔔 **Audio Alert System**: Chill/relaxing jingles in the final 30 seconds
 - 🔕 **Mute Button**: Stop alarm button appears when jingle is playing
 - ⏲️ **Flexible Duration**: Dropdown 1-5 Hours, Custom minutes, or Unlimited
+- 🗑️ **Audit Trail for Deletions**: Full deletion logging with reason tracking
+- ✏️ **Edit History**: Track all changes to income and expense records
 
 ## 🎨 PS3 2006-2007 Design
 
@@ -96,6 +98,33 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 - Prevents accidental data overwrite
 - JSON validation before import
 
+### Audit Trail (Deletion Logging)
+
+**Soft-delete with full audit trail for compliance:**
+
+- 🗑️ **Deletion Confirmation**: Checkbox + reason required before deletion
+- 📋 **Complete Audit Log**: Deleted data stored in `deletion_logs` table with:
+  - Full JSON snapshot of deleted record
+  - Deletion reason (minimum 3 characters)
+  - Timestamp (WIB timezone)
+  - User who performed deletion
+- ✏️ **Edit History**: Track all field changes with old/new values
+- 📊 **History Tabs**: View edit history or deletion logs per transaction
+- 🔍 **Viewable Logs**: Access deletion history via 📋 button on any record
+
+**Supported Record Types:**
+- `transaction` - Income/rental transactions
+- `expense` - Business expenses
+
+**API Endpoints:**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| DELETE | `/api/transactions/:id` | Delete with reason (body: `{reason}`) |
+| DELETE | `/api/expenses/:id` | Delete with reason (body: `{reason}`) |
+| GET | `/api/deletion-logs?recordType=` | Get deletion audit trail |
+| GET | `/api/transactions/:id/edits` | Get edit history |
+| GET | `/api/expenses/:id/edits` | Get edit history |
+
 ### Reports
 - Filter by date period
 - Income/expense/profit tracking
@@ -146,8 +175,15 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | POST | `/api/units/:id/start` | Start rental |
 | POST | `/api/units/:id/stop` | Stop rental |
 | GET | `/api/transactions` | List transactions |
+| DELETE | `/api/transactions/:id` | Delete transaction (requires `{reason}`) |
+| PUT | `/api/transactions/:id` | Update transaction |
+| GET | `/api/transactions/:id/edits` | Get transaction edit history |
 | GET | `/api/expenses` | List expenses |
 | POST | `/api/expenses` | Add expense |
+| DELETE | `/api/expenses/:id` | Delete expense (requires `{reason}`) |
+| PUT | `/api/expenses/:id` | Update expense |
+| GET | `/api/expenses/:id/edits` | Get expense edit history |
+| GET | `/api/deletion-logs` | Get deletion audit trail |
 | GET | `/api/reports/summary` | Get report summary |
 
 ## 🔒 Security
@@ -167,6 +203,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 - `transactions` - Rental history with WIB date
 - `expenses` - Business expenses
 - `sessions` - Active login tokens
+- `edit_logs` - Audit trail for all record modifications
+- `deletion_logs` - Audit trail for deleted records (soft-delete compliance)
 
 ### Features
 - WAL mode for concurrent access
