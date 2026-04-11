@@ -468,10 +468,113 @@ app.post('/api/units/:id/stop', requireAuth, (req, res) => {
 });
 
 // ─── TRANSACTIONS ─────────────────────────────────────────────
+// Enhanced GET with Discord-like search & filter capabilities
+// Query params:
+//   - search: partial TX ID match (e.g., "PSM0001")
+//   - customer: exact customer name filter
+//   - amountMin/amountMax: income amount range
+//   - dateFrom/dateTo: date range (YYYY-MM-DD format, WIB timezone)
+//   - payment: payment method filter
+//   - sortBy: 'date' | 'amount' | 'customer' | 'created' (default: date)
+//   - sortOrder: 'asc' | 'desc' (default: desc)
+//   - limit/offset: pagination
 app.get('/api/transactions', requireAuth, (req, res) => {
-  const { limit = 100, offset = 0 } = req.query;
-  const transactions = db.prepare('SELECT * FROM transactions ORDER BY endTime DESC LIMIT ? OFFSET ?').all(limit, offset);
-  res.json(transactions);
+  const {
+    search,
+    customer,
+    amountMin,
+    amountMax,
+    dateFrom,
+    dateTo,
+    payment,
+    sortBy = 'date',
+    sortOrder = 'desc',
+    limit = 100,
+    offset = 0
+  } = req.query;
+
+  const conditions = [];
+  const params = [];
+
+  // TX ID partial search (Discord-like search by ID)
+  if (search && search.trim()) {
+    conditions.push("id LIKE ? COLLATE NOCASE");
+    params.push(`%${search.trim()}%`);
+  }
+
+  // Customer name filter (exact match, case-insensitive)
+  if (customer && customer.trim()) {
+    conditions.push("customer = ? COLLATE NOCASE");
+    params.push(customer.trim());
+  }
+
+  // Amount range filter
+  if (amountMin !== undefined && amountMin !== '') {
+    conditions.push("paid >= ?");
+    params.push(parseFloat(amountMin));
+  }
+  if (amountMax !== undefined && amountMax !== '') {
+    conditions.push("paid <= ?");
+    params.push(parseFloat(amountMax));
+  }
+
+  // Date range filter (WIB dates stored as YYYY-MM-DD in DB)
+  if (dateFrom && dateFrom.trim()) {
+    conditions.push("date >= ?");
+    params.push(dateFrom.trim());
+  }
+  if (dateTo && dateTo.trim()) {
+    conditions.push("date <= ?");
+    params.push(dateTo.trim());
+  }
+
+  // Payment method filter
+  if (payment && payment.trim()) {
+    conditions.push("payment = ? COLLATE NOCASE");
+    params.push(payment.trim());
+  }
+
+  // Build WHERE clause
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  // Build ORDER BY clause
+  const sortColumnMap = {
+    'date': 'date',
+    'amount': 'paid',
+    'customer': 'customer',
+    'created': 'created_at',
+    'id': 'id'
+  };
+  const sortColumn = sortColumnMap[sortBy] || 'endTime';
+  const order = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+  // Execute count query for pagination info
+  const countQuery = `SELECT COUNT(*) as total FROM transactions ${whereClause}`;
+  const countResult = db.prepare(countQuery).get(...params);
+  const totalCount = countResult.total;
+
+  // Execute main query
+  const query = `SELECT * FROM transactions ${whereClause} ORDER BY ${sortColumn} ${order} LIMIT ? OFFSET ?`;
+  const transactions = db.prepare(query).all(...params, parseInt(limit), parseInt(offset));
+
+  res.json({
+    transactions,
+    pagination: {
+      total: totalCount,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      hasMore: totalCount > parseInt(offset) + transactions.length
+    },
+    filters: {
+      search: search || null,
+      customer: customer || null,
+      amountMin: amountMin || null,
+      amountMax: amountMax || null,
+      dateFrom: dateFrom || null,
+      dateTo: dateTo || null,
+      payment: payment || null
+    }
+  });
 });
 
 app.delete('/api/transactions/:id', requireAuth, (req, res) => {

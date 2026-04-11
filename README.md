@@ -129,6 +129,26 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 - Export CSV for accounting
 - Transaction history
 
+### Search & Filter (Discord-style)
+
+Advanced search and filtering for income transactions with Discord-like query capabilities:
+
+**Frontend UI Features:**
+- 🔍 Real-time TX ID search with debounce (300ms)
+- 👤 Customer dropdown filter (auto-populated from existing customers)
+- 💳 Payment method filter (Cash, QRIS, Transfer)
+- 💰 Amount range filter (min/max)
+- 📅 Date range picker (from/to)
+- 📊 Sort options (date, amount, customer, TX ID)
+- 📄 Pagination (50 items per page)
+- 🏷️ Active filter count badge
+- 🔄 One-click reset all filters
+
+**Backend SQL Capabilities:**
+- Case-insensitive partial matching (COLLATE NOCASE)
+- Efficient indexed queries with WHERE clause composition
+- Pagination with total count for accurate page indicators
+
 ### Settings
 - Configure rental rates
 - Add/remove/rename units
@@ -172,10 +192,66 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | POST | `/api/units` | Add new unit |
 | POST | `/api/units/:id/start` | Start rental |
 | POST | `/api/units/:id/stop` | Stop rental |
-| GET | `/api/transactions` | List transactions |
+| GET | `/api/transactions` | List transactions with optional search/filter (see below) |
 | DELETE | `/api/transactions/:id` | Delete transaction (requires `{reason}`) |
 | PUT | `/api/transactions/:id` | Update transaction |
 | GET | `/api/transactions/:id/edits` | Get transaction edit history |
+
+### Search & Filter Transactions (Discord-style)
+
+The `GET /api/transactions` endpoint supports Discord-like search and filtering capabilities:
+
+**Query Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `search` | string | Partial TX ID match (e.g., `PSM0001`) - case insensitive |
+| `customer` | string | Exact customer name filter (case insensitive) |
+| `amountMin` | number | Minimum income amount |
+| `amountMax` | number | Maximum income amount |
+| `dateFrom` | string | Start date (YYYY-MM-DD, WIB timezone) |
+| `dateTo` | string | End date (YYYY-MM-DD, WIB timezone) |
+| `payment` | string | Payment method: `cash`, `qris`, `transfer` |
+| `sortBy` | string | Sort column: `date` (default), `amount`, `customer`, `id`, `created` |
+| `sortOrder` | string | Sort direction: `desc` (default), `asc` |
+| `limit` | number | Results per page (default: 100, max: 1000) |
+| `offset` | number | Pagination offset (default: 0) |
+
+**Example Requests:**
+
+```bash
+# Search by TX ID (Discord-like ID search)
+GET /api/transactions?search=PSM0001
+
+# Filter by customer and payment method
+GET /api/transactions?customer=John&payment=cash
+
+# Date range filter with amount range
+GET /api/transactions?dateFrom=2025-01-01&dateTo=2025-01-31&amountMin=50000&amountMax=100000
+
+# Combined search with pagination
+GET /api/transactions?search=PSM&customer=Asep&payment=qris&sortBy=amount&sortOrder=desc&limit=50&offset=0
+```
+
+**Response Format:**
+
+```json
+{
+  "transactions": [...],
+  "pagination": {
+    "total": 150,
+    "limit": 50,
+    "offset": 0,
+    "hasMore": true
+  },
+  "filters": {
+    "search": "PSM",
+    "customer": "Asep",
+    "payment": "qris",
+    ...
+  }
+}
+```
 | GET | `/api/expenses` | List expenses |
 | POST | `/api/expenses` | Add expense |
 | DELETE | `/api/expenses/:id` | Delete expense (requires `{reason}`) |
