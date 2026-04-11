@@ -5076,7 +5076,7 @@
         // Update page title with business name
         const businessName = settings.businessName || 'PS3 Rental';
         document.getElementById('pageTitle').textContent = businessName + ' - Manager';
-        document.querySelector('.header-title').innerHTML = businessName.replace(/\s+/, ' <span>$2</span>');
+        document.querySelector('.header-title').innerHTML = businessName.replace(/(.+?)\s*(\S+)$/, '$1 <span>$2</span>');
       }
     }
 
