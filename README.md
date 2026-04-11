@@ -2,7 +2,7 @@
 
 A complete rental management solution for PlayStation 3 rental businesses.
 
-![Version](https://img.shields.io/badge/version-2.1.0-blue)
+![Version](https://img.shields.io/badge/version-2.2.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## ✨ Features
@@ -137,8 +137,8 @@ Advanced search and filtering for both income transactions and expenses with Dis
 - 🔍 Real-time TX ID search with debounce (300ms)
 - 👤 Customer dropdown filter (auto-populated from existing customers)
 - 💳 Payment method filter (Cash, QRIS, Transfer) - Income only
-- 🏷️ Category filter with autocomplete (Expense only)
-- 📦 Item filter with autocomplete (Expense only)
+- 🏷️ **Tipe Biaya dropdown** (Expense only) - matches submission form
+- 📂 **Sub-Kategori dropdown** (Expense only) - appears for Servis/Perawatan & Aksesoris
 - 📝 Note text search (Expense only)
 - 💰 Amount range filter (min/max)
 - 📅 Date range picker (from/to)
@@ -146,7 +146,7 @@ Advanced search and filtering for both income transactions and expenses with Dis
 - 📄 Pagination (20-50 items per page)
 - 🏷️ Active filter count badge
 - 🔄 One-click reset all filters
-- ⚡ Instant autocomplete highlight (bright red #e60012)
+- ⚡ Instant search response (300ms debounce)
 
 **Backend SQL Capabilities:**
 - Case-insensitive partial matching (COLLATE NOCASE)
@@ -412,6 +412,28 @@ const FINAL_ALERT_SECONDS = 30; // Change to 60 for 1 minute
 
 ### Default Units
 Starts with 1 unit (PS 1). Add more units via Settings → "Unit Management" → "Add Unit"
+
+## 📋 Changelog
+
+### v2.2.0 (2025-04-11)
+- **Refactored Expense Filter UI**: Unified filter structure with expense submission form
+  - Replaced category/item autocomplete with dropdown selects
+  - Added dynamic sub-category dropdown for Servis/Perawatan and Aksesoris
+  - Consistent UX between submission and filtering
+
+### v2.1.0 (2025-04-10)
+- Added search & filter system for expenses (Discord-style)
+- Added audit trail for expense deletions
+- Added edit history tracking for expenses
+- Smart category inference for legacy expense records
+
+### v2.0.0 (2025-04-09)
+- Initial production release with Fly.io deployment
+- SQLite database with WAL mode
+- JWT authentication
+- Real-time dashboard with WIB timezone
+- Audio alert system with 4 jingles
+- PS3 2006-2007 aesthetic design
 
 ## 🐛 Troubleshooting
 
