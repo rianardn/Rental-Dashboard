@@ -1188,10 +1188,10 @@
       color: var(--ps3-red);
     }
 
-    /* Stats Grid */
+    /* Stats Grid - Single column layout */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: 1fr;
       gap: 12px;
       margin-bottom: 20px;
     }
@@ -1249,6 +1249,14 @@
     }
 
     .stat-value.expense {
+      color: var(--ps3-red);
+    }
+
+    .stat-value.profit {
+      color: var(--ps3-green);
+    }
+
+    .stat-value.loss {
       color: var(--ps3-red);
     }
 
@@ -3098,7 +3106,13 @@
       
       document.getElementById('reportIncome').textContent = formatMoney(income);
       document.getElementById('reportExpenses').textContent = formatMoney(totalExpenses);
-      document.getElementById('reportProfit').textContent = formatMoney(income - totalExpenses);
+      
+      const profit = income - totalExpenses;
+      const profitEl = document.getElementById('reportProfit');
+      profitEl.textContent = formatMoney(profit);
+      profitEl.classList.remove('profit', 'loss');
+      profitEl.classList.add(profit >= 0 ? 'profit' : 'loss');
+      
       document.getElementById('reportTransactions').textContent = filtered.length;
 
       // Render chart
