@@ -1048,6 +1048,29 @@ app.get('/ping', (req, res) => {
   });
 });
 
+// ─── RESET DATABASE ───────────────────────────────────────────
+// DANGER: This endpoint resets ALL data - use with extreme caution
+app.post('/api/admin/reset-database', requireAuth, (req, res) => {
+  try {
+    // Delete all data from main tables
+    db.prepare('DELETE FROM transactions').run();
+    db.prepare('DELETE FROM expenses').run();
+    db.prepare('DELETE FROM edit_logs').run();
+    db.prepare('DELETE FROM deletion_logs').run();
+    
+    // Reset units to default (inactive, no customers)
+    db.prepare("UPDATE units SET active = 0, startTime = NULL, customer = NULL, duration = 0, note = NULL").run();
+    
+    res.json({ 
+      ok: true, 
+      message: 'Database reset successfully. All data cleared.',
+      cleared: ['transactions', 'expenses', 'edit_logs', 'deletion_logs', 'unit_sessions']
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
