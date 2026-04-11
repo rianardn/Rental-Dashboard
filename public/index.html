@@ -1081,6 +1081,22 @@
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 480px) {
+      .tab {
+        padding: 8px 12px;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .tab {
+        padding: 6px 10px;
+        font-size: 0.6rem;
+      }
     }
 
     .tab.active {
@@ -1186,6 +1202,23 @@
       padding: 16px;
       border: 1px solid var(--ps3-border);
       text-align: center;
+      min-width: 0;
+    }
+
+    @media (max-width: 480px) {
+      .stat-card {
+        padding: 12px 8px;
+        border-radius: 10px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .stats-grid {
+        gap: 8px;
+      }
+      .stat-card {
+        padding: 10px 6px;
+      }
     }
 
     .stat-value {
@@ -1194,6 +1227,21 @@
       font-weight: 700;
       color: var(--ps3-text);
       margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @media (max-width: 480px) {
+      .stat-value {
+        font-size: 1.25rem;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .stat-value {
+        font-size: 1.1rem;
+      }
     }
 
     .stat-value.income {
@@ -1209,6 +1257,44 @@
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: var(--ps3-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @media (max-width: 360px) {
+      .stat-label {
+        font-size: 0.55rem;
+        letter-spacing: 0.05em;
+      }
+    }
+
+    /* Chart Card - Responsive */
+    .chart-card {
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .chart-card canvas {
+      max-height: 200px;
+    }
+
+    @media (max-width: 480px) {
+      .chart-card {
+        padding: 12px;
+      }
+      .chart-card canvas {
+        max-height: 160px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .chart-card {
+        padding: 8px;
+      }
+      .chart-card canvas {
+        max-height: 140px;
+      }
     }
 
     /* Export Buttons */
@@ -1216,6 +1302,20 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
+    }
+
+    @media (max-width: 480px) {
+      .export-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .export-grid {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
     }
 
     .export-btn {
@@ -1234,6 +1334,18 @@
       flex-direction: column;
       align-items: center;
       gap: 6px;
+    }
+
+    @media (max-width: 480px) {
+      .export-btn {
+        padding: 10px 6px;
+        font-size: 0.65rem;
+        flex-direction: row;
+        justify-content: center;
+      }
+      .export-btn .icon {
+        font-size: 1rem;
+      }
     }
 
     .export-btn:hover {
@@ -1574,7 +1686,7 @@
       <div class="section-title">
         <span>Grafik Keuangan</span>
       </div>
-      <div class="card" style="padding: 20px; margin-bottom: 16px;">
+      <div class="card chart-card">
         <canvas id="financeChart" width="400" height="200"></canvas>
       </div>
 
@@ -5913,6 +6025,9 @@
 
     // ═════════════════ Format Helpers ═════════════════
     function formatMoney(amount) {
+      if (amount < 0) {
+        return 'Rp -' + Math.abs(amount).toLocaleString('id-ID');
+      }
       return 'Rp' + amount.toLocaleString('id-ID');
     }
 
