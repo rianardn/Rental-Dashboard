@@ -1649,21 +1649,6 @@
       </div>
       <div id="unitsList" style="margin-bottom: 20px;"></div>
 
-      <!-- Unit Management Section (pindah ke bawah) -->
-      <div class="section-title">
-        <span>Manajemen Unit</span>
-      </div>
-      <div class="card">
-        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-          <input type="text" id="dashNewUnitName" placeholder="Nama unit baru (contoh: TV 5)" 
-                 style="flex: 1; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); 
-                        border-radius: 8px; color: var(--ps3-text); font-family: var(--font-body);">
-          <button onclick="addUnitFromDashboard()" class="btn" style="width: auto; padding: 12px 20px;">
-            + Tambah
-          </button>
-        </div>
-        <div id="dashUnitsManagement" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
-      </div>
     </div>
 
     <!-- Reports Page -->
@@ -1802,6 +1787,213 @@
       </div>
     </div>
 
+    <!-- Management Page -->
+    <div id="pageManagement" class="page">
+      <!-- Jadwal Section -->
+      <div class="card">
+        <div class="section-title">📅 Jadwal Booking</div>
+        <p style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 15px;">Kelola booking penyewa yang akan datang</p>
+        
+        <div class="form-group">
+          <label>Nama Pelanggan</label>
+          <input type="text" id="scheduleCustomer" placeholder="Nama penyewa">
+        </div>
+        <div class="form-group">
+          <label>No. Telepon</label>
+          <input type="text" id="schedulePhone" placeholder="Nomor WhatsApp/HP">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Tanggal</label>
+            <input type="date" id="scheduleDate">
+          </div>
+          <div class="form-group">
+            <label>Jam</label>
+            <input type="time" id="scheduleTime">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Unit (opsional)</label>
+          <select id="scheduleUnit">
+            <option value="">Pilih unit...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Durasi (menit)</label>
+          <input type="number" id="scheduleDuration" placeholder="120" min="30" step="30">
+        </div>
+        <div class="form-group">
+          <label>Catatan</label>
+          <input type="text" id="scheduleNote" placeholder="Catatan tambahan">
+        </div>
+        <button class="btn" onclick="addSchedule()">Tambah Jadwal</button>
+      </div>
+      
+      <!-- Schedule List -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="section-title">Daftar Jadwal</div>
+        <div id="scheduleList" style="max-height: 300px; overflow-y: auto;">
+          <p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada jadwal booking</p>
+        </div>
+      </div>
+
+      <!-- Inventory Section -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="section-title">📦 Inventori & Peralatan</div>
+        <p style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 15px;">Kelola aset dan peralatan bisnis</p>
+        
+        <div class="form-group">
+          <label>Nama Item</label>
+          <input type="text" id="inventoryName" placeholder="Contoh: Stik PS3 Original">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Kategori</label>
+            <select id="inventoryCategory">
+              <option value="">Pilih kategori...</option>
+              <option value="console">Console</option>
+              <option value="controller">Controller/Stik</option>
+              <option value="tv">TV/Monitor</option>
+              <option value="accessories">Aksesoris</option>
+              <option value="furniture">Furniture</option>
+              <option value="other">Lainnya</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Kondisi</label>
+            <select id="inventoryCondition">
+              <option value="excellent">Sangat Baik</option>
+              <option value="good" selected>Baik</option>
+              <option value="fair">Cukup</option>
+              <option value="poor">Kurang Baik</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Jumlah</label>
+            <input type="number" id="inventoryQty" value="1" min="1">
+          </div>
+          <div class="form-group">
+            <label>Satuan</label>
+            <input type="text" id="inventoryUnit" value="pcs" placeholder="pcs, unit, set">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Lokasi Penyimpanan</label>
+          <input type="text" id="inventoryLocation" placeholder="Contoh: Rak A, Lemari B">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Tanggal Beli</label>
+            <input type="date" id="inventoryPurchaseDate">
+          </div>
+          <div class="form-group">
+            <label>Harga Beli (Rp)</label>
+            <input type="number" id="inventoryPurchasePrice" placeholder="0" min="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Catatan</label>
+          <input type="text" id="inventoryNote" placeholder="Catatan kondisi/riwayat">
+        </div>
+        <button class="btn" onclick="addInventory()">Tambah Inventori</button>
+      </div>
+      
+      <!-- Inventory List -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="section-title">Daftar Inventori</div>
+        <div id="inventoryList" style="max-height: 300px; overflow-y: auto;">
+          <p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada item inventori</p>
+        </div>
+      </div>
+
+      <!-- Initial Capital Section -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="section-title">💰 Modal Awal & Investasi</div>
+        <p style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 15px;">Catat modal awal dan proyeksi balik modal</p>
+        
+        <!-- Capital Input -->
+        <div style="background: rgba(0,170,0,0.1); border: 1px solid var(--ps3-green); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+          <div class="section-title" style="color: var(--ps3-green);">➕ Tambah Modal</div>
+          <div class="form-group">
+            <label>Jumlah Modal (Rp)</label>
+            <input type="number" id="capitalAmount" placeholder="5000000" min="0">
+          </div>
+          <div class="form-group">
+            <label>Deskripsi/Sumber</label>
+            <input type="text" id="capitalDesc" placeholder="Contoh: Modal dari tabungan pribadi">
+          </div>
+          <div class="form-group">
+            <label>Tanggal</label>
+            <input type="date" id="capitalDate">
+          </div>
+          <button class="btn" style="background: linear-gradient(135deg, #00aa00, #00cc00, #00aa00);" onclick="addCapital()">Catat Modal</button>
+        </div>
+        
+        <!-- Capital Expenses -->
+        <div style="background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+          <div class="section-title" style="color: var(--ps3-red);">➖ Pengeluaran Investasi</div>
+          <div class="form-group">
+            <label>Nama Item/Investasi</label>
+            <input type="text" id="capitalExpenseItem" placeholder="Contoh: Beli PS3 bekas">
+          </div>
+          <div class="form-group">
+            <label>Kategori</label>
+            <select id="capitalExpenseCategory">
+              <option value="">Pilih kategori...</option>
+              <option value="console">Pembelian Console</option>
+              <option value="tv">Pembelian TV/Monitor</option>
+              <option value="furniture">Furniture/Renovasi</option>
+              <option value="accessories">Aksesoris</option>
+              <option value="other">Lainnya</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Jumlah (Rp)</label>
+            <input type="number" id="capitalExpenseAmount" placeholder="2500000" min="0">
+          </div>
+          <div class="form-group">
+            <label>Tanggal</label>
+            <input type="date" id="capitalExpenseDate">
+          </div>
+          <button class="btn btn-red" onclick="addCapitalExpense()">Catat Pengeluaran</button>
+        </div>
+        
+        <!-- ROI Summary -->
+        <div id="roiSummary" style="background: rgba(192,192,192,0.1); border: 1px solid var(--ps3-silver); border-radius: 12px; padding: 15px;">
+          <div class="section-title">📊 Proyeksi Balik Modal</div>
+          <div id="roiContent">
+            <p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada data untuk proyeksi</p>
+          </div>
+        </div>
+        
+        <!-- Capital History -->
+        <div style="margin-top: 20px;">
+          <div class="section-title">Riwayat Modal & Investasi</div>
+          <div id="capitalHistory" style="max-height: 200px; overflow-y: auto;">
+            <p style="text-align: center; color: var(--ps3-muted); padding: 15px;">Belum ada data modal</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Unit Management Section (Moved from Dashboard/Settings) -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="section-title">🎮 Manajemen Unit</div>
+        <p style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 15px;">Tambah, hapus, atau ubah nama unit PS</p>
+        
+        <div class="form-group">
+          <label>Nama Unit Baru</label>
+          <input type="text" id="newMgmtUnitName" placeholder="Contoh: PS3 Slim 1">
+        </div>
+        <button class="btn" onclick="addUnitFromManagement()">Tambah Unit</button>
+        
+        <div id="mgmtUnitList" style="margin-top: 20px;">
+          <p style="text-align: center; color: var(--ps3-muted); padding: 15px;">Memuat daftar unit...</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Settings Page -->
     <div id="pageSettings" class="page">
       <div class="card">
@@ -1862,15 +2054,6 @@
       </div>
 
       <div class="card" style="margin-top: 20px;">
-        <div class="section-title">Manajemen Unit</div>
-        <div class="form-group">
-          <label>Nama Unit Baru</label>
-          <input type="text" id="newUnitName" placeholder="Contoh: TV 5">
-        </div>
-        <button class="btn" onclick="addUnit()">Tambah Unit</button>
-      </div>
-
-      <div class="card" style="margin-top: 20px;">
         <div class="section-title">Akun</div>
         <button class="btn btn-red" onclick="logout()">Logout</button>
       </div>
@@ -1885,6 +2068,10 @@
       <button class="nav-btn" onclick="showPage('pageReports')">
         <span class="nav-icon">📊</span>
         <span>Laporan</span>
+      </button>
+      <button class="nav-btn" onclick="showPage('pageManagement')">
+        <span class="nav-icon">📋</span>
+        <span>Manajemen</span>
       </button>
       <button class="nav-btn" onclick="showPage('pageSettings')">
         <span class="nav-icon">⚙️</span>
@@ -4953,8 +5140,8 @@
       }
     }
     
-    async function addUnitFromDashboard() {
-      const nameInput = document.getElementById('dashNewUnitName');
+    async function addUnitFromManagement() {
+      const nameInput = document.getElementById('newMgmtUnitName');
       const name = nameInput.value.trim();
       
       if (!name) {
@@ -4966,7 +5153,8 @@
         await api('POST', '/units', { name });
         nameInput.value = '';
         await loadData();
-        renderDashboard();
+        renderManagementUnits();
+        renderDashboard(); // Refresh dashboard too
         showToast('Unit ditambahkan', 'success');
       } catch (error) {
         showToast(error.message, 'error');
@@ -4988,6 +5176,10 @@
         await api('DELETE', `/units/${unitId}`);
         await loadData();
         renderDashboard();
+        // Also refresh management page if we're on it
+        if (document.getElementById('pageManagement').classList.contains('active')) {
+          renderManagementUnits();
+        }
         showToast('Unit dihapus', 'success');
       } catch (error) {
         showToast(error.message, 'error');
@@ -5002,6 +5194,10 @@
         await api('PUT', `/units/${unitId}`, { name: newName.trim() });
         await loadData();
         renderDashboard();
+        // Also refresh management page if we're on it
+        if (document.getElementById('pageManagement').classList.contains('active')) {
+          renderManagementUnits();
+        }
         showToast('Nama unit diperbarui', 'success');
       } catch (error) {
         showToast(error.message, 'error');
@@ -5139,6 +5335,23 @@
         const businessName = settings.businessName || 'PS3 Rental';
         document.getElementById('pageTitle').textContent = businessName + ' - Manager';
         document.querySelector('.header-title').innerHTML = businessName.replace(/(.+?)\s*(\S+)$/, '$1 <span>$2</span>');
+      }
+      
+      if (pageId === 'pageManagement') {
+        // Load management page data
+        renderSchedules();
+        renderInventory();
+        renderCapitalSummary();
+        renderCapitalHistory();
+        renderManagementUnits();
+        populateScheduleUnitSelect();
+        
+        // Set default dates
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('scheduleDate').value = today;
+        document.getElementById('capitalDate').value = today;
+        document.getElementById('capitalExpenseDate').value = today;
+        document.getElementById('inventoryPurchaseDate').value = today;
       }
     }
 
@@ -6206,6 +6419,559 @@
       }
     `;
     document.head.appendChild(toastStyles);
+
+    // ═════════════════ Management Functions ═════════════════
+    // Data storage for management
+    let schedules = [];
+    let inventory = [];
+    let capitalData = { capital: [], expenses: [], summary: { totalCapital: 0, totalSpent: 0, remaining: 0 } };
+
+    // Populate unit select for schedules
+    function populateScheduleUnitSelect() {
+      const select = document.getElementById('scheduleUnit');
+      if (!select) return;
+      
+      select.innerHTML = '<option value="">Pilih unit...</option>';
+      units.forEach(unit => {
+        const option = document.createElement('option');
+        option.value = unit.id;
+        option.textContent = unit.name;
+        select.appendChild(option);
+      });
+    }
+
+    // Schedule Functions
+    async function addSchedule() {
+      const customer = document.getElementById('scheduleCustomer').value.trim();
+      const phone = document.getElementById('schedulePhone').value.trim();
+      const date = document.getElementById('scheduleDate').value;
+      const time = document.getElementById('scheduleTime').value;
+      const unitId = document.getElementById('scheduleUnit').value;
+      const duration = parseInt(document.getElementById('scheduleDuration').value) || 0;
+      const note = document.getElementById('scheduleNote').value.trim();
+      
+      if (!customer || !date) {
+        showToast('Nama pelanggan dan tanggal wajib diisi', 'error');
+        return;
+      }
+      
+      const unitName = unitId ? units.find(u => u.id == unitId)?.name || '' : '';
+      
+      try {
+        await api('POST', '/schedules', {
+          customer,
+          phone,
+          unitId: unitId || null,
+          unitName,
+          scheduledDate: date,
+          scheduledTime: time,
+          duration,
+          note
+        });
+        
+        // Clear form
+        document.getElementById('scheduleCustomer').value = '';
+        document.getElementById('schedulePhone').value = '';
+        document.getElementById('scheduleTime').value = '';
+        document.getElementById('scheduleDuration').value = '';
+        document.getElementById('scheduleNote').value = '';
+        document.getElementById('scheduleUnit').value = '';
+        
+        await loadSchedules();
+        renderSchedules();
+        showToast('Jadwal booking ditambahkan', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    async function loadSchedules() {
+      try {
+        schedules = await api('GET', '/schedules');
+      } catch (error) {
+        console.error('Failed to load schedules:', error);
+        schedules = [];
+      }
+    }
+
+    function renderSchedules() {
+      const container = document.getElementById('scheduleList');
+      if (!container) return;
+      
+      if (schedules.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada jadwal booking</p>';
+        return;
+      }
+      
+      // Sort by date (newest first)
+      const sorted = [...schedules].sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
+      
+      const today = new Date().toISOString().split('T')[0];
+      
+      container.innerHTML = sorted.map(s => {
+        const isToday = s.scheduledDate === today;
+        const isPast = s.scheduledDate < today;
+        const statusClass = s.status === 'completed' ? 'completed' : (s.status === 'cancelled' ? 'cancelled' : (isPast ? 'overdue' : 'pending'));
+        const statusText = s.status === 'completed' ? '✅ Selesai' : (s.status === 'cancelled' ? '❌ Dibatalkan' : (isToday ? '📅 Hari Ini' : (isPast ? '⚠️ Lewat' : '⏳ Menunggu')));
+        
+        return `
+          <div style="background: ${isToday ? 'rgba(230,0,18,0.1)' : 'var(--ps3-surface)'}; border: 1px solid ${isToday ? 'var(--ps3-red)' : 'var(--ps3-border)'}; border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+              <div style="font-weight: 600;">${s.customer}</div>
+              <span style="font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; background: ${getStatusColor(statusClass)}; color: #fff;">${statusText}</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">
+              📅 ${formatDate(s.scheduledDate)} ${s.scheduledTime ? '🕐 ' + s.scheduledTime : ''}
+            </div>
+            ${s.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${s.unitName}</div>` : ''}
+            ${s.phone ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">📞 ${s.phone}</div>` : ''}
+            ${s.duration ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">⏱️ ${s.duration} menit</div>` : ''}
+            ${s.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic;">💬 ${s.note}</div>` : ''}
+            <div style="display: flex; gap: 8px; margin-top: 10px;">
+              ${s.status === 'pending' ? `
+                <button onclick="updateScheduleStatus(${s.id}, 'completed')" style="background: var(--ps3-green); color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600;">✅ Selesai</button>
+                <button onclick="updateScheduleStatus(${s.id}, 'cancelled')" style="background: var(--ps3-red); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600;">❌ Batal</button>
+              ` : ''}
+              <button onclick="deleteSchedule(${s.id})" style="background: var(--ps3-border); color: var(--ps3-text); border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">🗑️ Hapus</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function getStatusColor(status) {
+      const colors = {
+        completed: 'var(--ps3-green)',
+        cancelled: 'var(--ps3-red)',
+        pending: 'var(--ps3-yellow)',
+        overdue: '#ff6600'
+      };
+      return colors[status] || 'var(--ps3-muted)';
+    }
+
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+      return date.toLocaleDateString('id-ID', options);
+    }
+
+    async function updateScheduleStatus(id, status) {
+      try {
+        await api('PUT', `/schedules/${id}`, { status });
+        await loadSchedules();
+        renderSchedules();
+        showToast(`Status jadwal diperbarui`, 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    async function deleteSchedule(id) {
+      if (!confirm('Hapus jadwal ini?')) return;
+      
+      try {
+        await api('DELETE', `/schedules/${id}`);
+        await loadSchedules();
+        renderSchedules();
+        showToast('Jadwal dihapus', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    // Inventory Functions
+    async function addInventory() {
+      const name = document.getElementById('inventoryName').value.trim();
+      const category = document.getElementById('inventoryCategory').value;
+      const quantity = parseInt(document.getElementById('inventoryQty').value) || 1;
+      const unit = document.getElementById('inventoryUnit').value.trim() || 'pcs';
+      const condition = document.getElementById('inventoryCondition').value;
+      const location = document.getElementById('inventoryLocation').value.trim();
+      const purchaseDate = document.getElementById('inventoryPurchaseDate').value;
+      const purchasePrice = parseFloat(document.getElementById('inventoryPurchasePrice').value) || 0;
+      const note = document.getElementById('inventoryNote').value.trim();
+      
+      if (!name) {
+        showToast('Nama item wajib diisi', 'error');
+        return;
+      }
+      
+      try {
+        await api('POST', '/inventory', {
+          name,
+          category,
+          quantity,
+          unit,
+          condition,
+          location,
+          purchaseDate,
+          purchasePrice,
+          note
+        });
+        
+        // Clear form
+        document.getElementById('inventoryName').value = '';
+        document.getElementById('inventoryCategory').value = '';
+        document.getElementById('inventoryQty').value = '1';
+        document.getElementById('inventoryUnit').value = 'pcs';
+        document.getElementById('inventoryCondition').value = 'good';
+        document.getElementById('inventoryLocation').value = '';
+        document.getElementById('inventoryPurchaseDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('inventoryPurchasePrice').value = '';
+        document.getElementById('inventoryNote').value = '';
+        
+        await loadInventory();
+        renderInventory();
+        showToast('Item inventori ditambahkan', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    async function loadInventory() {
+      try {
+        inventory = await api('GET', '/inventory');
+      } catch (error) {
+        console.error('Failed to load inventory:', error);
+        inventory = [];
+      }
+    }
+
+    function renderInventory() {
+      const container = document.getElementById('inventoryList');
+      if (!container) return;
+      
+      if (inventory.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada item inventori</p>';
+        return;
+      }
+      
+      // Group by category
+      const byCategory = {};
+      inventory.forEach(item => {
+        const cat = item.category || 'Lainnya';
+        if (!byCategory[cat]) byCategory[cat] = [];
+        byCategory[cat].push(item);
+      });
+      
+      const categoryLabels = {
+        console: '🎮 Console',
+        controller: '🕹️ Controller/Stik',
+        tv: '📺 TV/Monitor',
+        accessories: '🔌 Aksesoris',
+        furniture: '🪑 Furniture',
+        other: '📦 Lainnya'
+      };
+      
+      const conditionLabels = {
+        excellent: '🟢 Sangat Baik',
+        good: '🔵 Baik',
+        fair: '🟡 Cukup',
+        poor: '🔴 Kurang Baik'
+      };
+      
+      container.innerHTML = Object.entries(byCategory).map(([cat, items]) => `
+        <div style="margin-bottom: 15px;">
+          <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ps3-muted); margin-bottom: 8px; border-bottom: 1px solid var(--ps3-border); padding-bottom: 4px;">
+            ${categoryLabels[cat] || cat}
+          </div>
+          ${items.map(item => `
+            <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="font-weight: 600;">${item.name}</div>
+                <span style="font-size: 0.7rem; color: var(--ps3-muted);">${item.quantity} ${item.unit}</span>
+              </div>
+              <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 4px;">
+                ${conditionLabels[item.condition] || item.condition}
+                ${item.location ? `• 📍 ${item.location}` : ''}
+                ${item.purchasePrice ? `• 💰 Rp${item.purchasePrice.toLocaleString()}` : ''}
+              </div>
+              ${item.note ? `<div style="font-size: 0.75rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${item.note}</div>` : ''}
+              <div style="display: flex; gap: 8px; margin-top: 10px;">
+                <button onclick="deleteInventory(${item.id})" style="background: var(--ps3-border); color: var(--ps3-text); border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">🗑️ Hapus</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+
+    async function deleteInventory(id) {
+      if (!confirm('Hapus item ini dari inventori?')) return;
+      
+      try {
+        await api('DELETE', `/inventory/${id}`);
+        await loadInventory();
+        renderInventory();
+        showToast('Item inventori dihapus', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    // Capital Functions
+    async function addCapital() {
+      const amount = parseFloat(document.getElementById('capitalAmount').value) || 0;
+      const description = document.getElementById('capitalDesc').value.trim();
+      const date = document.getElementById('capitalDate').value;
+      
+      if (amount <= 0) {
+        showToast('Jumlah modal harus lebih dari 0', 'error');
+        return;
+      }
+      
+      try {
+        await api('POST', '/capital', {
+          amount,
+          description,
+          date
+        });
+        
+        document.getElementById('capitalAmount').value = '';
+        document.getElementById('capitalDesc').value = '';
+        
+        await loadCapital();
+        renderCapitalSummary();
+        renderCapitalHistory();
+        showToast('Modal berhasil dicatat', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    async function addCapitalExpense() {
+      const item = document.getElementById('capitalExpenseItem').value.trim();
+      const category = document.getElementById('capitalExpenseCategory').value;
+      const amount = parseFloat(document.getElementById('capitalExpenseAmount').value) || 0;
+      const date = document.getElementById('capitalExpenseDate').value;
+      
+      if (!item || amount <= 0) {
+        showToast('Nama item dan jumlah wajib diisi', 'error');
+        return;
+      }
+      
+      try {
+        await api('POST', '/capital/expenses', {
+          item,
+          category,
+          amount,
+          date
+        });
+        
+        document.getElementById('capitalExpenseItem').value = '';
+        document.getElementById('capitalExpenseCategory').value = '';
+        document.getElementById('capitalExpenseAmount').value = '';
+        
+        await loadCapital();
+        renderCapitalSummary();
+        renderCapitalHistory();
+        showToast('Pengeluaran investasi dicatat', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    async function loadCapital() {
+      try {
+        const response = await api('GET', '/capital');
+        capitalData = response;
+      } catch (error) {
+        console.error('Failed to load capital:', error);
+        capitalData = { capital: [], expenses: [], summary: { totalCapital: 0, totalSpent: 0, remaining: 0 } };
+      }
+    }
+
+    async function renderCapitalSummary() {
+      const container = document.getElementById('roiContent');
+      if (!container) return;
+      
+      // Load ROI projections from API
+      let projections = {};
+      try {
+        const roiResponse = await api('GET', '/stats/roi');
+        projections = roiResponse.projections || {};
+      } catch (e) {
+        console.log('ROI stats not available, using basic calculations');
+      }
+      
+      const totalCapital = capitalData.summary?.totalCapital || 0;
+      const totalSpent = capitalData.summary?.totalSpent || 0;
+      const remaining = capitalData.summary?.remaining || 0;
+      
+      if (totalCapital === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada data modal. Tambahkan modal awal untuk melihat proyeksi.</p>';
+        return;
+      }
+      
+      const avgDaily = projections.avgDailyRevenue || 0;
+      const medianDaily = projections.medianDailyRevenue || 0;
+      const daysToBreakEvenAvg = projections.daysToBreakEvenAvg || 0;
+      const daysToBreakEvenMedian = projections.daysToBreakEvenMedian || 0;
+      const monthlyProfitAvg = projections.monthlyProfitAvg || 0;
+      const monthlyProfitMedian = projections.monthlyProfitMedian || 0;
+      
+      container.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+          <div style="background: rgba(0,170,0,0.1); border: 1px solid var(--ps3-green); border-radius: 8px; padding: 10px; text-align: center;">
+            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--ps3-muted); margin-bottom: 4px;">Total Modal</div>
+            <div style="font-size: 1.1rem; font-weight: 600; color: var(--ps3-green);">Rp${totalCapital.toLocaleString()}</div>
+          </div>
+          <div style="background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 8px; padding: 10px; text-align: center;">
+            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--ps3-muted); margin-bottom: 4px;">Sudah Terpakai</div>
+            <div style="font-size: 1.1rem; font-weight: 600; color: var(--ps3-red);">Rp${totalSpent.toLocaleString()}</div>
+          </div>
+        </div>
+        
+        <div style="background: rgba(245,166,35,0.1); border: 1px solid var(--ps3-yellow); border-radius: 8px; padding: 10px; text-align: center; margin-bottom: 15px;">
+          <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--ps3-muted); margin-bottom: 4px;">Sisa Modal Belum Terinvestasi</div>
+          <div style="font-size: 1.2rem; font-weight: 600; color: var(--ps3-yellow);">Rp${remaining.toLocaleString()}</div>
+        </div>
+        
+        ${avgDaily > 0 ? `
+          <div style="border-top: 1px solid var(--ps3-border); padding-top: 15px;">
+            <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ps3-muted); margin-bottom: 10px; text-align: center;">📊 Proyeksi Balik Modal</div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+              <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 4px;">Rata-rata Harian</div>
+                <div style="font-size: 1rem; font-weight: 600; color: var(--ps3-text);">Rp${Math.round(avgDaily).toLocaleString()}</div>
+              </div>
+              <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 4px;">Median Harian</div>
+                <div style="font-size: 1rem; font-weight: 600; color: var(--ps3-text);">Rp${Math.round(medianDaily).toLocaleString()}</div>
+              </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+              <div style="background: rgba(0,170,0,0.05); border: 1px solid var(--ps3-green); border-radius: 8px; padding: 10px; text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 4px;">Est. BEP (Rata-rata)</div>
+                <div style="font-size: 1rem; font-weight: 600; color: var(--ps3-green);">${daysToBreakEvenAvg} hari</div>
+                ${projections.breakEvenDateAvg ? `<div style="font-size: 0.7rem; color: var(--ps3-muted); margin-top: 2px;">${formatDate(projections.breakEvenDateAvg)}</div>` : ''}
+              </div>
+              <div style="background: rgba(0,170,0,0.05); border: 1px solid var(--ps3-green); border-radius: 8px; padding: 10px; text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 4px;">Est. BEP (Median)</div>
+                <div style="font-size: 1rem; font-weight: 600; color: var(--ps3-green);">${daysToBreakEvenMedian} hari</div>
+                ${projections.breakEvenDateMedian ? `<div style="font-size: 0.7rem; color: var(--ps3-muted); margin-top: 2px;">${formatDate(projections.breakEvenDateMedian)}</div>` : ''}
+              </div>
+            </div>
+            
+            <div style="background: rgba(192,192,192,0.1); border: 1px solid var(--ps3-silver); border-radius: 8px; padding: 10px; text-align: center;">
+              <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 4px;">Estimasi Profit Bulanan (Setelah BEP)</div>
+              <div style="font-size: 1.1rem; font-weight: 600; color: var(--ps3-silver);">
+                Rp${Math.round(monthlyProfitAvg).toLocaleString()} - Rp${Math.round(monthlyProfitMedian).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        ` : '<p style="text-align: center; color: var(--ps3-muted); font-size: 0.8rem; padding: 10px;">Belum cukup data transaksi untuk proyeksi. Minimal 2 hari dengan transaksi.</p>'}
+      `;
+    }
+
+    function renderCapitalHistory() {
+      const container = document.getElementById('capitalHistory');
+      if (!container) return;
+      
+      const allItems = [
+        ...(capitalData.capital || []).map(c => ({ ...c, type: 'capital' })),
+        ...(capitalData.expenses || []).map(e => ({ ...e, type: 'expense' }))
+      ].sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
+      
+      if (allItems.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 15px;">Belum ada data modal</p>';
+        return;
+      }
+      
+      container.innerHTML = allItems.map(item => {
+        if (item.type === 'capital') {
+          return `
+            <div style="background: rgba(0,170,0,0.1); border-left: 3px solid var(--ps3-green); padding: 10px; margin-bottom: 8px; border-radius: 0 8px 8px 0;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="font-weight: 600; color: var(--ps3-green);">+ Rp${item.amount.toLocaleString()}</span>
+                <span style="font-size: 0.75rem; color: var(--ps3-muted);">${formatDate(item.date)}</span>
+              </div>
+              ${item.description ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">${item.description}</div>` : ''}
+            </div>
+          `;
+        } else {
+          return `
+            <div style="background: rgba(230,0,18,0.1); border-left: 3px solid var(--ps3-red); padding: 10px; margin-bottom: 8px; border-radius: 0 8px 8px 0;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="font-weight: 600; color: var(--ps3-red);">- Rp${item.amount.toLocaleString()}</span>
+                <span style="font-size: 0.75rem; color: var(--ps3-muted);">${formatDate(item.date)}</span>
+              </div>
+              <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">${item.item}</div>
+              ${item.category ? `<div style="font-size: 0.7rem; color: var(--ps3-muted);">${item.category}</div>` : ''}
+            </div>
+          `;
+        }
+      }).join('');
+    }
+
+    async function deleteCapitalExpense(id) {
+      if (!confirm('Hapus pengeluaran investasi ini?')) return;
+      
+      try {
+        await api('DELETE', `/capital/expenses/${id}`);
+        await loadCapital();
+        renderCapitalSummary();
+        renderCapitalHistory();
+        showToast('Pengeluaran dihapus', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    // Management Unit List (for the new Management page)
+    function renderManagementUnits() {
+      const container = document.getElementById('mgmtUnitList');
+      if (!container) return;
+      
+      if (units.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 15px;">Belum ada unit</p>';
+        return;
+      }
+      
+      container.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+          ${units.map(unit => `
+            <div style="background: ${unit.active ? 'rgba(0,170,0,0.1)' : 'var(--ps3-surface)'}; 
+                        border: 1px solid ${unit.active ? 'var(--ps3-green)' : 'var(--ps3-border)'}; 
+                        border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: 600;">${unit.name}</div>
+                <div style="font-size: 0.75rem; color: var(--ps3-muted);">
+                  ${unit.active ? '🟢 Sedang aktif' : '⚫ Tersedia'}
+                </div>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button onclick="renameUnit(${unit.id}, '${unit.name.replace(/'/g, "\\'")}')" 
+                        style="background: var(--ps3-border); color: var(--ps3-text); border: none; 
+                               padding: 6px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer;"
+                        ${unit.active ? 'disabled' : ''} title="${unit.active ? 'Tidak bisa rename saat aktif' : 'Rename'}">
+                  ✏️
+                </button>
+                <button onclick="deleteUnit(${unit.id})" 
+                        style="background: var(--ps3-red); color: #fff; border: none; 
+                               padding: 6px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer;"
+                        ${unit.active ? 'disabled' : ''} title="${unit.active ? 'Tidak bisa hapus saat aktif' : 'Hapus'}">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    // Extend loadData to include management data
+    const originalLoadData = loadData;
+    loadData = async function() {
+      await originalLoadData();
+      await Promise.all([
+        loadSchedules(),
+        loadInventory(),
+        loadCapital()
+      ]);
+    };
 
     // ═════════════════ Event Listeners ═════════════════
     document.getElementById('loginForm').addEventListener('submit', (e) => {

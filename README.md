@@ -2,7 +2,7 @@
 
 A complete rental management solution for PlayStation 3 rental businesses.
 
-![Version](https://img.shields.io/badge/version-2.2.0-blue)
+![Version](https://img.shields.io/badge/version-2.3.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## ✨ Features
@@ -15,6 +15,7 @@ A complete rental management solution for PlayStation 3 rental businesses.
 - 📈 **Reports & Analytics**: Daily, weekly, monthly, yearly views
 - 💾 **Import/Export**: JSON backup & CSV export with "I AGREE" confirmation
 - 💸 **Expense Tracking**: Track business expenses
+- 📋 **Management Page**: Booking schedules, inventory, capital & ROI, unit management
 - 🔔 **Audio Alert System**: Chill/relaxing jingles in the final 30 seconds
 - 🔕 **Mute Button**: Stop alarm button appears when jingle is playing
 - ⏲️ **Flexible Duration**: Dropdown 1-5 Hours, Custom minutes, or Unlimited
@@ -161,10 +162,66 @@ Advanced search and filtering for both income transactions and expenses with Dis
 
 ### Settings
 - Configure rental rates
-- Add/remove/rename units
 - Import/export data with safety check
 - Manage business settings
 - **Warning threshold**: Visual warning setting (minutes)
+
+### Management (Manajemen)
+
+Centralized management hub with 4 sections:
+
+**📅 Jadwal (Booking Schedule)**
+- Record advance bookings from customers
+- Track customer name, phone, date, time, duration
+- Optional unit assignment for reservation
+- Status tracking: Pending, Completed, Cancelled
+- Visual indicators: Today's bookings highlighted in red
+- Quick actions: Mark complete, cancel, or delete
+
+**📦 Inventory (Asset Tracking)**
+- Track all business equipment and assets
+- Categories: Console, Controller/Stik, TV/Monitor, Accessories, Furniture, Other
+- Condition tracking: Excellent, Good, Fair, Poor
+- Storage location tracking
+- Purchase date and price logging
+- Grouped by category in visual grid
+
+**💰 Modal Awal (Initial Capital & ROI)**
+- Record initial capital investment
+- Track capital expenditures (equipment purchases, setup costs)
+- **Automatic ROI Projections:**
+  - Average daily revenue calculation
+  - Median daily revenue calculation
+  - Break-even point estimation (days to recover investment)
+  - Monthly profit projections after break-even
+- Visual capital flow: Green for capital in, Red for expenses
+- Real-time summary cards
+
+**🎮 Manajemen Unit**
+- Moved from Dashboard & Settings for centralization
+- Add new rental units
+- Rename existing units
+- Delete inactive units (units currently in use cannot be deleted)
+- Visual grid showing active/inactive status
+- Real-time sync with Dashboard
+
+**API Endpoints for Management:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/schedules` | List all bookings |
+| POST | `/api/schedules` | Create new booking |
+| PUT | `/api/schedules/:id` | Update booking status |
+| DELETE | `/api/schedules/:id` | Delete booking |
+| GET | `/api/inventory` | List all inventory |
+| POST | `/api/inventory` | Add inventory item |
+| PUT | `/api/inventory/:id` | Update inventory |
+| DELETE | `/api/inventory/:id` | Delete inventory |
+| GET | `/api/capital` | Get capital summary & history |
+| POST | `/api/capital` | Add initial capital |
+| POST | `/api/capital/expenses` | Add capital expense |
+| DELETE | `/api/capital/expenses/:id` | Delete capital expense |
+| GET | `/api/stats/roi` | Get ROI projections & break-even analysis |
 
 ## 🏗️ Architecture
 

@@ -26,6 +26,9 @@ if (!fs.existsSync(dataDir)) {
 // ─── SQLITE SETUP ─────────────────────────────────────────────
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
+db.pragma('synchronous = NORMAL');
+db.pragma('temp_store = MEMORY');
+db.pragma('mmap_size = 20971520');  // 20MB - safe for 256MB VM
 
 // Create tables if not exist
 db.exec(`
@@ -62,6 +65,60 @@ db.exec(`
     amount INTEGER,
     timestamp INTEGER,
     note TEXT
+  );
+  
+  -- Management: Schedules table for advance bookings
+  CREATE TABLE IF NOT EXISTS schedules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer TEXT NOT NULL,
+    phone TEXT,
+    unitId INTEGER,
+    unitName TEXT,
+    scheduledDate TEXT NOT NULL,
+    scheduledTime TEXT,
+    duration INTEGER,
+    note TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000),
+    FOREIGN KEY (unitId) REFERENCES units(id)
+  );
+  
+  -- Management: Inventory table for equipment/assets
+  CREATE TABLE IF NOT EXISTS inventory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT,
+    quantity INTEGER DEFAULT 1,
+    unit TEXT,
+    condition TEXT DEFAULT 'good',
+    purchaseDate TEXT,
+    purchasePrice REAL,
+    currentValue REAL,
+    location TEXT,
+    note TEXT,
+    status TEXT DEFAULT 'active',
+    created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
+  );
+  
+  -- Management: Initial Capital table
+  CREATE TABLE IF NOT EXISTS initial_capital (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    amount REAL NOT NULL,
+    description TEXT,
+    date TEXT,
+    source TEXT,
+    created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
+  );
+  
+  -- Management: Capital expenses (investments from initial capital)
+  CREATE TABLE IF NOT EXISTS capital_expenses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item TEXT NOT NULL,
+    category TEXT,
+    amount REAL NOT NULL,
+    date TEXT,
+    note TEXT,
+    created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
   );
 `);
 
@@ -346,6 +403,236 @@ app.post('/api/expenses', (req, res) => {
   });
   broadcast({ type: 'expenses', data: db.prepare('SELECT * FROM expenses ORDER BY timestamp DESC').all() });
   res.json({ ok: true, expense });
+});
+
+// ── Schedules ───────────────────────────────────────────────────
+app.get('/api/schedules', (req, res) => {
+  res.json(db.prepare('SELECT * FROM schedules ORDER BY scheduledDate DESC, scheduledTime ASC').all());
+});
+
+app.post('/api/schedules', (req, res) => {
+  const stmt = db.prepare(`
+    INSERT INTO schedules (customer, phone, unitId, unitName, scheduledDate, scheduledTime, duration, note, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const result = stmt.run(
+    req.body.customer,
+    req.body.phone || '',
+    req.body.unitId || null,
+    req.body.unitName || '',
+    req.body.scheduledDate,
+    req.body.scheduledTime || '',
+    req.body.duration || 0,
+    req.body.note || '',
+    req.body.status || 'pending'
+  );
+  const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(result.lastInsertRowid);
+  broadcast({ type: 'schedules', data: db.prepare('SELECT * FROM schedules ORDER BY scheduledDate DESC').all() });
+  res.json({ ok: true, schedule });
+});
+
+app.put('/api/schedules/:id', (req, res) => {
+  const stmt = db.prepare(`
+    UPDATE schedules SET
+      customer = ?, phone = ?, unitId = ?, unitName = ?, scheduledDate = ?, scheduledTime = ?,
+      duration = ?, note = ?, status = ?
+    WHERE id = ?
+  `);
+  stmt.run(
+    req.body.customer,
+    req.body.phone || '',
+    req.body.unitId || null,
+    req.body.unitName || '',
+    req.body.scheduledDate,
+    req.body.scheduledTime || '',
+    req.body.duration || 0,
+    req.body.note || '',
+    req.body.status || 'pending',
+    req.params.id
+  );
+  const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(req.params.id);
+  broadcast({ type: 'schedules', data: db.prepare('SELECT * FROM schedules ORDER BY scheduledDate DESC').all() });
+  res.json({ ok: true, schedule });
+});
+
+app.delete('/api/schedules/:id', (req, res) => {
+  db.prepare('DELETE FROM schedules WHERE id = ?').run(req.params.id);
+  broadcast({ type: 'schedules', data: db.prepare('SELECT * FROM schedules ORDER BY scheduledDate DESC').all() });
+  res.json({ ok: true });
+});
+
+// ── Inventory ───────────────────────────────────────────────────
+app.get('/api/inventory', (req, res) => {
+  res.json(db.prepare('SELECT * FROM inventory ORDER BY created_at DESC').all());
+});
+
+app.post('/api/inventory', (req, res) => {
+  const stmt = db.prepare(`
+    INSERT INTO inventory (name, category, quantity, unit, condition, purchaseDate, purchasePrice, currentValue, location, note, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const result = stmt.run(
+    req.body.name,
+    req.body.category || '',
+    req.body.quantity || 1,
+    req.body.unit || 'pcs',
+    req.body.condition || 'good',
+    req.body.purchaseDate || '',
+    req.body.purchasePrice || 0,
+    req.body.currentValue || req.body.purchasePrice || 0,
+    req.body.location || '',
+    req.body.note || '',
+    req.body.status || 'active'
+  );
+  const item = db.prepare('SELECT * FROM inventory WHERE id = ?').get(result.lastInsertRowid);
+  broadcast({ type: 'inventory', data: db.prepare('SELECT * FROM inventory ORDER BY created_at DESC').all() });
+  res.json({ ok: true, item });
+});
+
+app.put('/api/inventory/:id', (req, res) => {
+  const stmt = db.prepare(`
+    UPDATE inventory SET
+      name = ?, category = ?, quantity = ?, unit = ?, condition = ?, purchaseDate = ?,
+      purchasePrice = ?, currentValue = ?, location = ?, note = ?, status = ?
+    WHERE id = ?
+  `);
+  stmt.run(
+    req.body.name,
+    req.body.category || '',
+    req.body.quantity || 1,
+    req.body.unit || 'pcs',
+    req.body.condition || 'good',
+    req.body.purchaseDate || '',
+    req.body.purchasePrice || 0,
+    req.body.currentValue || req.body.purchasePrice || 0,
+    req.body.location || '',
+    req.body.note || '',
+    req.body.status || 'active',
+    req.params.id
+  );
+  const item = db.prepare('SELECT * FROM inventory WHERE id = ?').get(req.params.id);
+  broadcast({ type: 'inventory', data: db.prepare('SELECT * FROM inventory ORDER BY created_at DESC').all() });
+  res.json({ ok: true, item });
+});
+
+app.delete('/api/inventory/:id', (req, res) => {
+  db.prepare('DELETE FROM inventory WHERE id = ?').run(req.params.id);
+  broadcast({ type: 'inventory', data: db.prepare('SELECT * FROM inventory ORDER BY created_at DESC').all() });
+  res.json({ ok: true });
+});
+
+// ── Initial Capital ─────────────────────────────────────────────
+app.get('/api/capital', (req, res) => {
+  const capital = db.prepare('SELECT * FROM initial_capital ORDER BY created_at DESC').all();
+  const expenses = db.prepare('SELECT * FROM capital_expenses ORDER BY created_at DESC').all();
+  const totalCapital = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM initial_capital').get().total;
+  const totalSpent = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM capital_expenses').get().total;
+  res.json({
+    ok: true,
+    capital,
+    expenses,
+    summary: {
+      totalCapital,
+      totalSpent,
+      remaining: totalCapital - totalSpent
+    }
+  });
+});
+
+app.post('/api/capital', (req, res) => {
+  const stmt = db.prepare(`
+    INSERT INTO initial_capital (amount, description, date, source)
+    VALUES (?, ?, ?, ?)
+  `);
+  const result = stmt.run(
+    req.body.amount,
+    req.body.description || '',
+    req.body.date || new Date().toISOString().split('T')[0],
+    req.body.source || ''
+  );
+  const capital = db.prepare('SELECT * FROM initial_capital WHERE id = ?').get(result.lastInsertRowid);
+  broadcast({ type: 'capital', data: db.prepare('SELECT * FROM initial_capital ORDER BY created_at DESC').all() });
+  res.json({ ok: true, capital });
+});
+
+app.post('/api/capital/expenses', (req, res) => {
+  const stmt = db.prepare(`
+    INSERT INTO capital_expenses (item, category, amount, date, note)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+  const result = stmt.run(
+    req.body.item,
+    req.body.category || '',
+    req.body.amount,
+    req.body.date || new Date().toISOString().split('T')[0],
+    req.body.note || ''
+  );
+  const expense = db.prepare('SELECT * FROM capital_expenses WHERE id = ?').get(result.lastInsertRowid);
+  broadcast({ type: 'capital_expenses', data: db.prepare('SELECT * FROM capital_expenses ORDER BY created_at DESC').all() });
+  res.json({ ok: true, expense });
+});
+
+app.delete('/api/capital/expenses/:id', (req, res) => {
+  db.prepare('DELETE FROM capital_expenses WHERE id = ?').run(req.params.id);
+  broadcast({ type: 'capital_expenses', data: db.prepare('SELECT * FROM capital_expenses ORDER BY created_at DESC').all() });
+  res.json({ ok: true });
+});
+
+// ── ROI Statistics ─────────────────────────────────────────────
+app.get('/api/stats/roi', (req, res) => {
+  // Get revenue data for projections
+  const revenues = db.prepare('SELECT total FROM transactions').all().map(t => t.total);
+  const totalRevenue = revenues.reduce((a, b) => a + b, 0);
+  const avgRevenue = revenues.length > 0 ? totalRevenue / revenues.length : 0;
+  
+  // Calculate average daily revenue (based on unique days with transactions)
+  const dailyRevenues = db.prepare(`
+    SELECT DATE(timestamp/1000, 'unixepoch', 'localtime') as date, SUM(total) as daily_total
+    FROM transactions
+    GROUP BY date
+  `).all();
+  
+  const avgDailyRevenue = dailyRevenues.length > 0 
+    ? dailyRevenues.reduce((a, b) => a + b.daily_total, 0) / dailyRevenues.length 
+    : 0;
+  
+  // Calculate median daily revenue
+  const sortedDaily = dailyRevenues.map(d => d.daily_total).sort((a, b) => a - b);
+  const medianDailyRevenue = sortedDaily.length > 0 
+    ? (sortedDaily.length % 2 === 0 
+      ? (sortedDaily[sortedDaily.length/2 - 1] + sortedDaily[sortedDaily.length/2]) / 2
+      : sortedDaily[Math.floor(sortedDaily.length/2)])
+    : 0;
+  
+  // Get capital data
+  const totalCapital = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM initial_capital').get().total;
+  const totalCapitalSpent = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM capital_expenses').get().total;
+  
+  // Calculate break-even projections
+  const remainingCapital = totalCapital - totalCapitalSpent;
+  const daysToBreakEvenAvg = avgDailyRevenue > 0 ? Math.ceil(remainingCapital / avgDailyRevenue) : 0;
+  const daysToBreakEvenMedian = medianDailyRevenue > 0 ? Math.ceil(remainingCapital / medianDailyRevenue) : 0;
+  
+  // Calculate profit after break-even
+  const monthlyProfitAvg = avgDailyRevenue * 30;
+  const monthlyProfitMedian = medianDailyRevenue * 30;
+  
+  res.json({
+    ok: true,
+    projections: {
+      avgDailyRevenue,
+      medianDailyRevenue,
+      totalCapital,
+      totalCapitalSpent,
+      remainingCapital,
+      daysToBreakEvenAvg,
+      daysToBreakEvenMedian,
+      monthlyProfitAvg,
+      monthlyProfitMedian,
+      breakEvenDateAvg: daysToBreakEvenAvg > 0 ? new Date(Date.now() + daysToBreakEvenAvg * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : null,
+      breakEvenDateMedian: daysToBreakEvenMedian > 0 ? new Date(Date.now() + daysToBreakEvenMedian * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : null
+    }
+  });
 });
 
 // ─── WEBSOCKET ────────────────────────────────────────────────
