@@ -149,6 +149,11 @@ Advanced search and filtering for both income transactions and expenses with Dis
 - 🔄 One-click reset all filters
 - ⚡ Instant search response (300ms debounce)
 
+**UX Improvements:**
+- 🪟 **Auto-close "All Transactions" modal** when opening Edit/Delete/History modals (prevents z-index layering issues)
+- 📱 Mobile-optimized modal transitions
+- 🎯 Focus management for accessibility
+
 **Backend SQL Capabilities:**
 - Case-insensitive partial matching (COLLATE NOCASE)
 - Efficient indexed queries with WHERE clause composition
