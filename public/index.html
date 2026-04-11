@@ -3105,34 +3105,48 @@
           const catInfo = getExpenseCategoryInfo(e.item, e.category);
           const subCatEmoji = catInfo.subCategory ? getSubCategoryEmoji(catInfo.category, catInfo.subCategory) : '';
           return `
-          <div class="transaction-item" style="position: relative;" data-exp-id="${e.id || ''}">
-            <div class="transaction-header">
-              <div style="display: flex; flex-direction: column; align-items: flex-start; flex: 1; min-width: 0;">
-                <div class="transaction-unit" style="margin-bottom: 2px;">${catInfo.icon} ${catInfo.category}</div>
-                ${catInfo.subCategory ? `<div style="font-size: 0.9rem; color: var(--ps3-muted); text-align: left;">${subCatEmoji} ${catInfo.subCategory}</div>` : ''}
+          <div class="transaction-item" style="position: relative; padding: 14px;" data-exp-id="${e.id || ''}">
+            <!-- Row 1: Date (left) + Amount (right) -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
+                ${formatDateOnlyWIB(e.created_at)}
               </div>
-              <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-                <div class="transaction-amount" style="color: var(--ps3-red);">${formatMoney(e.amount)}</div>
-                <button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1.1rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Lihat riwayat">📋</button>
-                <button onclick="try { openEditExpenseModal('${e.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Edit pengeluaran">✏️</button>
-                <button onclick="try { openDeleteExpenseModal('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}', ${e.amount}); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1.1rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Hapus pengeluaran">🗑️</button>
+              <div class="transaction-amount" style="color: var(--ps3-red); font-size: 1.15rem; font-weight: 600;">
+                ${formatMoney(e.amount)}
               </div>
             </div>
-            <div class="transaction-meta" style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">
-              <div style="display: flex; justify-content: flex-end; font-size: 0.85rem; color: var(--ps3-muted);">
-                <span>${formatDateOnlyWIB(e.created_at)}</span>
+
+            <!-- Row 2: Category + Action Buttons -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${catInfo.subCategory ? '6px' : '10px'};">
+              <div class="transaction-unit" style="font-size: 1.05rem; line-height: 1.4; flex: 1; min-width: 0; padding-right: 10px;">
+                ${catInfo.icon} ${catInfo.category}
               </div>
-              <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; color: var(--ps3-muted); font-size: 0.8rem;">
-                <div style="text-align: left;">
-                  ${formatTimeOnlyWIB(e.created_at)}
-                </div>
-                <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
-                  <span style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
-                  <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${e.id || ''}</span>
-                </div>
-                <div style="text-align: right; font-style: italic;">
-                  ${e.note ? `💬 ${e.note}` : ' '}
-                </div>
+              <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                <button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat">📋</button>
+                <button onclick="try { openEditExpenseModal('${e.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Edit pengeluaran">✏️</button>
+                <button onclick="try { openDeleteExpenseModal('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}', ${e.amount}); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Hapus pengeluaran">🗑️</button>
+              </div>
+            </div>
+
+            <!-- Row 3: Sub-category (if exists) -->
+            ${catInfo.subCategory ? `
+            <div style="font-size: 0.95rem; color: var(--ps3-text); margin-bottom: 10px; padding-left: 2px;">
+              ${subCatEmoji} ${catInfo.subCategory}
+            </div>
+            ` : ''}
+
+            <!-- Row 4: Time | TX ID | Note -->
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-border); opacity: 0.85;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span>🕐</span>
+                <span>${formatTimeOnlyWIB(e.created_at)}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
+                <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${e.id || ''}</span>
+              </div>
+              <div style="font-style: italic; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right;">
+                ${e.note ? `💬 ${e.note}` : ''}
               </div>
             </div>
           </div>
@@ -3807,34 +3821,44 @@
         const catInfo = getExpenseCategoryInfo(e.item, e.category);
         const subCatEmoji = catInfo.subCategory ? getSubCategoryEmoji(catInfo.category, catInfo.subCategory) : '';
         return `
-        <div class="transaction-item" style="position: relative; margin-bottom: 12px;" data-exp-id="${e.id || ''}">
-          <div class="transaction-header">
-            <div style="display: flex; flex-direction: column; align-items: flex-start; flex: 1; min-width: 0;">
-              <div class="transaction-unit" style="margin-bottom: 2px;">${catInfo.icon} ${catInfo.category}</div>
-              ${catInfo.subCategory ? `<div style="font-size: 0.9rem; color: var(--ps3-muted); text-align: left;">${subCatEmoji} ${catInfo.subCategory}</div>` : ''}
+        <div class="transaction-item" style="position: relative; padding: 14px; margin-bottom: 12px;" data-exp-id="${e.id || ''}">
+          <!-- Row 1: Date (left) + Amount (right) -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
+              ${formatDate(new Date(e.date).getTime())}
             </div>
-            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-              <div class="transaction-amount" style="color: var(--ps3-red);">${formatMoney(e.amount)}</div>
-              <button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1.1rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Lihat riwayat">📋</button>
-              <button onclick="try { openEditExpenseModal('${e.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Edit pengeluaran">✏️</button>
-              <button onclick="try { openDeleteExpenseModal('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}', ${e.amount}); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1.1rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Hapus pengeluaran">🗑️</button>
+            <div class="transaction-amount" style="color: var(--ps3-red); font-size: 1.15rem; font-weight: 600;">
+              ${formatMoney(e.amount)}
             </div>
           </div>
-          <div class="transaction-details" style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; color: var(--ps3-muted);">
-              <span>${formatDate(new Date(e.date).getTime())}</span>
+
+          <!-- Row 2: Category + Action Buttons -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${catInfo.subCategory ? '6px' : '10px'};">
+            <div class="transaction-unit" style="font-size: 1.05rem; line-height: 1.4; flex: 1; min-width: 0; padding-right: 10px;">
+              ${catInfo.icon} ${catInfo.category}
             </div>
-            <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; color: var(--ps3-muted); font-size: 0.8rem;">
-              <div style="text-align: left; font-style: italic;">
-                ${e.note ? `💬 ${e.note}` : ' '}
-              </div>
-              <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
-                <span style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
-                <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${e.id || ''}</span>
-              </div>
-              <div style="text-align: right; color: var(--ps3-text);">
-                —
-              </div>
+            <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+              <button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat">📋</button>
+              <button onclick="try { openEditExpenseModal('${e.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Edit pengeluaran">✏️</button>
+              <button onclick="try { openDeleteExpenseModal('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}', ${e.amount}); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Hapus pengeluaran">🗑️</button>
+            </div>
+          </div>
+
+          <!-- Row 3: Sub-category (if exists) -->
+          ${catInfo.subCategory ? `
+          <div style="font-size: 0.95rem; color: var(--ps3-text); margin-bottom: 10px; padding-left: 2px;">
+            ${subCatEmoji} ${catInfo.subCategory}
+          </div>
+          ` : ''}
+
+          <!-- Row 4: Note | TX ID -->
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-border); opacity: 0.85;">
+            <div style="font-style: italic; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${e.note ? `💬 ${e.note}` : ''}
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
+              <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${e.id || ''}</span>
             </div>
           </div>
         </div>
@@ -4428,8 +4452,12 @@
 
     // Get sub-category emoji from EXPENSE_SUB_CATEGORIES
     function getSubCategoryEmoji(category, subCategory) {
-      if (!category || !subCategory || !EXPENSE_SUB_CATEGORIES[category]) return '📦';
-      const sub = EXPENSE_SUB_CATEGORIES[category].find(s => s.value === subCategory);
+      if (!category || !subCategory) return '📦';
+      const catKey = Object.keys(EXPENSE_SUB_CATEGORIES).find(k => k.toLowerCase() === category.toLowerCase().trim());
+      if (!catKey) return '📦';
+      const subCats = EXPENSE_SUB_CATEGORIES[catKey];
+      if (!subCats) return '📦';
+      const sub = subCats.find(s => s.value.toLowerCase().trim() === subCategory.toLowerCase().trim());
       return sub ? sub.label.charAt(0) : '📦';
     }
 
