@@ -150,7 +150,7 @@ Advanced search and filtering for both income transactions and expenses with Dis
 - ⚡ Instant search response (300ms debounce)
 
 **UX Improvements:**
-- 🪟 **Auto-close "All Transactions" modal** when opening Edit/Delete/History modals (prevents z-index layering issues)
+- 🪟 **Layered modals with z-index management** — Edit/Delete/History modals appear above "All Transactions" modal (z-index: 3000 vs 2000), keeping both open for context
 - 📱 Mobile-optimized modal transitions
 - 🎯 Focus management for accessibility
 
