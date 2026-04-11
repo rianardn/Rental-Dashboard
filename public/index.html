@@ -1703,36 +1703,6 @@
       </div>
       <div id="transactionsList"></div>
 
-      <div class="section-title" style="margin-top: 24px;">
-        <span>Export Laporan</span>
-      </div>
-      <div class="export-grid">
-        <button class="export-btn" onclick="exportCSV('today')">
-          <span class="icon">📊</span>
-          <span>Harian</span>
-        </button>
-        <button class="export-btn" onclick="exportCSV('week')">
-          <span class="icon">📈</span>
-          <span>Mingguan</span>
-        </button>
-        <button class="export-btn" onclick="exportCSV('month')">
-          <span class="icon">📉</span>
-          <span>Bulanan</span>
-        </button>
-        <button class="export-btn" onclick="exportCSV('year')">
-          <span class="icon">📅</span>
-          <span>Tahunan</span>
-        </button>
-        <button class="export-btn" onclick="exportCSV('all')">
-          <span class="icon">📁</span>
-          <span>Semua</span>
-        </button>
-        <button class="export-btn" onclick="exportFullBackup()">
-          <span class="icon">💾</span>
-          <span>Backup JSON</span>
-        </button>
-      </div>
-
       <!-- Expense Management Section -->
       <div class="section-title" style="margin-top: 24px;">
         <span>💸 Catat Pengeluaran</span>
@@ -1794,6 +1764,37 @@
         <span>Daftar Pengeluaran Periode Ini</span>
       </div>
       <div id="expensesList"></div>
+
+      <!-- Export Section - Moved to bottom after expense history -->
+      <div class="section-title" style="margin-top: 24px;">
+        <span>Export Laporan</span>
+      </div>
+      <div class="export-grid">
+        <button class="export-btn" onclick="exportCSV('today')">
+          <span class="icon">📊</span>
+          <span>Harian</span>
+        </button>
+        <button class="export-btn" onclick="exportCSV('week')">
+          <span class="icon">📈</span>
+          <span>Mingguan</span>
+        </button>
+        <button class="export-btn" onclick="exportCSV('month')">
+          <span class="icon">📉</span>
+          <span>Bulanan</span>
+        </button>
+        <button class="export-btn" onclick="exportCSV('year')">
+          <span class="icon">📅</span>
+          <span>Tahunan</span>
+        </button>
+        <button class="export-btn" onclick="exportCSV('all')">
+          <span class="icon">📁</span>
+          <span>Semua</span>
+        </button>
+        <button class="export-btn" onclick="exportFullBackup()">
+          <span class="icon">💾</span>
+          <span>Backup JSON</span>
+        </button>
+      </div>
     </div>
 
     <!-- Settings Page -->
@@ -4303,16 +4304,56 @@
 
     // ═════════════════ OPEN ALL EXPENSES MODAL ═════════════════
     function openAllExpensesModal() {
-      // Reset filters to default state
+      const now = new Date();
+
+      // Set default date range based on current period (same as income)
+      let dateFrom = '', dateTo = '';
+      switch(currentPeriod) {
+        case 'today':
+          dateFrom = dateTo = getWIBDateISO();
+          break;
+        case 'week': {
+          const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+          dateFrom = weekAgo.toISOString().split('T')[0];
+          dateTo = getWIBDateISO();
+          break;
+        }
+        case 'month': {
+          const thisMonth = now.getMonth();
+          const thisYear = now.getFullYear();
+          dateFrom = `${thisYear}-${String(thisMonth + 1).padStart(2, '0')}-01`;
+          dateTo = getWIBDateISO();
+          break;
+        }
+        case 'year': {
+          const thisYear = now.getFullYear();
+          dateFrom = `${thisYear}-01-01`;
+          dateTo = getWIBDateISO();
+          break;
+        }
+        case 'all':
+        default:
+          dateFrom = '';
+          dateTo = '';
+          break;
+      }
+
+      // Reset filters to default state with period-based date range
       clearAllExpFilters();
-      
+
+      // Set date range in UI and state
+      document.getElementById('expFilterDateFrom').value = dateFrom;
+      document.getElementById('expFilterDateTo').value = dateTo;
+      expSearchState.dateFrom = dateFrom;
+      expSearchState.dateTo = dateTo;
+
       // Setup autocomplete data
       setupCategoryAutocomplete();
       setupItemAutocomplete();
-      
-      // Initial search (loads all expenses)
+
+      // Initial search (loads expenses for current period)
       searchExpenses();
-      
+
       openModal('modalAllExpenses');
     }
 
