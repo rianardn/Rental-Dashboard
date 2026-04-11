@@ -60,7 +60,7 @@ const db = new Database(DB_FILE);
 db.pragma('journal_mode = WAL');
 db.pragma('synchronous = NORMAL');
 db.pragma('temp_store = MEMORY');
-db.pragma('mmap_size = 30000000000');
+db.pragma('mmap_size = 20971520');  // 20MB - safe for 256MB VM
 
 // Create tables if not exist
 db.exec(`
