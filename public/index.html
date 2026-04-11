@@ -5154,6 +5154,10 @@
     let currentEditTransactionId = null;
 
     function openEditModal(transactionId) {
+      // Close "All Transactions" modal if open (fix z-index layering issue)
+      closeModal('modalAllTransactions');
+      closeModal('modalAllExpenses');
+      
       // Mobile-friendly debug - show toast immediately
       showToast('Membuka edit... ID: ' + transactionId, 'info');
       
@@ -5357,6 +5361,10 @@
 
     // View edit history from transaction list
     async function viewEditHistory(transactionId, customerName, unitName) {
+      // Close "All Transactions" modal if open (fix z-index layering issue)
+      closeModal('modalAllTransactions');
+      closeModal('modalAllExpenses');
+      
       if (!transactionId) {
         showToast('ID transaksi tidak valid', 'error');
         return;
@@ -5386,6 +5394,10 @@
     let currentDeleteTxId = null;
 
     function openDeleteTransactionModal(txId, customerName, unitName) {
+      // Close "All Transactions" modal if open (fix z-index layering issue)
+      closeModal('modalAllTransactions');
+      closeModal('modalAllExpenses');
+      
       if (!txId) {
         showToast('ID transaksi tidak valid', 'error');
         return;
@@ -5562,6 +5574,10 @@
     let currentEditExpenseCategory = null;
 
     function openEditExpenseModal(expenseId) {
+      // Close "All Transactions" modal if open (fix z-index layering issue)
+      closeModal('modalAllTransactions');
+      closeModal('modalAllExpenses');
+      
       showToast('Membuka edit pengeluaran... ID: ' + expenseId, 'info');
       
       currentEditExpenseId = expenseId;
@@ -5862,6 +5878,10 @@
     }
 
     async function viewExpenseEditHistory(expenseId, itemName) {
+      // Close "All Transactions" modal if open (fix z-index layering issue)
+      closeModal('modalAllTransactions');
+      closeModal('modalAllExpenses');
+      
       if (!expenseId) {
         showToast('ID pengeluaran tidak valid', 'error');
         return;
@@ -5888,6 +5908,10 @@
     let currentDeleteExpenseId = null;
 
     function openDeleteExpenseModal(expenseId, itemName, amount) {
+      // Close "All Transactions" modal if open (fix z-index layering issue)
+      closeModal('modalAllTransactions');
+      closeModal('modalAllExpenses');
+      
       if (!expenseId) {
         showToast('ID pengeluaran tidak valid', 'error');
         return;
