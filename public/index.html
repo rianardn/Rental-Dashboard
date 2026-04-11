@@ -2190,6 +2190,15 @@
                 </div>
               </div>
 
+              <!-- Unit Filter (Text Input with Autocomplete) -->
+              <div class="filter-field">
+                <label>🎮 Nama Unit</label>
+                <div class="autocomplete-wrapper">
+                  <input type="text" id="txFilterUnit" placeholder="Ketik nama unit..." oninput="onUnitInput()" onfocus="showUnitSuggestions()" autocomplete="off">
+                  <div id="unitSuggestions" class="suggestions-dropdown" style="display: none;"></div>
+                </div>
+              </div>
+
               <!-- Payment Method Filter -->
               <div class="filter-field">
                 <label>💳 Metode Pembayaran</label>
@@ -2230,6 +2239,7 @@
                   <option value="date">Tanggal</option>
                   <option value="amount">Jumlah</option>
                   <option value="customer">Nama Penyewa</option>
+                  <option value="unit">Nama Unit</option>
                   <option value="id">TX ID</option>
                 </select>
                 <select id="txSortOrder" onchange="searchTransactions()">
@@ -3182,6 +3192,7 @@
     let txSearchState = {
       search: '',
       customer: '',
+      unit: '',
       payment: '',
       amountMin: '',
       amountMax: '',
@@ -3238,6 +3249,7 @@
       txSearchState = {
         search: '',
         customer: '',
+        unit: '',
         payment: '',
         amountMin: '',
         amountMax: '',
@@ -3250,8 +3262,9 @@
         total: 0
       };
 
-      // Setup customer autocomplete
+      // Setup customer and unit autocomplete
       setupCustomerAutocomplete();
+      setupUnitAutocomplete();
 
       // Sync UI with state
       syncTxSearchUI();
@@ -3352,6 +3365,88 @@
       searchTransactions();
     }
 
+    // ═════════════════ Unit Autocomplete Functions ═════════════════
+    let unitAutocompleteTimer = null;
+    let uniqueUnits = [];
+
+    // Setup unit autocomplete from global transactions data
+    function setupUnitAutocomplete() {
+      uniqueUnits = [...new Set(transactions.map(t => t.unitName).filter(Boolean))].sort();
+    }
+
+    // Immediate suggestion update + debounced search
+    function onUnitInput() {
+      // Show suggestions immediately (no delay) with fresh highlight
+      showUnitSuggestions();
+
+      // Debounce the actual transaction search
+      if (unitAutocompleteTimer) {
+        clearTimeout(unitAutocompleteTimer);
+      }
+      unitAutocompleteTimer = setTimeout(() => {
+        updateTxSearchStateFromUI();
+        searchTransactions();
+      }, 300);
+    }
+
+    // Show autocomplete suggestions for units
+    function showUnitSuggestions() {
+      const input = document.getElementById('txFilterUnit');
+      const dropdown = document.getElementById('unitSuggestions');
+      const value = input.value.trim().toLowerCase();
+
+      // Filter units that match input (case-insensitive)
+      const matches = value
+        ? uniqueUnits.filter(u => u.toLowerCase().includes(value))
+        : uniqueUnits.slice(0, 10); // Show first 10 if empty
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = '<div class="suggestion-empty">Tidak ditemukan</div>';
+      } else {
+        dropdown.innerHTML = matches.map(unit => {
+          // Highlight matching text
+          const highlighted = value
+            ? unit.replace(new RegExp(`(${escapeRegex(value)})`, 'gi'), '<mark>$1</mark>')
+            : unit;
+          return `<div class="suggestion-item" onclick="selectUnit('${escapeHtml(unit)}')">${highlighted}</div>`;
+        }).join('');
+      }
+
+      dropdown.style.display = 'block';
+
+      // Close dropdown when clicking outside
+      setTimeout(() => {
+        document.addEventListener('click', hideUnitSuggestionsOnClickOutside, { once: true, capture: true });
+      }, 0);
+    }
+
+    // Hide suggestions when clicking outside
+    function hideUnitSuggestionsOnClickOutside(e) {
+      const input = document.getElementById('txFilterUnit');
+      const dropdown = document.getElementById('unitSuggestions');
+
+      // Check if click is outside both input and dropdown
+      if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+      } else {
+        // Click was inside, re-add listener for next click
+        document.addEventListener('click', hideUnitSuggestionsOnClickOutside, { once: true, capture: true });
+      }
+    }
+
+    // Hide unit autocomplete dropdown
+    function hideUnitSuggestions() {
+      document.getElementById('unitSuggestions').style.display = 'none';
+    }
+
+    // Select a unit from suggestions
+    function selectUnit(unit) {
+      document.getElementById('txFilterUnit').value = unit;
+      hideUnitSuggestions();
+      updateTxSearchStateFromUI();
+      searchTransactions();
+    }
+
     // Utility: escape regex special chars
     function escapeRegex(str) {
       return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -3368,6 +3463,7 @@
     function syncTxSearchUI() {
       document.getElementById('txSearchInput').value = txSearchState.search;
       document.getElementById('txFilterCustomer').value = txSearchState.customer;
+      document.getElementById('txFilterUnit').value = txSearchState.unit;
       document.getElementById('txFilterPayment').value = txSearchState.payment;
       document.getElementById('txFilterAmountMin').value = txSearchState.amountMin;
       document.getElementById('txFilterAmountMax').value = txSearchState.amountMax;
@@ -3398,6 +3494,7 @@
     function updateTxSearchStateFromUI() {
       txSearchState.search = document.getElementById('txSearchInput').value.trim();
       txSearchState.customer = document.getElementById('txFilterCustomer').value;
+      txSearchState.unit = document.getElementById('txFilterUnit').value;
       txSearchState.payment = document.getElementById('txFilterPayment').value;
       txSearchState.amountMin = document.getElementById('txFilterAmountMin').value;
       txSearchState.amountMax = document.getElementById('txFilterAmountMax').value;
@@ -3411,6 +3508,7 @@
     function countActiveTxFilters() {
       let count = 0;
       if (txSearchState.customer) count++;
+      if (txSearchState.unit) count++;
       if (txSearchState.payment) count++;
       if (txSearchState.amountMin || txSearchState.amountMax) count++;
       if (txSearchState.dateFrom || txSearchState.dateTo) count++;
@@ -3434,6 +3532,7 @@
       txSearchState = {
         search: '',
         customer: '',
+        unit: '',
         payment: '',
         amountMin: '',
         amountMax: '',
@@ -3447,6 +3546,7 @@
       };
       syncTxSearchUI();
       hideCustomerSuggestions();
+      hideUnitSuggestions();
       document.getElementById('txFilterPanel').style.display = 'none';
       searchTransactions();
     }
@@ -3475,6 +3575,7 @@
 
       if (txSearchState.search) params.set('search', txSearchState.search);
       if (txSearchState.customer) params.set('customer', txSearchState.customer);
+      if (txSearchState.unit) params.set('unit', txSearchState.unit);
       if (txSearchState.payment) params.set('payment', txSearchState.payment);
       if (txSearchState.amountMin) params.set('amountMin', txSearchState.amountMin);
       if (txSearchState.amountMax) params.set('amountMax', txSearchState.amountMax);

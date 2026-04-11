@@ -482,6 +482,7 @@ app.get('/api/transactions', requireAuth, (req, res) => {
   const {
     search,
     customer,
+    unit,
     amountMin,
     amountMax,
     dateFrom,
@@ -506,6 +507,12 @@ app.get('/api/transactions', requireAuth, (req, res) => {
   if (customer && customer.trim()) {
     conditions.push("customer LIKE ? COLLATE NOCASE");
     params.push(`%${customer.trim()}%`);
+  }
+
+  // Unit name filter (partial match, case-insensitive)
+  if (unit && unit.trim()) {
+    conditions.push("unitName LIKE ? COLLATE NOCASE");
+    params.push(`%${unit.trim()}%`);
   }
 
   // Amount range filter
@@ -542,6 +549,7 @@ app.get('/api/transactions', requireAuth, (req, res) => {
     'date': 'date',
     'amount': 'paid',
     'customer': 'customer',
+    'unit': 'unitName',
     'created': 'created_at',
     'id': 'id'
   };
@@ -568,6 +576,7 @@ app.get('/api/transactions', requireAuth, (req, res) => {
     filters: {
       search: search || null,
       customer: customer || null,
+      unit: unit || null,
       amountMin: amountMin || null,
       amountMax: amountMax || null,
       dateFrom: dateFrom || null,
