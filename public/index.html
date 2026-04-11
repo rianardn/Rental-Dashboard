@@ -2998,32 +2998,49 @@
         const hasMore = sorted.length > 5;
         
         container.innerHTML = latest5.map(t => `
-          <div class="transaction-item" style="position: relative;" data-tx-id="${t.id || ''}">
-            <div class="transaction-header">
-              <div class="transaction-unit">${t.unitName}</div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <div class="transaction-amount">${formatMoney(t.paid)}</div>
-                <button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1.1rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>
-                <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Edit transaksi">✏️</button>
-                <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Hapus transaksi">🗑️</button>
+          <div class="transaction-item" style="position: relative; padding: 14px;" data-tx-id="${t.id || ''}">
+            <!-- Row 1: Date (left) + Amount (right) -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
+                ${formatDateOnlyWIB(t.endTime)}
+              </div>
+              <div class="transaction-amount" style="color: var(--ps3-green); font-size: 1.15rem; font-weight: 600;">
+                ${formatMoney(t.paid)}
               </div>
             </div>
-            <div class="transaction-details" style="display: flex; flex-direction: column; gap: 4px;">
-              <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; font-size: 0.9rem;">
-                <span style="text-align: left; color: var(--ps3-text);">${t.customer || 'No name'}</span>
-                <span style="text-align: right; color: var(--ps3-muted);">${formatDate(t.endTime)}</span>
+
+            <!-- Row 2: Unit Name + Action Buttons -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${t.customer ? '6px' : '10px'};">
+              <div class="transaction-unit" style="font-size: 1.05rem; line-height: 1.4; flex: 1; min-width: 0; padding-right: 10px;">
+                🎮 ${t.unitName}
               </div>
-              <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; color: var(--ps3-muted); font-size: 0.8rem;">
-                <div style="text-align: left; font-style: italic;">
-                  ${t.note ? `💬 ${t.note}` : ' '}
-                </div>
-                <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
-                  <span style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
-                  <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${t.id || ''}</span>
-                </div>
-                <div style="text-align: right; color: var(--ps3-muted);">
-                  ${t.payment || 'cash'}
-                </div>
+              <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                <button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>
+                <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Edit transaksi">✏️</button>
+                <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Hapus transaksi">🗑️</button>
+              </div>
+            </div>
+
+            <!-- Row 3: Customer (if exists) -->
+            ${t.customer ? `
+            <div style="font-size: 0.95rem; color: var(--ps3-text); margin-bottom: 10px; padding-left: 2px; display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 1rem;">👤</span>
+              <span>${t.customer}</span>
+            </div>
+            ` : ''}
+
+            <!-- Row 4: Time | TX ID (centered) | Payment -->
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-border); opacity: 0.85;">
+              <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
+                <span>🕐</span>
+                <span>${formatTimeOnlyWIB(t.endTime)}</span>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1;">
+                <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
+                <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${t.id || ''}</span>
+              </div>
+              <div style="text-align: right; flex: 1;">
+                💳 ${t.payment || 'cash'}
               </div>
             </div>
           </div>
@@ -3522,32 +3539,49 @@
       }
 
       container.innerHTML = transactions.map(t => `
-        <div class="transaction-item" style="position: relative; margin-bottom: 12px;" data-tx-id="${t.id || ''}">
-          <div class="transaction-header">
-            <div class="transaction-unit">${t.unitName}</div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <div class="transaction-amount">${formatMoney(t.paid)}</div>
-              <button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1.1rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>
-              <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Edit transaksi">✏️</button>
-              <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1.2rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Hapus transaksi">🗑️</button>
+        <div class="transaction-item" style="position: relative; padding: 14px; margin-bottom: 12px;" data-tx-id="${t.id || ''}">
+          <!-- Row 1: Date (left) + Amount (right) -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
+              ${formatDateOnlyWIB(t.endTime)}
+            </div>
+            <div class="transaction-amount" style="color: var(--ps3-green); font-size: 1.15rem; font-weight: 600;">
+              ${formatMoney(t.paid)}
             </div>
           </div>
-          <div class="transaction-details" style="display: flex; flex-direction: column; gap: 4px;">
-            <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; font-size: 0.9rem;">
-              <span style="text-align: left; color: var(--ps3-text);">${t.customer || 'No name'}</span>
-              <span style="text-align: right; color: var(--ps3-muted);">${formatDate(t.endTime)}</span>
+
+          <!-- Row 2: Unit Name + Action Buttons -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${t.customer ? '6px' : '10px'};">
+            <div class="transaction-unit" style="font-size: 1.05rem; line-height: 1.4; flex: 1; min-width: 0; padding-right: 10px;">
+              🎮 ${t.unitName}
             </div>
-            <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; color: var(--ps3-muted); font-size: 0.8rem;">
-              <div style="text-align: left; font-style: italic;">
-                ${t.note ? `💬 ${t.note}` : ' '}
-              </div>
-              <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
-                <span style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
-                <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID">${t.id || ''}</span>
-              </div>
-              <div style="text-align: right; color: var(--ps3-muted);">
-                ${t.payment || 'cash'}
-              </div>
+            <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+              <button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>
+              <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Edit transaksi">✏️</button>
+              <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Hapus transaksi">🗑️</button>
+            </div>
+          </div>
+
+          <!-- Row 3: Customer (if exists) -->
+          ${t.customer ? `
+          <div style="font-size: 0.95rem; color: var(--ps3-text); margin-bottom: 10px; padding-left: 2px; display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 1rem;">👤</span>
+            <span>${t.customer}</span>
+          </div>
+          ` : ''}
+
+          <!-- Row 4: Time | TX ID (centered) | Payment -->
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-border); opacity: 0.85;">
+            <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
+              <span>🕐</span>
+              <span>${formatTimeOnlyWIB(t.endTime)}</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1;">
+              <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
+              <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${t.id || ''}</span>
+            </div>
+            <div style="text-align: right; flex: 1;">
+              💳 ${t.payment || 'cash'}
             </div>
           </div>
         </div>
