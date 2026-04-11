@@ -3136,17 +3136,17 @@
             </div>
             ` : ''}
 
-            <!-- Row 4: Time | TX ID | Note -->
+            <!-- Row 4: Time | TX ID (centered) | Note -->
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-border); opacity: 0.85;">
-              <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
                 <span>🕐</span>
                 <span>${formatTimeOnlyWIB(e.created_at)}</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 4px;">
+              <div style="display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1;">
                 <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
                 <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${e.id || ''}</span>
               </div>
-              <div style="font-style: italic; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right;">
+              <div style="font-style: italic; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; flex: 1;">
                 ${e.note ? `💬 ${e.note}` : ''}
               </div>
             </div>
@@ -3853,14 +3853,18 @@
           </div>
           ` : ''}
 
-          <!-- Row 4: Note | TX ID -->
+          <!-- Row 4: Time | TX ID (centered) | Note -->
           <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-border); opacity: 0.85;">
-            <div style="font-style: italic; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              ${e.note ? `💬 ${e.note}` : ''}
+            <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
+              <span>🕐</span>
+              <span>${formatTimeOnlyWIB(e.date)}</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 4px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1;">
               <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
               <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${e.id || ''}</span>
+            </div>
+            <div style="font-style: italic; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; flex: 1;">
+              ${e.note ? `💬 ${e.note}` : ''}
             </div>
           </div>
         </div>
@@ -4468,24 +4472,33 @@
         catKey = Object.keys(EXPENSE_SUB_CATEGORIES).find(k => k.toLowerCase() === catNorm);
       }
 
-      if (!catKey) return '';
+      if (!catKey) {
+        console.log('[Emoji] Category not found:', category, 'normalized:', catNorm);
+        return '';
+      }
 
       // Find matching sub-category
       const subCats = EXPENSE_SUB_CATEGORIES[catKey];
-      if (!subCats || !Array.isArray(subCats)) return '';
+      if (!subCats || !Array.isArray(subCats)) {
+        console.log('[Emoji] No sub-categories for:', catKey);
+        return '';
+      }
 
       const sub = subCats.find(s => {
         const val = (s.value || '').toLowerCase().trim();
         return val === subNorm;
       });
 
-      // Return emoji (first char of label which is the emoji)
+      // Return emoji from label (format: "💿 Game")
       if (sub && sub.label) {
-        const emoji = sub.label.charAt(0);
-        // Verify it's actually an emoji (not a regular letter)
+        // Extract emoji - it's the first character before the space
+        const match = sub.label.match(/^([\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|.)/u);
+        const emoji = match ? match[0] : sub.label.charAt(0);
+        console.log('[Emoji] Found:', category, '->', subCategory, '=', emoji, 'from label:', sub.label);
         return emoji;
       }
 
+      console.log('[Emoji] Sub-category not found:', subCategory, 'in', catKey, 'available:', subCats.map(s => s.value));
       return '';
     }
 
