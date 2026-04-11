@@ -4304,6 +4304,8 @@
 
     // ═════════════════ OPEN ALL EXPENSES MODAL ═════════════════
     function openAllExpensesModal() {
+      // Get current period from active tab (same as income modal)
+      const currentPeriod = document.querySelector('.tab.active')?.dataset.period || 'today';
       const now = new Date();
 
       // Set default date range based on current period (same as income)
