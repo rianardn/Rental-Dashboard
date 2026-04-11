@@ -1381,6 +1381,11 @@
       display: flex;
     }
 
+    /* Front modal (for edit/delete/history) - appears above "All Transactions" modal */
+    .modal.modal-front {
+      z-index: 3000;
+    }
+
     .modal-content {
       background: var(--ps3-card);
       border: 1px solid var(--ps3-border);
@@ -5137,12 +5142,18 @@
       }
     }
 
-    function openModal(id) {
-      document.getElementById(id).classList.add('active');
+    function openModal(id, front = false) {
+      const modal = document.getElementById(id);
+      modal.classList.add('active');
+      if (front) {
+        modal.classList.add('modal-front');
+      }
     }
 
     function closeModal(id) {
-      document.getElementById(id).classList.remove('active');
+      const modal = document.getElementById(id);
+      modal.classList.remove('active');
+      modal.classList.remove('modal-front');
       
       // Reset edit modal title when closing
       if (id === 'modalEditTransaction') {
@@ -5154,10 +5165,6 @@
     let currentEditTransactionId = null;
 
     function openEditModal(transactionId) {
-      // Close "All Transactions" modal if open (fix z-index layering issue)
-      closeModal('modalAllTransactions');
-      closeModal('modalAllExpenses');
-      
       // Mobile-friendly debug - show toast immediately
       showToast('Membuka edit... ID: ' + transactionId, 'info');
       
@@ -5197,7 +5204,7 @@
       // Load edit history
       loadEditHistory(transactionId);
 
-      openModal('modalEditTransaction');
+      openModal('modalEditTransaction', true);
     }
 
     function proceedToEditStep2() {
@@ -5361,10 +5368,6 @@
 
     // View edit history from transaction list
     async function viewEditHistory(transactionId, customerName, unitName) {
-      // Close "All Transactions" modal if open (fix z-index layering issue)
-      closeModal('modalAllTransactions');
-      closeModal('modalAllExpenses');
-      
       if (!transactionId) {
         showToast('ID transaksi tidak valid', 'error');
         return;
@@ -5384,7 +5387,7 @@
       document.getElementById('btnShowDeleteLogs').style.background = 'var(--ps3-surface)';
       document.getElementById('btnShowDeleteLogs').style.opacity = '0.7';
 
-      openModal('modalEditTransaction');
+      openModal('modalEditTransaction', true);
 
       // Load history
       await loadEditHistory(transactionId);
@@ -5394,10 +5397,6 @@
     let currentDeleteTxId = null;
 
     function openDeleteTransactionModal(txId, customerName, unitName) {
-      // Close "All Transactions" modal if open (fix z-index layering issue)
-      closeModal('modalAllTransactions');
-      closeModal('modalAllExpenses');
-      
       if (!txId) {
         showToast('ID transaksi tidak valid', 'error');
         return;
@@ -5435,7 +5434,7 @@
       document.getElementById('deleteConfirmCheckbox').addEventListener('change', updateDeleteButtonState);
       document.getElementById('deleteReason').addEventListener('input', updateDeleteButtonState);
 
-      openModal('modalDeleteTransaction');
+      openModal('modalDeleteTransaction', true);
     }
 
     function updateDeleteButtonState() {
@@ -5574,10 +5573,6 @@
     let currentEditExpenseCategory = null;
 
     function openEditExpenseModal(expenseId) {
-      // Close "All Transactions" modal if open (fix z-index layering issue)
-      closeModal('modalAllTransactions');
-      closeModal('modalAllExpenses');
-      
       showToast('Membuka edit pengeluaran... ID: ' + expenseId, 'info');
       
       currentEditExpenseId = expenseId;
@@ -5661,7 +5656,7 @@
       // Load edit history
       loadExpenseEditHistory(expenseId);
 
-      openModal('modalEditExpense');
+      openModal('modalEditExpense', true);
     }
 
     function onEditExpenseCategoryChange() {
@@ -5878,10 +5873,6 @@
     }
 
     async function viewExpenseEditHistory(expenseId, itemName) {
-      // Close "All Transactions" modal if open (fix z-index layering issue)
-      closeModal('modalAllTransactions');
-      closeModal('modalAllExpenses');
-      
       if (!expenseId) {
         showToast('ID pengeluaran tidak valid', 'error');
         return;
@@ -5898,7 +5889,7 @@
       // Reset to edit tab by default
       showExpenseEditLogsTab();
       
-      openModal('modalEditExpense');
+      openModal('modalEditExpense', true);
       
       // Load history
       await loadExpenseEditHistory(expenseId);
@@ -5908,10 +5899,6 @@
     let currentDeleteExpenseId = null;
 
     function openDeleteExpenseModal(expenseId, itemName, amount) {
-      // Close "All Transactions" modal if open (fix z-index layering issue)
-      closeModal('modalAllTransactions');
-      closeModal('modalAllExpenses');
-      
       if (!expenseId) {
         showToast('ID pengeluaran tidak valid', 'error');
         return;
@@ -5927,7 +5914,7 @@
       document.getElementById('confirmDeleteExpenseCheckbox').checked = false;
       document.getElementById('deleteExpenseReason').value = '';
       
-      openModal('modalDeleteExpense');
+      openModal('modalDeleteExpense', true);
     }
 
     async function confirmDeleteExpense() {
