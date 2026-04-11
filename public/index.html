@@ -1018,6 +1018,29 @@
       box-shadow: 0 0 0 2px rgba(230,0,18,0.15);
     }
 
+    /* Desktop optimizations for sort section */
+    @media (min-width: 768px) {
+      .sort-options {
+        flex-wrap: nowrap;
+        gap: 16px;
+      }
+      
+      .sort-label {
+        font-size: 0.8rem;
+      }
+      
+      .sort-selects {
+        gap: 12px;
+        flex: 0 1 auto;
+      }
+      
+      .sort-selects select {
+        padding: 10px 14px;
+        font-size: 0.9rem;
+        min-width: 140px;
+      }
+    }
+
     @media (max-width: 480px) {
       .sort-options {
         flex-direction: column;
@@ -2162,7 +2185,7 @@
               <div class="filter-field">
                 <label>👤 Nama Penyewa</label>
                 <div class="autocomplete-wrapper">
-                  <input type="text" id="txFilterCustomer" placeholder="Ketik nama..." oninput="debouncedCustomerSearch()" onfocus="showCustomerSuggestions()" autocomplete="off">
+                  <input type="text" id="txFilterCustomer" placeholder="Ketik nama..." oninput="onCustomerInput()" onfocus="showCustomerSuggestions()" autocomplete="off">
                   <div id="customerSuggestions" class="suggestions-dropdown" style="display: none;"></div>
                 </div>
               </div>
@@ -3116,8 +3139,12 @@
       uniqueCustomers = [...new Set(transactions.map(t => t.customer).filter(Boolean))].sort();
     }
 
-    // Debounced customer search input handler
-    function debouncedCustomerSearch() {
+    // Immediate suggestion update + debounced search
+    function onCustomerInput() {
+      // Show suggestions immediately (no delay) with fresh highlight
+      showCustomerSuggestions();
+      
+      // Debounce the actual transaction search
       if (customerAutocompleteTimer) {
         clearTimeout(customerAutocompleteTimer);
       }
@@ -3152,17 +3179,23 @@
 
       dropdown.style.display = 'block';
 
-      // Close dropdown when clicking outside
+      // Close dropdown when clicking outside (use capture phase for better reliability)
       setTimeout(() => {
-        document.addEventListener('click', hideCustomerSuggestionsOnClickOutside, { once: true });
-      }, 10);
+        document.addEventListener('click', hideCustomerSuggestionsOnClickOutside, { once: true, capture: true });
+      }, 0);
     }
 
     // Hide suggestions when clicking outside
     function hideCustomerSuggestionsOnClickOutside(e) {
       const wrapper = document.querySelector('.autocomplete-wrapper');
-      if (!wrapper.contains(e.target)) {
-        hideCustomerSuggestions();
+      const dropdown = document.getElementById('customerSuggestions');
+      
+      // Check if click is outside both input and dropdown
+      if (wrapper && !wrapper.contains(e.target)) {
+        dropdown.style.display = 'none';
+      } else {
+        // Click was inside, re-add listener for next click
+        document.addEventListener('click', hideCustomerSuggestionsOnClickOutside, { once: true, capture: true });
       }
     }
 
