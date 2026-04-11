@@ -2291,22 +2291,27 @@
           <div id="expFilterPanel" style="display: none; border-top: 1px solid var(--ps3-border); padding-top: 12px;">
             <!-- Filter Grid -->
             <div class="filter-grid">
-              <!-- Category Filter (Text Input with Autocomplete) -->
+              <!-- Tipe Biaya (Category) Filter - Dropdown consistent with submission form -->
               <div class="filter-field">
-                <label>🏷️ Kategori</label>
-                <div class="autocomplete-wrapper">
-                  <input type="text" id="expFilterCategory" placeholder="Ketik kategori..." oninput="onCategoryInput()" onfocus="showCategorySuggestions()" autocomplete="off">
-                  <div id="categorySuggestions" class="suggestions-dropdown" style="display: none;"></div>
-                </div>
+                <label>🏷️ Tipe Biaya</label>
+                <select id="expFilterCategory" onchange="onFilterCategoryChange()" style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem; height: 48px;">
+                  <option value="">-- Semua Tipe --</option>
+                  <option value="Listrik">⚡ Listrik</option>
+                  <option value="Prive">💰 Prive</option>
+                  <option value="Unit PS Baru">🎮 Unit PS Baru</option>
+                  <option value="TV/Monitor Baru">📺 TV/Monitor Baru</option>
+                  <option value="Servis/Perawatan">🔧 Servis/Perawatan</option>
+                  <option value="Aksesoris">🎧 Aksesoris</option>
+                  <option value="Custom">✏️ Custom</option>
+                </select>
               </div>
 
-              <!-- Item Filter (Text Input with Autocomplete) -->
-              <div class="filter-field">
-                <label>📦 Item/Barang</label>
-                <div class="autocomplete-wrapper">
-                  <input type="text" id="expFilterItem" placeholder="Ketik nama item..." oninput="onItemInput()" onfocus="showItemSuggestions()" autocomplete="off">
-                  <div id="itemSuggestions" class="suggestions-dropdown" style="display: none;"></div>
-                </div>
+              <!-- Sub-Kategori Filter - Only shows for Servis/Perawatan and Aksesoris -->
+              <div class="filter-field" id="expFilterSubCategoryGroup" style="display: none;">
+                <label>📂 Sub-Kategori</label>
+                <select id="expFilterSubCategory" onchange="onFilterSubCategoryChange()" style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem; height: 48px;">
+                  <option value="">-- Semua Sub --</option>
+                </select>
               </div>
 
               <!-- Amount Range -->
@@ -3566,7 +3571,7 @@
     let expSearchState = {
       search: '',
       category: '',
-      item: '',
+      subCategory: '',
       amountMin: '',
       amountMax: '',
       dateFrom: '',
@@ -3598,11 +3603,44 @@
       panel.style.display = isVisible ? 'none' : 'block';
     }
 
+    // Handle filter category change - show/hide sub-category dropdown
+    function onFilterCategoryChange() {
+      const category = document.getElementById('expFilterCategory').value;
+      const subGroup = document.getElementById('expFilterSubCategoryGroup');
+      const subSelect = document.getElementById('expFilterSubCategory');
+
+      // Reset sub-category
+      subSelect.innerHTML = '<option value="">-- Semua Sub --</option>';
+
+      // Show/hide sub-category based on category selection
+      if (EXPENSE_SUB_CATEGORIES[category]) {
+        subGroup.style.display = 'block';
+        // Populate sub-categories
+        EXPENSE_SUB_CATEGORIES[category].forEach(sub => {
+          const option = document.createElement('option');
+          option.value = sub.value;
+          option.textContent = sub.label;
+          subSelect.appendChild(option);
+        });
+      } else {
+        subGroup.style.display = 'none';
+        subSelect.value = '';
+      }
+
+      // Trigger search
+      debouncedSearchExpenses();
+    }
+
+    // Handle filter sub-category change
+    function onFilterSubCategoryChange() {
+      debouncedSearchExpenses();
+    }
+
     // Update search state from UI inputs
     function updateExpSearchStateFromUI() {
       expSearchState.search = document.getElementById('expSearchInput').value.trim();
       expSearchState.category = document.getElementById('expFilterCategory').value.trim();
-      expSearchState.item = document.getElementById('expFilterItem').value.trim();
+      expSearchState.subCategory = document.getElementById('expFilterSubCategory').value.trim();
       expSearchState.amountMin = document.getElementById('expFilterAmountMin').value;
       expSearchState.amountMax = document.getElementById('expFilterAmountMax').value;
       expSearchState.dateFrom = document.getElementById('expFilterDateFrom').value;
@@ -3617,7 +3655,7 @@
       const activeFilters = [
         expSearchState.search,
         expSearchState.category,
-        expSearchState.item,
+        expSearchState.subCategory,
         expSearchState.amountMin,
         expSearchState.amountMax,
         expSearchState.dateFrom,
@@ -3638,7 +3676,7 @@
     function clearAllExpFilters() {
       document.getElementById('expSearchInput').value = '';
       document.getElementById('expFilterCategory').value = '';
-      document.getElementById('expFilterItem').value = '';
+      document.getElementById('expFilterSubCategory').value = '';
       document.getElementById('expFilterAmountMin').value = '';
       document.getElementById('expFilterAmountMax').value = '';
       document.getElementById('expFilterDateFrom').value = '';
@@ -3647,11 +3685,14 @@
       document.getElementById('expSortBy').value = 'date';
       document.getElementById('expSortOrder').value = 'desc';
 
+      // Hide sub-category group
+      document.getElementById('expFilterSubCategoryGroup').style.display = 'none';
+
       // Reset state
       expSearchState = {
         search: '',
         category: '',
-        item: '',
+        subCategory: '',
         amountMin: '',
         amountMax: '',
         dateFrom: '',
@@ -3692,7 +3733,10 @@
 
       if (expSearchState.search) params.set('search', expSearchState.search);
       if (expSearchState.category) params.set('category', expSearchState.category);
-      if (expSearchState.item) params.set('item', expSearchState.item);
+      // If subCategory is selected, filter by item pattern "Category - SubCategory%"
+      if (expSearchState.subCategory && expSearchState.category) {
+        params.set('item', `${expSearchState.category} - ${expSearchState.subCategory}`);
+      }
       if (expSearchState.amountMin) params.set('amountMin', expSearchState.amountMin);
       if (expSearchState.amountMax) params.set('amountMax', expSearchState.amountMax);
       if (expSearchState.dateFrom) params.set('dateFrom', expSearchState.dateFrom);
