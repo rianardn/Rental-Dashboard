@@ -2138,6 +2138,45 @@
     </div>
   </div>
 
+  <!-- ═════════════════ MODAL: SELECT UNIT FOR SCHEDULE ═════════════════ -->
+  <div id="modalScheduleUnit" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>▶️ Mulai dari Jadwal</h3>
+      </div>
+      <div class="modal-body">
+        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: var(--ps3-muted); font-size: 0.8rem;">Pelanggan:</span>
+            <span style="font-weight: 600;" id="scheduleUnitCustomer"></span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--ps3-muted); font-size: 0.8rem;">Durasi:</span>
+            <span id="scheduleUnitDuration"></span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Pilih Unit Tersedia</label>
+          <select id="scheduleUnitSelect" style="width: 100%; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 6px; color: var(--ps3-text); font-size: 0.9rem;">
+            <option value="">-- Pilih Unit --</option>
+          </select>
+          <small style="display: block; margin-top: 8px; color: var(--ps3-muted); font-size: 0.75rem;">
+            ℹ️ Hanya unit yang tidak aktif yang ditampilkan
+          </small>
+        </div>
+        <div style="background: rgba(230,0,18,0.1); border-left: 3px solid var(--ps3-red); padding: 10px 12px; border-radius: 0 6px 6px 0; margin-top: 12px;">
+          <small style="color: var(--ps3-text); font-size: 0.75rem;">
+            💡 Catatan akan otomatis ditambahkan prefix <strong>[BOOKING]</strong>
+          </small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modalScheduleUnit')">Batal</button>
+        <button class="btn btn-green" onclick="confirmScheduleUnitSelection()">▶️ Mulai Sewa</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Edit Transaction Modal -->
   <div id="modalEditTransaction" class="modal">
     <div class="modal-content" style="max-width: 420px;">
@@ -3278,17 +3317,22 @@
             ${unit.note ? `
             <div class="customer-info-row">
               <span class="customer-info-label">Catatan</span>
-              <span class="customer-info-value">${unit.note}</span>
+              <span class="customer-info-value" style="${unit.note.includes('[BOOKING]') ? 'color: var(--ps3-green); font-weight: 500;' : ''}">${unit.note.replace('[BOOKING]', '<span style="background: var(--ps3-green); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-right: 4px;">BOOKING</span>')}</span>
             </div>
             ` : ''}
           </div>
         `;
       }
       
+      const isFromBooking = unit.note && unit.note.includes('[BOOKING]');
+      
       return `
         <div class="unit-card ${isActive ? 'active' : ''}">
           <div class="unit-header">
-            <div class="unit-name">${unit.name}</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="unit-name">${unit.name}</div>
+              ${isFromBooking ? '<span style="background: var(--ps3-green); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 700;">📅 BOOKING</span>' : ''}
+            </div>
             <div class="unit-status ${isActive ? 'active' : 'idle'}">
               ${isActive ? 'BERMAIN' : 'SIAP'}
             </div>
@@ -7075,8 +7119,9 @@
             <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 6px;">
               ${formatScheduleTime(s)}
             </div>
-            ${s.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${s.unitName}</div>` : ''}
+            ${s.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${s.unitName} ${s.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem;">● AKTIF</span>' : ''}</div>` : ''}
             ${s.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${s.note}</div>` : ''}
+            ${s.status === 'running' ? `<div style="font-size: 0.75rem; color: var(--ps3-green); margin-top: 6px; padding: 4px 8px; background: rgba(119,221,119,0.1); border-radius: 4px; border: 1px solid rgba(119,221,119,0.3);">▶️ Sedang berjalan di unit</div>` : ''}
             <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
               ${s.status === 'pending' ? `
                 <button onclick="startSchedule(${s.id})" style="background: var(--ps3-green); color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-green-dark)'" onmouseout="this.style.background='var(--ps3-green)'">▶️ Mulai</button>
@@ -7204,10 +7249,21 @@
 
     async function updateScheduleStatus(id, status) {
       try {
-        await api('PUT', `/schedules/${id}`, { status });
+        const schedule = schedules.find(s => s.id === id);
+        
+        // If completing a running schedule, use the complete endpoint which also stops the unit
+        if (status === 'completed' && schedule && schedule.status === 'running') {
+          await api('POST', `/schedules/${id}/complete`, {});
+          showToast('Jadwal selesai! Unit dihentikan dan transaksi tercatat.', 'success');
+        } else {
+          await api('PUT', `/schedules/${id}`, { status });
+          showToast(`Status jadwal diperbarui`, 'success');
+        }
+        
+        await loadData();
         await loadSchedules();
+        renderAll();
         renderSchedules();
-        showToast(`Status jadwal diperbarui`, 'success');
       } catch (error) {
         showToast(error.message, 'error');
       }
@@ -7215,11 +7271,77 @@
 
     async function startSchedule(id) {
       try {
-        // Update status to 'running'
-        await api('PUT', `/schedules/${id}`, { status: 'running' });
+        const schedule = schedules.find(s => s.id === id);
+        if (!schedule) {
+          showToast('Jadwal tidak ditemukan', 'error');
+          return;
+        }
+        
+        // Check if schedule has a unit assigned
+        if (!schedule.unitId) {
+          // Show modal to select unit
+          openScheduleUnitModal(schedule);
+          return;
+        }
+        
+        // Check if unit is already active
+        const unit = units.find(u => u.id === schedule.unitId);
+        if (unit && unit.active) {
+          showToast('Unit sudah aktif dengan penyewa lain', 'error');
+          return;
+        }
+        
+        // Start the unit with schedule data
+        await api('POST', `/schedules/${id}/start-unit`, { unitId: schedule.unitId });
+        await loadData();
         await loadSchedules();
+        renderAll();
         renderSchedules();
-        showToast('Jadwal dimulai!', 'success');
+        showToast('Jadwal dimulai! Unit aktif dengan data booking.', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+    
+    // Modal for selecting unit when starting a schedule without assigned unit
+    let currentScheduleForUnit = null;
+    
+    function openScheduleUnitModal(schedule) {
+      currentScheduleForUnit = schedule;
+      const modal = document.getElementById('modalScheduleUnit');
+      const unitSelect = document.getElementById('scheduleUnitSelect');
+      
+      // Populate available units (non-active only)
+      const availableUnits = units.filter(u => !u.active);
+      unitSelect.innerHTML = availableUnits.map(u => 
+        `<option value="${u.id}">${u.name}</option>`
+      ).join('');
+      
+      // Add info text
+      document.getElementById('scheduleUnitCustomer').textContent = schedule.customer;
+      document.getElementById('scheduleUnitDuration').textContent = schedule.duration ? `${schedule.duration} menit` : 'Tak terbatas';
+      
+      openModal('modalScheduleUnit');
+    }
+    
+    async function confirmScheduleUnitSelection() {
+      if (!currentScheduleForUnit) return;
+      
+      const unitId = document.getElementById('scheduleUnitSelect').value;
+      if (!unitId) {
+        showToast('Pilih unit terlebih dahulu', 'error');
+        return;
+      }
+      
+      try {
+        await api('POST', `/schedules/${currentScheduleForUnit.id}/start-unit`, { unitId: parseInt(unitId) });
+        closeModal('modalScheduleUnit');
+        currentScheduleForUnit = null;
+        await loadData();
+        await loadSchedules();
+        renderAll();
+        renderSchedules();
+        showToast('Jadwal dimulai! Unit aktif dengan data booking.', 'success');
       } catch (error) {
         showToast(error.message, 'error');
       }

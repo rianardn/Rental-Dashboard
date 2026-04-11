@@ -86,6 +86,7 @@ db.exec(`
     customer TEXT,
     duration INTEGER DEFAULT 0,
     note TEXT,
+    linkedScheduleId INTEGER,
     created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
   );
 
@@ -373,6 +374,14 @@ if (db) {
       }
       console.log('[DB] Migration: All schedules now have scheduleId');
     }
+    
+    // Migration: Add linkedScheduleId column to units table if not exists
+    const unitsInfo = db.prepare(`PRAGMA table_info(units)`).all();
+    const hasLinkedScheduleId = unitsInfo.find(c => c.name === 'linkedScheduleId');
+    if (!hasLinkedScheduleId) {
+      db.prepare(`ALTER TABLE units ADD COLUMN linkedScheduleId INTEGER`).run();
+      console.log('[DB] Migration: Added linkedScheduleId column to units');
+    }
   } catch (e) {
     console.error('[DB] Migration error for schedules columns:', e.message);
   }
@@ -539,11 +548,22 @@ app.post('/api/units/:id/start', requireAuth, (req, res) => {
   if (!unit) return res.status(404).json({ error: 'Unit tidak ditemukan' });
   if (unit.active) return res.status(400).json({ error: 'Unit sudah aktif' });
   
-  const { customer = '', duration = 0, note = '' } = req.body;
+  const { customer = '', duration = 0, note = '', linkedScheduleId = null } = req.body;
   const startTime = Date.now();
   
-  db.prepare('UPDATE units SET active = 1, startTime = ?, customer = ?, duration = ?, note = ? WHERE id = ?')
-    .run(startTime, customer, duration, note, id);
+  db.prepare('UPDATE units SET active = 1, startTime = ?, customer = ?, duration = ?, note = ?, linkedScheduleId = ? WHERE id = ?')
+    .run(startTime, customer, duration, note, linkedScheduleId, id);
+  
+  // If linked to a schedule, update schedule status to 'running'
+  if (linkedScheduleId) {
+    try {
+      db.prepare('UPDATE schedules SET status = ?, unitId = ?, unitName = ? WHERE id = ?')
+        .run('running', id, unit.name, linkedScheduleId);
+      console.log(`[Schedule] Linked schedule ${linkedScheduleId} started on unit ${id}`);
+    } catch (e) {
+      console.error('[Schedule] Error updating schedule status:', e.message);
+    }
+  }
   
   res.json({ ok: true, unit: db.prepare('SELECT * FROM units WHERE id = ?').get(id) });
 });
@@ -580,9 +600,104 @@ app.post('/api/units/:id/stop', requireAuth, (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .run(tx.id, tx.unitId, tx.unitName, tx.customer, tx.startTime, tx.endTime, tx.durationMin, tx.paid, tx.payment, tx.note, tx.date);
   
-  db.prepare("UPDATE units SET active = 0, startTime = NULL, customer = '', duration = 0, note = '' WHERE id = ?").run(id);
+  // If linked to a schedule, update schedule status to 'completed'
+  if (unit.linkedScheduleId) {
+    try {
+      db.prepare('UPDATE schedules SET status = ? WHERE id = ?')
+        .run('completed', unit.linkedScheduleId);
+      console.log(`[Schedule] Linked schedule ${unit.linkedScheduleId} marked as completed`);
+    } catch (e) {
+      console.error('[Schedule] Error updating schedule status on stop:', e.message);
+    }
+  }
+  
+  db.prepare("UPDATE units SET active = 0, startTime = NULL, customer = '', duration = 0, note = '', linkedScheduleId = NULL WHERE id = ?").run(id);
   
   res.json({ ok: true, tx });
+});
+
+// ─── SCHEDULE-UNIT INTEGRATION ─────────────────────────────────
+// Start a unit from a schedule (booking → active unit)
+app.post('/api/schedules/:id/start-unit', requireAuth, (req, res) => {
+  const scheduleId = parseInt(req.params.id);
+  const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
+  if (!schedule) return res.status(404).json({ error: 'Jadwal tidak ditemukan' });
+  if (schedule.status === 'running') return res.status(400).json({ error: 'Jadwal sudah berjalan' });
+  if (schedule.status === 'completed') return res.status(400).json({ error: 'Jadwal sudah selesai' });
+  if (schedule.status === 'cancelled') return res.status(400).json({ error: 'Jadwal sudah dibatalkan' });
+  
+  // Use provided unitId or schedule's unitId
+  const { unitId = schedule.unitId } = req.body;
+  if (!unitId) return res.status(400).json({ error: 'Pilih unit terlebih dahulu' });
+  
+  const unit = db.prepare('SELECT * FROM units WHERE id = ?').get(unitId);
+  if (!unit) return res.status(404).json({ error: 'Unit tidak ditemukan' });
+  if (unit.active) return res.status(400).json({ error: 'Unit sudah aktif' });
+  
+  // Prepare note with [BOOKING] prefix
+  const bookingNote = schedule.note ? `[BOOKING] - ${schedule.note}` : '[BOOKING]';
+  const startTime = Date.now();
+  
+  // Start the unit with schedule data
+  db.prepare('UPDATE units SET active = 1, startTime = ?, customer = ?, duration = ?, note = ?, linkedScheduleId = ? WHERE id = ?')
+    .run(startTime, schedule.customer, schedule.duration || 0, bookingNote, scheduleId, unitId);
+  
+  // Update schedule status to running
+  db.prepare('UPDATE schedules SET status = ?, unitId = ?, unitName = ? WHERE id = ?')
+    .run('running', unitId, unit.name, scheduleId);
+  
+  res.json({ 
+    ok: true, 
+    message: 'Unit dimulai dari jadwal',
+    unit: db.prepare('SELECT * FROM units WHERE id = ?').get(unitId),
+    schedule: db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId)
+  });
+});
+
+// Complete a schedule and stop its linked unit
+app.post('/api/schedules/:id/complete', requireAuth, (req, res) => {
+  const scheduleId = parseInt(req.params.id);
+  const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
+  if (!schedule) return res.status(404).json({ error: 'Jadwal tidak ditemukan' });
+  
+  // If schedule is running and has a linked unit, stop the unit first
+  if (schedule.status === 'running' && schedule.unitId) {
+    const unit = db.prepare('SELECT * FROM units WHERE id = ?').get(schedule.unitId);
+    if (unit && unit.active && unit.linkedScheduleId === scheduleId) {
+      const settings = getSettings();
+      const elMin = Math.floor((Date.now() - unit.startTime) / 60000);
+      const cost = Math.round((elMin / 60) * settings.ratePerHour);
+      const { paid = cost, payment = 'cash' } = req.body;
+      const dateKey = getWIBDateISO();
+      
+      const tx = {
+        id: generateRevenueId(),
+        unitId: unit.id,
+        unitName: unit.name,
+        customer: unit.customer,
+        startTime: unit.startTime,
+        endTime: Date.now(),
+        durationMin: elMin,
+        paid: paid,
+        payment: payment,
+        note: unit.note,
+        date: dateKey
+      };
+      
+      db.prepare(`INSERT INTO transactions 
+        (id, unitId, unitName, customer, startTime, endTime, durationMin, paid, payment, note, date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(tx.id, tx.unitId, tx.unitName, tx.customer, tx.startTime, tx.endTime, tx.durationMin, tx.paid, tx.payment, tx.note, tx.date);
+      
+      db.prepare("UPDATE units SET active = 0, startTime = NULL, customer = '', duration = 0, note = '', linkedScheduleId = NULL WHERE id = ?")
+        .run(schedule.unitId);
+    }
+  }
+  
+  // Update schedule status
+  db.prepare('UPDATE schedules SET status = ? WHERE id = ?').run('completed', scheduleId);
+  
+  res.json({ ok: true, message: 'Jadwal selesai' });
 });
 
 // ─── TRANSACTIONS ─────────────────────────────────────────────
