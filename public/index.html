@@ -22,8 +22,13 @@
       --ps3-silver: #c0c0c0;
       --ps3-red: #e60012;
       --ps3-red-glow: rgba(230, 0, 18, 0.6);
-      --ps3-green: #00aa00;
+      --ps3-red-badge: #dc2626;       /* Deeper red for badges - distinct from emoji red */
+      --ps3-red-danger: #b91c1c;      /* Darker red for danger/cancel actions */
+      --ps3-green: #22c55e;            /* Vibrant green for success/start */
+      --ps3-green-dark: #16a34a;      /* Darker green for completed states */
       --ps3-yellow: #f5a623;
+      --ps3-orange: #ff8c00;           /* Orange for urgent warnings */
+      --ps3-silver-hover: #e0e0e0;     /* Silver hover for neutral buttons */
       --ps3-text: #ffffff;
       --ps3-muted: #666666;
       --font-display: 'Orbitron', sans-serif;
@@ -821,6 +826,15 @@
       outline: none;
       border-color: var(--ps3-red);
       box-shadow: 0 0 0 3px rgba(230,0,18,0.1);
+    }
+
+    .form-group select:hover {
+      border-color: var(--ps3-silver);
+      background: #141414;
+    }
+
+    .form-group select:focus:hover {
+      border-color: var(--ps3-red);
     }
 
     .form-group small {
@@ -2060,7 +2074,7 @@
         </div>
         <div class="form-group">
           <label>Durasi Sewa</label>
-          <select id="startDurationPreset" onchange="handleDurationChange()" style="width: 100%; padding: 14px 16px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; color: var(--ps3-text); font-family: var(--font-body); font-size: 1rem; margin-bottom: 10px;">
+          <select id="startDurationPreset" onchange="handleDurationChange()" style="margin-bottom: 10px; cursor: pointer;">
             <option value="">Pilih durasi...</option>
             <option value="60">1 Jam</option>
             <option value="120">2 Jam</option>
@@ -2677,39 +2691,72 @@
       </div>
       
       <div style="padding: 20px;">
+        <!-- KOLOM WAJIB -->
         <div class="form-group">
-          <label>Nama Pelanggan</label>
-          <input type="text" id="scheduleCustomer" placeholder="Nama penyewa">
+          <label>Nama Pelanggan <span style="color: var(--ps3-red);">*</span></label>
+          <input type="text" id="scheduleCustomer" placeholder="Nama penyewa" required>
         </div>
-        <div class="form-group">
-          <label>No. Telepon</label>
-          <input type="text" id="schedulePhone" placeholder="Nomor WhatsApp/HP">
-        </div>
+        <!-- Baris 1: Tanggal Mulai - Jam Mulai -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div class="form-group">
-            <label>Tanggal</label>
-            <input type="date" id="scheduleDate">
+            <label>Tanggal Mulai <span style="color: var(--ps3-red);">*</span></label>
+            <input type="date" id="scheduleDate" required onchange="initDefaultEndDate()">
           </div>
           <div class="form-group">
-            <label>Jam</label>
-            <input type="time" id="scheduleTime">
+            <label>Jam Mulai <span style="color: var(--ps3-red);">*</span></label>
+            <input type="time" id="scheduleTime" step="60" required onchange="updateEndDateTimeFromDuration()">
+          </div>
+        </div>
+        <!-- Baris 2: Tanggal Berakhir - Jam Berakhir -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Tanggal Berakhir <span style="color: var(--ps3-red);">*</span></label>
+            <input type="date" id="scheduleEndDate" required onchange="updateDurationFromEndDateTime()">
+          </div>
+          <div class="form-group">
+            <label>Jam Berakhir <span style="color: var(--ps3-red);">*</span></label>
+            <input type="time" id="scheduleEndTime" step="60" required onchange="updateDurationFromEndDateTime()">
+          </div>
+        </div>
+        <!-- Baris 3: Durasi - Custom menit -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Durasi <span style="color: var(--ps3-red);">*</span></label>
+            <select id="scheduleDuration" onchange="handleScheduleDurationChange(this)" required style="width: 100%; padding: 14px 16px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; color: var(--ps3-text); font-family: var(--font-body); font-size: 1rem; cursor: pointer; transition: all 0.2s;">
+              <option value="60">1 Jam</option>
+              <option value="120" selected>2 Jam</option>
+              <option value="180">3 Jam</option>
+              <option value="240">4 Jam</option>
+              <option value="300">5 Jam</option>
+              <option value="custom">Custom (menit)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label id="customDurationLabel" style="color: var(--ps3-muted);">Menit (jika Custom)</label>
+            <input type="number" id="scheduleDurationCustom" placeholder="Masukkan durasi (menit)" min="30" step="10" style="width: 100%; padding: 14px 16px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; color: var(--ps3-text); font-family: var(--font-body); font-size: 1rem;" onchange="updateEndDateTimeFromDuration()">
           </div>
         </div>
         <div class="form-group">
-          <label>Unit (opsional)</label>
-          <select id="scheduleUnit">
+          <label>Unit <span style="color: var(--ps3-red);">*</span></label>
+          <select id="scheduleUnit" required>
             <option value="">Pilih unit...</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Durasi (menit)</label>
-          <input type="number" id="scheduleDuration" placeholder="120" min="30" step="30">
+        
+        <!-- KOLOM OPSIONAL -->
+        <div style="border-top: 1px solid var(--ps3-border); padding-top: 15px; margin-top: 15px;">
+          <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.1em;">Opsional</div>
+          <div class="form-group">
+            <label>No. Telepon (opsional)</label>
+            <input type="text" id="schedulePhone" placeholder="Nomor WhatsApp/HP">
+          </div>
+          <div class="form-group">
+            <label>Catatan (opsional)</label>
+            <input type="text" id="scheduleNote" placeholder="Catatan tambahan">
+          </div>
         </div>
-        <div class="form-group">
-          <label>Catatan</label>
-          <input type="text" id="scheduleNote" placeholder="Catatan tambahan">
-        </div>
-        <button class="btn btn-red" onclick="addSchedule()" style="width: 100%;">Tambah Jadwal</button>
+        
+        <button class="btn btn-red" onclick="addSchedule()" style="width: 100%; margin-top: 15px;">Tambah Jadwal</button>
       </div>
     </div>
   </div>
@@ -3210,12 +3257,12 @@
             </div>
             <div class="customer-info-row">
               <span class="customer-info-label">Waktu Mulai</span>
-              <span class="customer-info-value">${startDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</span>
+              <span class="customer-info-value">${startDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false})} WIB</span>
             </div>
             ${endDate ? `
             <div class="customer-info-row">
               <span class="customer-info-label">Waktu Akhir</span>
-              <span class="customer-info-value">${endDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</span>
+              <span class="customer-info-value">${endDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false})} WIB</span>
             </div>
             ` : ''}
             <div class="customer-info-row">
@@ -3363,11 +3410,13 @@
               </div>
             </div>
 
-            <!-- Row 3: Customer (if exists) -->
-            ${t.customer ? `
-            <div style="font-size: 0.95rem; color: var(--ps3-text); margin-bottom: 10px; padding-left: 2px; display: flex; align-items: center; gap: 6px;">
-              <span style="font-size: 1rem;">👤</span>
-              <span>${t.customer}</span>
+            <!-- Row 3: Customer (left) + Note (right, if exists) -->
+            ${t.customer || t.note ? `
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; color: var(--ps3-text); margin-bottom: 10px; padding-left: 2px;">
+              <div style="display: flex; align-items: center; gap: 6px; flex: 1;">
+                ${t.customer ? `<span style="font-size: 1rem;">👤</span><span>${t.customer}</span>` : ''}
+              </div>
+              ${t.note ? `<div style="text-align: right; font-style: italic; opacity: 0.8; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50%;">💬 ${t.note}</div>` : ''}
             </div>
             ` : ''}
 
@@ -3995,11 +4044,13 @@
             </div>
           </div>
 
-          <!-- Row 3: Customer (if exists) -->
-          ${t.customer ? `
-          <div style="font-size: 0.95rem; color: var(--ps3-text); margin-bottom: 10px; padding-left: 2px; display: flex; align-items: center; gap: 6px;">
-            <span style="font-size: 1rem;">👤</span>
-            <span>${t.customer}</span>
+          <!-- Row 3: Customer (left) + Note (right, if exists) -->
+          ${t.customer || t.note ? `
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; color: var(--ps3-text); margin-bottom: 10px; padding-left: 2px;">
+            <div style="display: flex; align-items: center; gap: 6px; flex: 1;">
+              ${t.customer ? `<span style="font-size: 1rem;">👤</span><span>${t.customer}</span>` : ''}
+            </div>
+            ${t.note ? `<div style="text-align: right; font-style: italic; opacity: 0.8; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50%;">💬 ${t.note}</div>` : ''}
           </div>
           ` : ''}
 
@@ -5313,7 +5364,7 @@
       filtered.forEach(t => {
         const date = new Date(t.endTime);
         const dateStr = date.toLocaleDateString('id-ID');
-        const timeStr = date.toLocaleTimeString('id-ID');
+        const timeStr = date.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false}) + ' WIB';
         csv += `"${dateStr}","${timeStr}","${t.unitName}","${t.customer || '-'}",${t.durationMin},${t.paid},"${t.payment || 'cash'}","${t.note || ''}"\n`;
       });
       
@@ -5369,9 +5420,28 @@
     }
 
     function openAddScheduleModal() {
-      // Set default date to today
-      const today = new Date().toISOString().split('T')[0];
+      // Get current time in WIB (UTC+7)
+      const now = new Date();
+      const wibOffset = 7 * 60 * 60 * 1000; // 7 hours in milliseconds
+      const wibTime = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + wibOffset);
+      
+      // Format date as YYYY-MM-DD in WIB
+      const today = wibTime.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
       document.getElementById('scheduleDate').value = today;
+      document.getElementById('scheduleEndDate').value = today;
+      
+      // Format time as HH:MM in WIB
+      const startTime = wibTime.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta', hour12: false, hour: '2-digit', minute: '2-digit' });
+      const endWibTime = new Date(wibTime.getTime() + 60 * 60000);
+      const endTime = endWibTime.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta', hour12: false, hour: '2-digit', minute: '2-digit' });
+      document.getElementById('scheduleTime').value = startTime;
+      document.getElementById('scheduleEndTime').value = endTime;
+      
+      // Set default duration to 60 minutes
+      document.getElementById('scheduleDuration').value = '60';
+      document.getElementById('scheduleDurationCustom').style.display = 'none';
+      document.getElementById('customDurationLabel').style.color = 'var(--ps3-muted)';
+      
       // Ensure unit select is populated
       populateScheduleUnitSelect();
       // Open modal
@@ -6310,6 +6380,14 @@
       indicator.className = 'sync-indicator ' + status;
     }
 
+    // ═════════════════ Global Clock System ═════════════════
+    // Global clock state - used by all time-based calculations
+    let globalClock = {
+      now: new Date(),
+      lastMinute: null,
+      wibTime: null
+    };
+
     function updateClock() {
       const now = new Date();
       // Convert to WIB timezone (UTC+7)
@@ -6318,12 +6396,35 @@
       const minutes = String(wibTime.getUTCMinutes()).padStart(2, '0');
       const seconds = String(wibTime.getUTCSeconds()).padStart(2, '0');
       
+      // Update global clock state
+      globalClock.now = now;
+      globalClock.wibTime = wibTime;
+      const currentMinute = `${hours}:${minutes}`;
+      
+      // Check if minute changed
+      const minuteChanged = globalClock.lastMinute !== null && globalClock.lastMinute !== currentMinute;
+      globalClock.lastMinute = currentMinute;
+      
+      // Update clock display
       const clockEl = document.getElementById('clock');
       if (clockEl) {
         const timeEl = clockEl.querySelector('.time');
         if (timeEl) {
           timeEl.textContent = `${hours}:${minutes}:${seconds}`;
         }
+      }
+      
+      // When minute changes, update time-sensitive UI elements
+      if (minuteChanged) {
+        onMinuteChanged();
+      }
+    }
+
+    // Called every time the minute changes
+    function onMinuteChanged() {
+      // Re-render schedules to update countdown badges
+      if (document.getElementById('pageManagement')?.style.display !== 'none') {
+        renderSchedules();
       }
     }
 
@@ -6374,7 +6475,7 @@
       const wibTime = new Date(timestampMs + (7 * 60 * 60 * 1000));
       const hours = String(wibTime.getUTCHours()).padStart(2, '0');
       const minutes = String(wibTime.getUTCMinutes()).padStart(2, '0');
-      return `${hours}:${minutes}`;
+      return `${hours}:${minutes} WIB`;
     }
 
     async function copyToClipboard(text) {
@@ -6464,21 +6565,192 @@
     }
 
     // Schedule Functions
+    function handleScheduleDurationChange(select) {
+      const customInput = document.getElementById('scheduleDurationCustom');
+      const customLabel = document.getElementById('customDurationLabel');
+      
+      if (select.value === 'custom') {
+        customInput.style.display = 'block';
+        customLabel.style.color = 'var(--ps3-text)';
+        customInput.focus();
+      } else {
+        customInput.style.display = 'none';
+        customLabel.style.color = 'var(--ps3-muted)';
+        // Auto update end date/time when selecting preset duration
+        updateEndDateTimeFromDuration();
+      }
+    }
+    
+    // Initialize default end date when start date changes
+    function initDefaultEndDate() {
+      const startDate = document.getElementById('scheduleDate').value;
+      const endDateInput = document.getElementById('scheduleEndDate');
+      
+      if (startDate && !endDateInput.value) {
+        endDateInput.value = startDate;
+      }
+      
+      // Also update end time if we have start time and duration
+      updateEndDateTimeFromDuration();
+    }
+    
+    // Calculate duration from start and end datetime (with dates, WIB timezone aware)
+    function getDurationMinutesWithDate(startDate, startTime, endDate, endTime) {
+      if (!startDate || !startTime || !endDate || !endTime) return 0;
+      
+      // Parse dates as WIB (UTC+7) by appending timezone offset
+      const start = new Date(`${startDate}T${startTime}:00+07:00`);
+      const end = new Date(`${endDate}T${endTime}:00+07:00`);
+      
+      const diffMs = end - start;
+      const diffMinutes = Math.round(diffMs / (1000 * 60));
+      
+      return diffMinutes > 0 ? diffMinutes : 0;
+    }
+    
+    // Calculate end datetime from start datetime and duration (WIB timezone aware)
+    function addMinutesToDateTime(startDate, startTime, minutes) {
+      if (!startDate || !startTime || !minutes) return { date: '', time: '' };
+      
+      // Parse start date as local time (WIB) by appending timezone offset
+      const start = new Date(`${startDate}T${startTime}:00+07:00`);
+      const end = new Date(start.getTime() + minutes * 60000);
+      
+      // Format date as YYYY-MM-DD in WIB
+      const endDate = end.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+      // Format time as HH:MM in WIB  
+      const endTime = end.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta', hour12: false, hour: '2-digit', minute: '2-digit' });
+      
+      return { date: endDate, time: endTime };
+    }
+    
+    // Legacy function for backward compatibility (used in other parts)
+    function getDurationMinutes(startTime, endTime) {
+      if (!startTime || !endTime) return 0;
+      const [startH, startM] = startTime.split(':').map(Number);
+      const [endH, endM] = endTime.split(':').map(Number);
+      let startMinutes = startH * 60 + startM;
+      let endMinutes = endH * 60 + endM;
+      // Handle crossing midnight
+      if (endMinutes < startMinutes) {
+        endMinutes += 24 * 60;
+      }
+      return endMinutes - startMinutes;
+    }
+    
+    // Legacy function for backward compatibility
+    function addMinutesToTime(timeStr, minutes) {
+      if (!timeStr || !minutes) return '';
+      const [h, m] = timeStr.split(':').map(Number);
+      let totalMinutes = h * 60 + m + parseInt(minutes);
+      totalMinutes = totalMinutes % (24 * 60); // Wrap around 24h
+      const newH = Math.floor(totalMinutes / 60);
+      const newM = totalMinutes % 60;
+      return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+    }
+    
+    // When duration changes, update end date and time
+    function updateEndDateTimeFromDuration() {
+      const startDate = document.getElementById('scheduleDate').value;
+      const startTime = document.getElementById('scheduleTime').value;
+      const durationSelect = document.getElementById('scheduleDuration').value;
+      let duration = 0;
+      
+      if (durationSelect === 'custom') {
+        duration = parseInt(document.getElementById('scheduleDurationCustom').value) || 0;
+      } else {
+        duration = parseInt(durationSelect) || 0;
+      }
+      
+      if (startDate && startTime && duration > 0) {
+        const result = addMinutesToDateTime(startDate, startTime, duration);
+        document.getElementById('scheduleEndDate').value = result.date;
+        document.getElementById('scheduleEndTime').value = result.time;
+      }
+    }
+    
+    // When end date/time changes, update duration
+    function updateDurationFromEndDateTime() {
+      const startDate = document.getElementById('scheduleDate').value;
+      const startTime = document.getElementById('scheduleTime').value;
+      const endDate = document.getElementById('scheduleEndDate').value;
+      const endTime = document.getElementById('scheduleEndTime').value;
+      
+      if (startDate && startTime && endDate && endTime) {
+        const duration = getDurationMinutesWithDate(startDate, startTime, endDate, endTime);
+        if (duration > 0) {
+          const durationSelect = document.getElementById('scheduleDuration');
+          const customInput = document.getElementById('scheduleDurationCustom');
+          const customLabel = document.getElementById('customDurationLabel');
+          
+          // Check if duration matches preset options
+          const presetOptions = [60, 120, 180, 240, 300];
+          if (presetOptions.includes(duration)) {
+            durationSelect.value = duration.toString();
+            customInput.style.display = 'none';
+            customLabel.style.color = 'var(--ps3-muted)';
+          } else {
+            durationSelect.value = 'custom';
+            customInput.style.display = 'block';
+            customInput.value = duration;
+            customLabel.style.color = 'var(--ps3-text)';
+          }
+        }
+      }
+    }
+    
     async function addSchedule() {
       const customer = document.getElementById('scheduleCustomer').value.trim();
       const phone = document.getElementById('schedulePhone').value.trim();
       const date = document.getElementById('scheduleDate').value;
       const time = document.getElementById('scheduleTime').value;
+      const endDate = document.getElementById('scheduleEndDate').value;
+      const endTime = document.getElementById('scheduleEndTime').value;
       const unitId = document.getElementById('scheduleUnit').value;
-      const duration = parseInt(document.getElementById('scheduleDuration').value) || 0;
+      const durationSelect = document.getElementById('scheduleDuration').value;
+      const durationCustom = document.getElementById('scheduleDurationCustom').value;
       const note = document.getElementById('scheduleNote').value.trim();
       
-      if (!customer || !date) {
-        showToast('Nama pelanggan dan tanggal wajib diisi', 'error');
+      // Validasi kolom wajib
+      if (!customer) {
+        showToast('Nama pelanggan wajib diisi', 'error');
+        document.getElementById('scheduleCustomer').focus();
+        return;
+      }
+      if (!date) {
+        showToast('Tanggal mulai wajib dipilih', 'error');
+        document.getElementById('scheduleDate').focus();
+        return;
+      }
+      if (!time) {
+        showToast('Jam mulai wajib dipilih', 'error');
+        document.getElementById('scheduleTime').focus();
+        return;
+      }
+      if (!endDate) {
+        showToast('Tanggal berakhir wajib dipilih', 'error');
+        document.getElementById('scheduleEndDate').focus();
+        return;
+      }
+      if (!endTime) {
+        showToast('Jam berakhir wajib dipilih', 'error');
+        document.getElementById('scheduleEndTime').focus();
+        return;
+      }
+      if (!unitId) {
+        showToast('Unit wajib dipilih', 'error');
+        document.getElementById('scheduleUnit').focus();
         return;
       }
       
-      const unitName = unitId ? units.find(u => u.id == unitId)?.name || '' : '';
+      // Hitung durasi dari tanggal dan jam
+      let duration = getDurationMinutesWithDate(date, time, endDate, endTime);
+      if (duration < 30) {
+        showToast('Durasi minimal 30 menit', 'error');
+        return;
+      }
+      
+      const unitName = units.find(u => u.id == unitId)?.name || '';
       
       try {
         await api('POST', '/schedules', {
@@ -6488,6 +6760,8 @@
           unitName,
           scheduledDate: date,
           scheduledTime: time,
+          scheduledEndDate: endDate,
+          scheduledEndTime: endTime,
           duration,
           note
         });
@@ -6495,14 +6769,20 @@
         // Clear form
         document.getElementById('scheduleCustomer').value = '';
         document.getElementById('schedulePhone').value = '';
+        document.getElementById('scheduleDate').value = '';
         document.getElementById('scheduleTime').value = '';
-        document.getElementById('scheduleDuration').value = '';
-        document.getElementById('scheduleNote').value = '';
+        document.getElementById('scheduleEndDate').value = '';
+        document.getElementById('scheduleEndTime').value = '';
         document.getElementById('scheduleUnit').value = '';
+        document.getElementById('scheduleDuration').value = '120';
+        document.getElementById('scheduleDurationCustom').style.display = 'none';
+        document.getElementById('scheduleDurationCustom').value = '';
+        document.getElementById('customDurationLabel').style.color = 'var(--ps3-muted)';
+        document.getElementById('scheduleNote').value = '';
         
         await loadSchedules();
         renderSchedules();
-        closeModal('modalAddSchedule'); // Tutup modal setelah berhasil
+        closeModal('modalAddSchedule');
         showToast('Jadwal booking ditambahkan', 'success');
       } catch (error) {
         showToast(error.message, 'error');
@@ -6528,6 +6808,201 @@
       }
     }
 
+    // State untuk toggle view schedule
+    let showAllSchedules = false;
+
+    function getTimeUntil(dateStr, timeStr) {
+      // Use global clock for consistent time calculations
+      const now = globalClock.now || new Date();
+      const scheduled = new Date(dateStr + 'T' + (timeStr || '00:00'));
+      const diffMs = scheduled - now;
+      
+      if (diffMs <= 0) return null;
+      
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (hours > 0) {
+        return minutes > 0 ? `Dalam ${hours} jam ${minutes} menit` : `Dalam ${hours} jam`;
+      }
+      return `Dalam ${minutes} menit`;
+    }
+
+    function getMinutesUntil(dateStr, timeStr) {
+      // Use global clock for consistent time calculations
+      const now = globalClock.now || new Date();
+      const scheduled = new Date(dateStr + 'T' + (timeStr || '00:00'));
+      const diffMs = scheduled - now;
+      return Math.ceil(diffMs / (1000 * 60));
+    }
+
+    function getDaysUntil(dateStr) {
+      // Use global clock for consistent time calculations
+      const now = globalClock.now || new Date();
+      now.setHours(0, 0, 0, 0);
+      const scheduled = new Date(dateStr);
+      scheduled.setHours(0, 0, 0, 0);
+      
+      const diffDays = Math.ceil((scheduled - now) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays <= 0) return null;
+      if (diffDays === 1) return 'Dalam 1 hari';
+      if (diffDays === 2) return 'Dalam 2 hari';
+      return `Dalam ${diffDays} hari`;
+    }
+
+    function isScheduleRunning(s) {
+      // Use global clock for consistent time calculations
+      const now = globalClock.now || new Date();
+      const startTime = new Date(s.scheduledDate + 'T' + (s.scheduledTime || '00:00'));
+      let endTime;
+      
+      if (s.scheduledEndTime) {
+        endTime = new Date(s.scheduledDate + 'T' + s.scheduledEndTime);
+      } else if (s.scheduledTime && s.duration) {
+        // Calculate end time from duration
+        const [hours, minutes] = s.scheduledTime.split(':').map(Number);
+        endTime = new Date(s.scheduledDate + 'T' + s.scheduledTime);
+        endTime.setMinutes(endTime.getMinutes() + parseInt(s.duration));
+      } else {
+        return false;
+      }
+      
+      return now >= startTime && now <= endTime;
+    }
+
+    function getScheduleHighlight(s) {
+      // Use global clock for consistent time calculations
+      const now = globalClock.now || new Date();
+      const today = now.toISOString().split('T')[0];
+      const isPast = s.scheduledDate < today;
+      
+      // 5. Deleted -> Red (using badge shade for consistency)
+      if (s.status === 'deleted') {
+        return { bg: 'rgba(220, 38, 38, 0.15)', border: 'var(--ps3-red-badge)' };
+      }
+      
+      // 4. Cancelled -> Red (using badge shade for consistency)
+      if (s.status === 'cancelled') {
+        return { bg: 'rgba(220, 38, 38, 0.15)', border: 'var(--ps3-red-badge)' };
+      }
+      
+      // 3. Completed -> Gray
+      if (s.status === 'completed') {
+        return { bg: 'rgba(128, 128, 128, 0.2)', border: '#888' };
+      }
+      
+      // 2. Running -> Green (highlight remains green even if overtime)
+      if (s.status === 'running') {
+        return { bg: 'rgba(74, 222, 128, 0.15)', border: 'var(--ps3-green)' };
+      }
+      
+      // 1. Pending (including missed/terlewat) -> White/transparent
+      // User must manually click "Mulai" to change to running
+      return { bg: 'var(--ps3-surface)', border: 'var(--ps3-border)' };
+    }
+
+    function getScheduleStatusBadge(s) {
+      // Use global clock for consistent time calculations
+      const now = globalClock.now || new Date();
+      const today = now.toISOString().split('T')[0];
+      const isToday = s.scheduledDate === today;
+      const isPast = s.scheduledDate < today;
+      
+      // Helper: get overdue time
+      function getOverdueTime(dateStr, timeStr) {
+        const scheduled = new Date(dateStr + 'T' + (timeStr || '00:00'));
+        const diffMs = now - scheduled;
+        if (diffMs <= 0) return null;
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        if (hours > 0) {
+          return minutes > 0 ? `${hours} jam ${minutes} menit` : `${hours} jam`;
+        }
+        return `${minutes} menit`;
+      }
+      
+      // Helper: get overtime (for running schedules)
+      function getOvertime() {
+        let endTime;
+        if (s.scheduledEndTime) {
+          endTime = new Date(s.scheduledDate + 'T' + s.scheduledEndTime);
+        } else if (s.scheduledTime && s.duration) {
+          endTime = new Date(s.scheduledDate + 'T' + s.scheduledTime);
+          endTime.setMinutes(endTime.getMinutes() + parseInt(s.duration));
+        } else {
+          return null;
+        }
+        const diffMs = now - endTime;
+        if (diffMs <= 0) return null;
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        if (hours > 0) {
+          return minutes > 0 ? `${hours} jam ${minutes} menit` : `${hours} jam`;
+        }
+        return `${minutes} menit`;
+      }
+      
+      // 5. Deleted -> Red badge (distinct shade), "🗑 Dihapus"
+      if (s.status === 'deleted') {
+        return { text: '🗑️ Dihapus', bg: 'var(--ps3-red-badge)', color: '#fff' };
+      }
+      
+      // 4. Cancelled -> Red badge (distinct shade), "❌ Dibatalkan"
+      if (s.status === 'cancelled') {
+        return { text: '❌ Dibatalkan', bg: 'var(--ps3-red-badge)', color: '#fff' };
+      }
+      
+      // 3. Completed -> Dark green badge, "✅ Selesai"
+      if (s.status === 'completed') {
+        return { text: '✅ Selesai', bg: 'var(--ps3-green-dark)', color: '#fff' };
+      }
+      
+      // 2a. Running + Overtime -> Red badge (distinct shade), "🆘 Melebihi waktu X jam X menit"
+      if (s.status === 'running') {
+        const overtime = getOvertime();
+        if (overtime) {
+          return { text: `🆘 Melebihi waktu ${overtime}`, bg: 'var(--ps3-red-badge)', color: '#fff' };
+        }
+        // Running on time -> Green badge, "🔥 Berjalan"
+        return { text: '🔥 Berjalan', bg: 'var(--ps3-green)', color: '#000' };
+      }
+      
+      // 2b. Pending + Start time passed (Missed) -> Red badge (distinct shade), "⛔️ Terlewat X jam X menit"
+      if (s.status === 'pending') {
+        const startTime = new Date(s.scheduledDate + 'T' + (s.scheduledTime || '00:00'));
+        if (now > startTime) {
+          const overdue = getOverdueTime(s.scheduledDate, s.scheduledTime);
+          if (overdue) {
+            return { text: `⛔️ Terlewat ${overdue}`, bg: 'var(--ps3-red-badge)', color: '#fff' };
+          }
+        }
+        
+        // Pending + Within 5 minutes -> Orange
+        // Pending + Normal -> Yellow
+        const minutesUntil = getMinutesUntil(s.scheduledDate, s.scheduledTime);
+        const isUrgent = minutesUntil !== null && minutesUntil <= 5 && minutesUntil > 0;
+        
+        let countText;
+        if (isToday) {
+          const timeUntil = getTimeUntil(s.scheduledDate, s.scheduledTime);
+          countText = timeUntil || '⏰ Segera';
+        } else {
+          const daysUntil = getDaysUntil(s.scheduledDate);
+          countText = daysUntil || '📅 Mendatang';
+        }
+        
+        return {
+          text: isUrgent ? `⏰ ${countText}` : `⏳ ${countText}`,
+          bg: isUrgent ? 'var(--ps3-orange)' : 'var(--ps3-yellow)',
+          color: isUrgent ? '#fff' : '#000'
+        };
+      }
+      
+      // Fallback - should not reach here
+      return { text: '⏳ Menunggu', bg: 'var(--ps3-yellow)', color: '#000' };
+    }
+
     function renderSchedules() {
       const container = document.getElementById('scheduleList');
       if (!container) return;
@@ -6542,40 +7017,94 @@
         return;
       }
       
-      // Sort by date (newest first)
-      const sorted = [...schedules].sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
+      // Use global clock for consistent time calculations
+      const now = globalClock.now || new Date();
+      const today = now.toISOString().split('T')[0];
       
-      const today = new Date().toISOString().split('T')[0];
+      // Sort by time closest to now (upcoming first, then past)
+      const sorted = [...schedules].sort((a, b) => {
+        const dateTimeA = new Date(a.scheduledDate + 'T' + (a.scheduledTime || '00:00'));
+        const dateTimeB = new Date(b.scheduledDate + 'T' + (b.scheduledTime || '00:00'));
+        const diffA = dateTimeA - now;
+        const diffB = dateTimeB - now;
+        
+        // If both are in future or both in past, sort by absolute difference
+        if ((diffA >= 0 && diffB >= 0) || (diffA < 0 && diffB < 0)) {
+          return Math.abs(diffA) - Math.abs(diffB);
+        }
+        // Future comes before past
+        return diffB - diffA;
+      });
       
-      container.innerHTML = sorted.map(s => {
-        const isToday = s.scheduledDate === today;
-        const isPast = s.scheduledDate < today;
-        const statusClass = s.status === 'completed' ? 'completed' : (s.status === 'cancelled' ? 'cancelled' : (isPast ? 'overdue' : 'pending'));
-        const statusText = s.status === 'completed' ? '✅ Selesai' : (s.status === 'cancelled' ? '❌ Dibatalkan' : (isToday ? '📅 Hari Ini' : (isPast ? '⚠️ Lewat' : '⏳ Menunggu')));
+      // Filter: tampilkan semua jika showAllSchedules, atau hanya hari ini jika tidak
+      const filtered = showAllSchedules ? sorted : sorted.filter(s => s.scheduledDate === today);
+      
+      // Count other schedules (non-today)
+      const otherSchedules = sorted.filter(s => s.scheduledDate !== today);
+      
+      let html = '';
+      
+      // Card untuk hari ini
+      const todaySchedules = sorted.filter(s => s.scheduledDate === today);
+      if (!showAllSchedules && todaySchedules.length === 0) {
+        html += '<p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Tidak ada jadwal untuk hari ini</p>';
+      }
+      
+      html += filtered.map(s => {
+        const highlight = getScheduleHighlight(s);
+        const badge = getScheduleStatusBadge(s);
         
         return `
-          <div style="background: ${isToday ? 'rgba(230,0,18,0.1)' : 'var(--ps3-surface)'}; border: 1px solid ${isToday ? 'var(--ps3-red)' : 'var(--ps3-border)'}; border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+          <div style="background: ${highlight.bg}; border: 2px solid ${highlight.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-              <div style="font-weight: 600;">${s.customer}</div>
-              <span style="font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; background: ${getStatusColor(statusClass)}; color: #fff;">${statusText}</span>
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-weight: 600;">${s.customer}</span>
+                  ${s.scheduleId ? `<span style="font-size: 0.7rem; padding: 2px 6px; background: var(--ps3-silver); color: #000; border-radius: 4px; font-weight: 500; font-family: monospace;">${s.scheduleId}</span>` : ''}
+                </div>
+                ${s.phone ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">📞 ${s.phone}</div>` : ''}
+              </div>
+              <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.bg}; color: ${badge.color}; font-weight: 600; white-space: nowrap;">${badge.text}</span>
             </div>
-            <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">
-              📅 ${formatDate(s.scheduledDate)} ${s.scheduledTime ? '🕐 ' + s.scheduledTime : ''}
+            <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
+              ${formatScheduleDate(s)}
+            </div>
+            <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 6px;">
+              ${formatScheduleTime(s)}
             </div>
             ${s.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${s.unitName}</div>` : ''}
-            ${s.phone ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">📞 ${s.phone}</div>` : ''}
-            ${s.duration ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">⏱️ ${s.duration} menit</div>` : ''}
-            ${s.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic;">💬 ${s.note}</div>` : ''}
-            <div style="display: flex; gap: 8px; margin-top: 10px;">
+            ${s.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${s.note}</div>` : ''}
+            <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
               ${s.status === 'pending' ? `
-                <button onclick="updateScheduleStatus(${s.id}, 'completed')" style="background: var(--ps3-green); color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600;">✅ Selesai</button>
-                <button onclick="updateScheduleStatus(${s.id}, 'cancelled')" style="background: var(--ps3-red); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600;">❌ Batal</button>
+                <button onclick="startSchedule(${s.id})" style="background: var(--ps3-green); color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-green-dark)'" onmouseout="this.style.background='var(--ps3-green)'">▶️ Mulai</button>
+                <button onclick="updateScheduleStatus(${s.id}, 'cancelled')" style="background: var(--ps3-surface); color: var(--ps3-red-danger); border: 1px solid var(--ps3-red-danger); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-red-danger)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-red-danger)'">❌ Batal</button>
               ` : ''}
-              <button onclick="deleteSchedule(${s.id})" style="background: var(--ps3-border); color: var(--ps3-text); border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">🗑️ Hapus</button>
+              ${s.status === 'running' ? `
+                <button onclick="updateScheduleStatus(${s.id}, 'completed')" style="background: var(--ps3-green-dark); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-green)'" onmouseout="this.style.background='var(--ps3-green-dark)'">✅ Selesai</button>
+                <button onclick="updateScheduleStatus(${s.id}, 'cancelled')" style="background: var(--ps3-surface); color: var(--ps3-red-danger); border: 1px solid var(--ps3-red-danger); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-red-danger)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-red-danger)'">❌ Batal</button>
+              ` : ''}
+              <button onclick="deleteSchedule(${s.id})" style="background: transparent; color: var(--ps3-muted); border: 1px solid var(--ps3-border); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#fff';this.style.borderColor='var(--ps3-muted)'" onmouseout="this.style.color='var(--ps3-muted)';this.style.borderColor='var(--ps3-border)'">🗑️ Hapus</button>
             </div>
           </div>
         `;
       }).join('');
+      
+      // Tambah tombol toggle view more / view less
+      if (otherSchedules.length > 0) {
+        const btnText = showAllSchedules ? '📅 Tampilkan Hanya Hari Ini' : `📅 Lihat ${otherSchedules.length} Jadwal Lainnya`;
+        html += `
+          <button onclick="toggleShowAllSchedules()" style="width: 100%; background: var(--ps3-surface); border: 2px dashed var(--ps3-border); color: var(--ps3-text); padding: 12px; border-radius: 10px; font-size: 0.9rem; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            ${btnText}
+          </button>
+        `;
+      }
+      
+      container.innerHTML = html;
+    }
+
+    function toggleShowAllSchedules() {
+      showAllSchedules = !showAllSchedules;
+      renderSchedules();
     }
 
     function getStatusColor(status) {
@@ -6594,12 +7123,100 @@
       return date.toLocaleDateString('id-ID', options);
     }
 
+    /**
+     * Format schedule DATE line only (for 2-line display)
+     * Returns format like: "📆 Sab, 11 Apr 2026" or "📆 Sab - Min, 11 - 12 Apr 2026"
+     */
+    function formatScheduleDate(s) {
+      const startDate = new Date(s.scheduledDate + 'T00:00:00');
+      
+      // Calculate end date
+      let endDate;
+      if (s.scheduledEndDate) {
+        endDate = new Date(s.scheduledEndDate + 'T00:00:00');
+      } else if (s.scheduledTime && s.duration) {
+        const startDateTime = new Date(s.scheduledDate + 'T' + s.scheduledTime);
+        endDate = new Date(startDateTime.getTime() + parseInt(s.duration) * 60000);
+      } else {
+        // No end date, show only start
+        const dayName = startDate.toLocaleDateString('id-ID', { weekday: 'short' });
+        const day = startDate.getDate();
+        const month = startDate.toLocaleDateString('id-ID', { month: 'short' });
+        const year = startDate.getFullYear();
+        return `📆 ${dayName}, ${day} ${month} ${year}`;
+      }
+      
+      // Check which components are same/different
+      const sameDay = startDate.toDateString() === endDate.toDateString();
+      const sameMonth = startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear();
+      const sameYear = startDate.getFullYear() === endDate.getFullYear();
+      
+      // Format components
+      const startDayName = startDate.toLocaleDateString('id-ID', { weekday: 'short' });
+      const endDayName = endDate.toLocaleDateString('id-ID', { weekday: 'short' });
+      const startDay = startDate.getDate();
+      const endDay = endDate.getDate();
+      const startMonth = startDate.toLocaleDateString('id-ID', { month: 'short' });
+      const endMonth = endDate.toLocaleDateString('id-ID', { month: 'short' });
+      const startYear = startDate.getFullYear();
+      const endYear = endDate.getFullYear();
+      
+      if (sameDay) {
+        // Same day
+        return `📆 ${startDayName}, ${startDay} ${startMonth} ${startYear}`;
+      } else if (sameMonth && sameYear) {
+        // Different day, same month/year
+        return `📆 ${startDayName} - ${endDayName}, ${startDay} - ${endDay} ${startMonth} ${startYear}`;
+      } else if (sameYear) {
+        // Different month, same year
+        return `📆 ${startDayName} - ${endDayName}, ${startDay} ${startMonth} - ${endDay} ${endMonth} ${startYear}`;
+      } else {
+        // Different year
+        return `📆 ${startDayName} - ${endDayName}, ${startDay} ${startMonth} ${startYear} - ${endDay} ${endMonth} ${endYear}`;
+      }
+    }
+
+    /**
+     * Format schedule TIME line only (for 2-line display)
+     * Returns format like: "🕐 14:30 → 17:30 ⏰ 60 menit"
+     */
+    function formatScheduleTime(s) {
+      const startTime = s.scheduledTime || '--:--';
+      
+      // Calculate or get end time
+      let endTime;
+      if (s.scheduledEndTime) {
+        endTime = s.scheduledEndTime;
+      } else if (s.scheduledTime && s.duration) {
+        const startDateTime = new Date(s.scheduledDate + 'T' + s.scheduledTime);
+        const endDateTime = new Date(startDateTime.getTime() + parseInt(s.duration) * 60000);
+        endTime = endDateTime.toTimeString().slice(0, 5);
+      } else {
+        endTime = '--:--';
+      }
+      
+      const durationText = s.duration ? `⏰ ${s.duration} menit` : '';
+      return `🕐 ${startTime} → ${endTime} ${durationText}`;
+    }
+
     async function updateScheduleStatus(id, status) {
       try {
         await api('PUT', `/schedules/${id}`, { status });
         await loadSchedules();
         renderSchedules();
         showToast(`Status jadwal diperbarui`, 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    async function startSchedule(id) {
+      try {
+        // Update status to 'running'
+        await api('PUT', `/schedules/${id}`, { status: 'running' });
+        await loadSchedules();
+        renderSchedules();
+        showToast('Jadwal dimulai!', 'success');
       } catch (error) {
         showToast(error.message, 'error');
       }

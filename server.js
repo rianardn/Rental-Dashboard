@@ -50,6 +50,15 @@ function generateExpenseId() {
   return `${prefix}${String(seq).padStart(5, '0')}`;
 }
 
+// Generate sequential schedule ID (PSJxxxxx for schedules/jadwal)
+function generateScheduleId() {
+  const prefix = 'PSJ';
+  const stmt = db.prepare('INSERT INTO id_counters (prefix, last_number) VALUES (?, 1) ON CONFLICT(prefix) DO UPDATE SET last_number = last_number + 1 RETURNING last_number');
+  const result = stmt.get(prefix);
+  const seq = result.last_number;
+  return `${prefix}${String(seq).padStart(5, '0')}`;
+}
+
 // ─── INIT DATA DIR ─────────────────────────────────────────────
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -146,18 +155,23 @@ db.exec(`
   -- Management: Schedules table for advance bookings
   CREATE TABLE IF NOT EXISTS schedules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scheduleId TEXT UNIQUE,
     customer TEXT NOT NULL,
     phone TEXT,
     unitId INTEGER,
     unitName TEXT,
     scheduledDate TEXT NOT NULL,
     scheduledTime TEXT,
+    scheduledEndDate TEXT,
+    scheduledEndTime TEXT,
     duration INTEGER,
     note TEXT,
     status TEXT DEFAULT 'pending',
     created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000),
     FOREIGN KEY (unitId) REFERENCES units(id)
   );
+
+  -- Note: scheduleId column is added via runtime migration below
 
   -- Management: Inventory table for equipment/assets
   CREATE TABLE IF NOT EXISTS inventory (
@@ -311,6 +325,56 @@ if (db) {
     console.log('[DB] Migration: Added category column to expenses');
   } catch (e) {
     // Column might already exist, ignore error
+  }
+}
+
+// Runtime migration: Add scheduledEndDate and scheduledEndTime columns to schedules table
+if (db) {
+  try {
+    const schedulesInfo = db.prepare(`PRAGMA table_info(schedules)`).all();
+    const hasEndDate = schedulesInfo.find(c => c.name === 'scheduledEndDate');
+    const hasEndTime = schedulesInfo.find(c => c.name === 'scheduledEndTime');
+    
+    if (!hasEndDate) {
+      db.prepare(`ALTER TABLE schedules ADD COLUMN scheduledEndDate TEXT`).run();
+      console.log('[DB] Migration: Added scheduledEndDate column to schedules');
+    }
+    if (!hasEndTime) {
+      db.prepare(`ALTER TABLE schedules ADD COLUMN scheduledEndTime TEXT`).run();
+      console.log('[DB] Migration: Added scheduledEndTime column to schedules');
+    }
+    
+    // Migration: Add scheduleId column if not exists
+    const hasScheduleId = schedulesInfo.find(c => c.name === 'scheduleId');
+    if (!hasScheduleId) {
+      // Add column without UNIQUE first (SQLite limitation)
+      db.prepare(`ALTER TABLE schedules ADD COLUMN scheduleId TEXT`).run();
+      console.log('[DB] Migration: Added scheduleId column to schedules');
+      
+      // Generate IDs for existing schedules immediately after adding column
+      const existingSchedules = db.prepare(`SELECT id FROM schedules WHERE scheduleId IS NULL`).all();
+      if (existingSchedules.length > 0) {
+        console.log(`[DB] Migration: Generating scheduleId for ${existingSchedules.length} existing schedules`);
+        for (const schedule of existingSchedules) {
+          const newId = generateScheduleId();
+          db.prepare(`UPDATE schedules SET scheduleId = ? WHERE id = ?`).run(newId, schedule.id);
+        }
+        console.log('[DB] Migration: Generated scheduleId for all existing schedules');
+      }
+    }
+    
+    // Ensure all schedules have scheduleId (catch any that might have been missed)
+    const schedulesWithoutId = db.prepare(`SELECT id FROM schedules WHERE scheduleId IS NULL OR scheduleId = ''`).all();
+    if (schedulesWithoutId.length > 0) {
+      console.log(`[DB] Migration: Generating scheduleId for ${schedulesWithoutId.length} schedules without ID`);
+      for (const schedule of schedulesWithoutId) {
+        const newId = generateScheduleId();
+        db.prepare(`UPDATE schedules SET scheduleId = ? WHERE id = ?`).run(newId, schedule.id);
+      }
+      console.log('[DB] Migration: All schedules now have scheduleId');
+    }
+  } catch (e) {
+    console.error('[DB] Migration error for schedules columns:', e.message);
   }
 }
 
@@ -1105,54 +1169,83 @@ app.get('/api/schedules', requireAuth, (req, res) => {
 });
 
 app.post('/api/schedules', requireAuth, (req, res) => {
-  const { customer, phone, unitId, unitName, scheduledDate, scheduledTime, duration, note, status } = req.body;
+  const { customer, phone, unitId, unitName, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status } = req.body;
   const durationMinutes = parseInt(duration) || 0;
   
   // Conflict detection: Check if unit is already booked for overlapping time
-  if (unitId && scheduledDate && scheduledTime && durationMinutes > 0) {
-    // Calculate new booking time range in minutes from midnight
-    const [newHour, newMin] = scheduledTime.split(':').map(Number);
-    const newStartMinutes = newHour * 60 + newMin;
-    const newEndMinutes = newStartMinutes + durationMinutes;
+  // Uses scheduledEndDate and scheduledEndTime if available, otherwise fall back to calculation
+  if (unitId && scheduledDate && scheduledTime) {
+    let newStartDateTime, newEndDateTime;
     
-    // Get existing schedules for same date and unit
-    const existingSchedules = db.prepare(
-      'SELECT * FROM schedules WHERE scheduledDate = ? AND unitId = ? AND status != ?'
-    ).all(scheduledDate, unitId, 'cancelled');
+    // Parse new booking dates/times
+    newStartDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+    if (scheduledEndDate && scheduledEndTime) {
+      newEndDateTime = new Date(`${scheduledEndDate}T${scheduledEndTime}`);
+    } else if (durationMinutes > 0) {
+      newEndDateTime = new Date(newStartDateTime.getTime() + durationMinutes * 60000);
+    }
     
-    for (const existing of existingSchedules) {
-      if (!existing.scheduledTime || !existing.duration) continue;
+    if (newEndDateTime) {
+      // Get existing schedules for overlapping dates and unit
+      // Check schedules where the date range overlaps
+      const existingSchedules = db.prepare(
+        `SELECT * FROM schedules 
+         WHERE unitId = ? AND status != ? 
+         AND (
+           (scheduledDate <= ? AND (scheduledEndDate >= ? OR scheduledDate = ?))
+           OR 
+           (scheduledEndDate IS NULL AND scheduledDate >= ? AND scheduledDate <= ?)
+         )`
+      ).all(unitId, 'cancelled', scheduledEndDate || scheduledDate, scheduledDate, scheduledDate, scheduledDate, scheduledEndDate || scheduledDate);
       
-      // Calculate existing booking time range
-      const [existHour, existMin] = existing.scheduledTime.split(':').map(Number);
-      const existStartMinutes = existHour * 60 + existMin;
-      const existEndMinutes = existStartMinutes + (existing.duration || 0);
-      
-      // Check for overlap: (StartA < EndB) && (EndA > StartB)
-      const overlap = (newStartMinutes < existEndMinutes) && (newEndMinutes > existStartMinutes);
-      
-      if (overlap) {
-        const existEndTime = String(Math.floor(existEndMinutes / 60)).padStart(2, '0') + ':' + 
-                            String(existEndMinutes % 60).padStart(2, '0');
-        return res.status(409).json({
-          ok: false,
-          error: `Unit sudah dibooking oleh ${existing.customer} pukul ${existing.scheduledTime}-${existEndTime}. Silakan pilih unit lain atau waktu berbeda.`
-        });
+      for (const existing of existingSchedules) {
+        if (!existing.scheduledTime) continue;
+        
+        // Calculate existing booking datetime range
+        let existStartDateTime = new Date(`${existing.scheduledDate}T${existing.scheduledTime}`);
+        let existEndDateTime;
+        
+        if (existing.scheduledEndDate && existing.scheduledEndTime) {
+          existEndDateTime = new Date(`${existing.scheduledEndDate}T${existing.scheduledEndTime}`);
+        } else if (existing.duration) {
+          existEndDateTime = new Date(existStartDateTime.getTime() + existing.duration * 60000);
+        } else {
+          continue; // Skip if no end time info
+        }
+        
+        // Check for overlap: (StartA < EndB) && (EndA > StartB)
+        const overlap = (newStartDateTime < existEndDateTime) && (newEndDateTime > existStartDateTime);
+        
+        if (overlap) {
+          const existEndTimeStr = existing.scheduledEndTime || 
+            String(existEndDateTime.getHours()).padStart(2, '0') + ':' + 
+            String(existEndDateTime.getMinutes()).padStart(2, '0');
+          return res.status(409).json({
+            ok: false,
+            error: `Unit sudah dibooking oleh ${existing.customer} pukul ${existing.scheduledTime}-${existEndTimeStr}. Silakan pilih unit lain atau waktu berbeda.`
+          });
+        }
       }
     }
   }
   
+  // Generate schedule ID (PSJxxxxx)
+  const scheduleId = generateScheduleId();
+
   const stmt = db.prepare(`
-    INSERT INTO schedules (customer, phone, unitId, unitName, scheduledDate, scheduledTime, duration, note, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO schedules (scheduleId, customer, phone, unitId, unitName, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
+    scheduleId,
     customer,
     phone || '',
     unitId || null,
     unitName || '',
     scheduledDate,
     scheduledTime || '',
+    scheduledEndDate || scheduledDate,
+    scheduledEndTime || '',
     durationMinutes,
     note || '',
     status || 'pending'
@@ -1163,39 +1256,79 @@ app.post('/api/schedules', requireAuth, (req, res) => {
 
 app.put('/api/schedules/:id', requireAuth, (req, res) => {
   const scheduleId = req.params.id;
-  const { customer, phone, unitId, unitName, scheduledDate, scheduledTime, duration, note, status } = req.body;
+  const { customer, phone, unitId, unitName, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status } = req.body;
   const durationMinutes = parseInt(duration) || 0;
   
+  // Get existing schedule first for partial updates
+  const existing = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
+  if (!existing) {
+    return res.status(404).json({ ok: false, error: 'Jadwal tidak ditemukan' });
+  }
+  
+  // Use existing values if not provided (partial update support)
+  const updateCustomer = customer !== undefined ? customer : existing.customer;
+  const updatePhone = phone !== undefined ? phone : existing.phone;
+  const updateUnitId = unitId !== undefined ? (unitId || null) : existing.unitId;
+  const updateUnitName = unitName !== undefined ? unitName : existing.unitName;
+  const updateScheduledDate = scheduledDate !== undefined ? scheduledDate : existing.scheduledDate;
+  const updateScheduledTime = scheduledTime !== undefined ? scheduledTime : existing.scheduledTime;
+  const updateScheduledEndDate = scheduledEndDate !== undefined ? scheduledEndDate : existing.scheduledEndDate;
+  const updateScheduledEndTime = scheduledEndTime !== undefined ? scheduledEndTime : existing.scheduledEndTime;
+  const updateDuration = duration !== undefined ? durationMinutes : existing.duration;
+  const updateNote = note !== undefined ? note : existing.note;
+  const updateStatus = status !== undefined ? status : existing.status;
+  
   // Conflict detection for updates: Check if unit is already booked for overlapping time (excluding current schedule)
-  if (unitId && scheduledDate && scheduledTime && durationMinutes > 0) {
-    // Calculate new booking time range in minutes from midnight
-    const [newHour, newMin] = scheduledTime.split(':').map(Number);
-    const newStartMinutes = newHour * 60 + newMin;
-    const newEndMinutes = newStartMinutes + durationMinutes;
+  // Uses datetime comparison for multi-day bookings
+  if (updateUnitId && updateScheduledDate && updateScheduledTime) {
+    let newStartDateTime = new Date(`${updateScheduledDate}T${updateScheduledTime}`);
+    let newEndDateTime;
     
-    // Get existing schedules for same date and unit (excluding current schedule)
-    const existingSchedules = db.prepare(
-      'SELECT * FROM schedules WHERE scheduledDate = ? AND unitId = ? AND status != ? AND id != ?'
-    ).all(scheduledDate, unitId, 'cancelled', scheduleId);
+    if (updateScheduledEndDate && updateScheduledEndTime) {
+      newEndDateTime = new Date(`${updateScheduledEndDate}T${updateScheduledEndTime}`);
+    } else if (updateDuration > 0) {
+      newEndDateTime = new Date(newStartDateTime.getTime() + updateDuration * 60000);
+    }
     
-    for (const existing of existingSchedules) {
-      if (!existing.scheduledTime || !existing.duration) continue;
+    if (newEndDateTime) {
+      // Get existing schedules for overlapping dates and unit (excluding current)
+      const existingSchedules = db.prepare(
+        `SELECT * FROM schedules 
+         WHERE unitId = ? AND status != ? AND id != ?
+         AND (
+           (scheduledDate <= ? AND (scheduledEndDate >= ? OR scheduledDate = ?))
+           OR 
+           (scheduledEndDate IS NULL AND scheduledDate >= ? AND scheduledDate <= ?)
+         )`
+      ).all(updateUnitId, 'cancelled', scheduleId, updateScheduledEndDate || updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledEndDate || updateScheduledDate);
       
-      // Calculate existing booking time range
-      const [existHour, existMin] = existing.scheduledTime.split(':').map(Number);
-      const existStartMinutes = existHour * 60 + existMin;
-      const existEndMinutes = existStartMinutes + (existing.duration || 0);
-      
-      // Check for overlap: (StartA < EndB) && (EndA > StartB)
-      const overlap = (newStartMinutes < existEndMinutes) && (newEndMinutes > existStartMinutes);
-      
-      if (overlap) {
-        const existEndTime = String(Math.floor(existEndMinutes / 60)).padStart(2, '0') + ':' + 
-                            String(existEndMinutes % 60).padStart(2, '0');
-        return res.status(409).json({
-          ok: false,
-          error: `Unit sudah dibooking oleh ${existing.customer} pukul ${existing.scheduledTime}-${existEndTime}. Silakan pilih unit lain atau waktu berbeda.`
-        });
+      for (const exist of existingSchedules) {
+        if (!exist.scheduledTime) continue;
+        
+        // Calculate existing booking datetime range
+        let existStartDateTime = new Date(`${exist.scheduledDate}T${exist.scheduledTime}`);
+        let existEndDateTime;
+        
+        if (exist.scheduledEndDate && exist.scheduledEndTime) {
+          existEndDateTime = new Date(`${exist.scheduledEndDate}T${exist.scheduledEndTime}`);
+        } else if (exist.duration) {
+          existEndDateTime = new Date(existStartDateTime.getTime() + exist.duration * 60000);
+        } else {
+          continue;
+        }
+        
+        // Check for overlap: (StartA < EndB) && (EndA > StartB)
+        const overlap = (newStartDateTime < existEndDateTime) && (newEndDateTime > existStartDateTime);
+        
+        if (overlap) {
+          const existEndTimeStr = exist.scheduledEndTime || 
+            String(existEndDateTime.getHours()).padStart(2, '0') + ':' + 
+            String(existEndDateTime.getMinutes()).padStart(2, '0');
+          return res.status(409).json({
+            ok: false,
+            error: `Unit sudah dibooking oleh ${exist.customer} pukul ${exist.scheduledTime}-${existEndTimeStr}. Silakan pilih unit lain atau waktu berbeda.`
+          });
+        }
       }
     }
   }
@@ -1203,19 +1336,21 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
   const stmt = db.prepare(`
     UPDATE schedules SET
       customer = ?, phone = ?, unitId = ?, unitName = ?, scheduledDate = ?, scheduledTime = ?,
-      duration = ?, note = ?, status = ?
+      scheduledEndDate = ?, scheduledEndTime = ?, duration = ?, note = ?, status = ?
     WHERE id = ?
   `);
   stmt.run(
-    customer,
-    phone || '',
-    unitId || null,
-    unitName || '',
-    scheduledDate,
-    scheduledTime || '',
-    durationMinutes,
-    note || '',
-    status || 'pending',
+    updateCustomer,
+    updatePhone || '',
+    updateUnitId,
+    updateUnitName || '',
+    updateScheduledDate,
+    updateScheduledTime || '',
+    updateScheduledEndDate || updateScheduledDate,
+    updateScheduledEndTime || '',
+    updateDuration,
+    updateNote || '',
+    updateStatus || 'pending',
     scheduleId
   );
   const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
