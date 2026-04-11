@@ -3106,7 +3106,7 @@
           return `
           <div class="transaction-item" style="position: relative;" data-exp-id="${e.id || ''}">
             <div class="transaction-header">
-              <div class="transaction-unit">${e.item}</div>
+              <div class="transaction-unit">${catInfo.icon} ${e.item}</div>
               <div style="display: flex; align-items: center; gap: 6px;">
                 <div class="transaction-amount" style="color: var(--ps3-red);">${formatMoney(e.amount)}</div>
                 <button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1.1rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Lihat riwayat">📋</button>
@@ -3115,9 +3115,8 @@
               </div>
             </div>
             <div class="transaction-meta" style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">
-              <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; font-size: 0.85rem;">
-                <span style="text-align: left; color: var(--ps3-chrome);">${catInfo.fullDisplay}</span>
-                <span style="text-align: right; color: var(--ps3-muted);">${formatDateOnlyWIB(e.created_at)}</span>
+              <div style="display: flex; justify-content: flex-end; font-size: 0.85rem; color: var(--ps3-muted);">
+                <span>${formatDateOnlyWIB(e.created_at)}</span>
               </div>
               <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; color: var(--ps3-muted); font-size: 0.8rem;">
                 <div style="text-align: left;">
@@ -3805,7 +3804,7 @@
         return `
         <div class="transaction-item" style="position: relative; margin-bottom: 12px;" data-exp-id="${e.id || ''}">
           <div class="transaction-header">
-            <div class="transaction-unit">${e.item || 'No item'}</div>
+            <div class="transaction-unit">${catInfo.icon} ${e.item || 'No item'}</div>
             <div style="display: flex; align-items: center; gap: 6px;">
               <div class="transaction-amount" style="color: var(--ps3-red);">${formatMoney(e.amount)}</div>
               <button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1.1rem; cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; touch-action: manipulation;" title="Lihat riwayat">📋</button>
@@ -3814,9 +3813,8 @@
             </div>
           </div>
           <div class="transaction-details" style="display: flex; flex-direction: column; gap: 4px;">
-            <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; font-size: 0.9rem;">
-              <span style="text-align: left; color: var(--ps3-chrome); font-weight: 500;">${catInfo.fullDisplay}</span>
-              <span style="text-align: right; color: var(--ps3-muted);">${formatDate(new Date(e.date).getTime())}</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; color: var(--ps3-muted);">
+              <span>${formatDate(new Date(e.date).getTime())}</span>
             </div>
             <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; color: var(--ps3-muted); font-size: 0.8rem;">
               <div style="text-align: left; font-style: italic;">
