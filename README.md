@@ -44,8 +44,6 @@ fly status
 fly logs -a rental-dashboard
 ```
 
-**Live URL:** https://rental-dashboard.fly.dev/
-
 ### Local Development
 
 ```bash
