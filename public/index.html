@@ -1789,50 +1789,17 @@
 
     <!-- Management Page -->
     <div id="pageManagement" class="page">
-      <!-- Jadwal Section -->
+      <!-- Jadwal Section - Daftar Jadwal dengan tombol Tambah -->
       <div class="card">
-        <div class="section-title">📅 Jadwal Booking</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+          <div class="section-title" style="margin: 0;">📅 Daftar Jadwal</div>
+          <button class="btn btn-red" style="width: auto; padding: 10px 16px; font-size: 0.75rem;" onclick="openAddScheduleModal()">
+            <span style="margin-right: 6px;">➕</span> Tambah Jadwal
+          </button>
+        </div>
         <p style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 15px;">Kelola booking penyewa yang akan datang</p>
         
-        <div class="form-group">
-          <label>Nama Pelanggan</label>
-          <input type="text" id="scheduleCustomer" placeholder="Nama penyewa">
-        </div>
-        <div class="form-group">
-          <label>No. Telepon</label>
-          <input type="text" id="schedulePhone" placeholder="Nomor WhatsApp/HP">
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <div class="form-group">
-            <label>Tanggal</label>
-            <input type="date" id="scheduleDate">
-          </div>
-          <div class="form-group">
-            <label>Jam</label>
-            <input type="time" id="scheduleTime">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Unit (opsional)</label>
-          <select id="scheduleUnit">
-            <option value="">Pilih unit...</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Durasi (menit)</label>
-          <input type="number" id="scheduleDuration" placeholder="120" min="30" step="30">
-        </div>
-        <div class="form-group">
-          <label>Catatan</label>
-          <input type="text" id="scheduleNote" placeholder="Catatan tambahan">
-        </div>
-        <button class="btn" onclick="addSchedule()">Tambah Jadwal</button>
-      </div>
-      
-      <!-- Schedule List -->
-      <div class="card" style="margin-top: 20px;">
-        <div class="section-title">Daftar Jadwal</div>
-        <div id="scheduleList" style="max-height: 300px; overflow-y: auto;">
+        <div id="scheduleList" style="max-height: 400px; overflow-y: auto;">
           <p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada jadwal booking</p>
         </div>
       </div>
@@ -2697,6 +2664,52 @@
 
       <div style="padding: 16px 20px; border-top: 1px solid var(--ps3-border);">
         <button class="btn" onclick="closeModal('modalAllExpenses')" style="width: 100%;">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Tambah Jadwal Booking -->
+  <div id="modalAddSchedule" class="modal" style="z-index: 3000;">
+    <div class="modal-content" style="max-width: 420px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div class="modal-title">➕ Tambah Jadwal Booking</div>
+        <button class="modal-close" onclick="closeModal('modalAddSchedule')">×</button>
+      </div>
+      
+      <div style="padding: 20px;">
+        <div class="form-group">
+          <label>Nama Pelanggan</label>
+          <input type="text" id="scheduleCustomer" placeholder="Nama penyewa">
+        </div>
+        <div class="form-group">
+          <label>No. Telepon</label>
+          <input type="text" id="schedulePhone" placeholder="Nomor WhatsApp/HP">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Tanggal</label>
+            <input type="date" id="scheduleDate">
+          </div>
+          <div class="form-group">
+            <label>Jam</label>
+            <input type="time" id="scheduleTime">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Unit (opsional)</label>
+          <select id="scheduleUnit">
+            <option value="">Pilih unit...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Durasi (menit)</label>
+          <input type="number" id="scheduleDuration" placeholder="120" min="30" step="30">
+        </div>
+        <div class="form-group">
+          <label>Catatan</label>
+          <input type="text" id="scheduleNote" placeholder="Catatan tambahan">
+        </div>
+        <button class="btn btn-red" onclick="addSchedule()" style="width: 100%;">Tambah Jadwal</button>
       </div>
     </div>
   </div>
@@ -5355,6 +5368,16 @@
       }
     }
 
+    function openAddScheduleModal() {
+      // Set default date to today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('scheduleDate').value = today;
+      // Ensure unit select is populated
+      populateScheduleUnitSelect();
+      // Open modal
+      openModal('modalAddSchedule');
+    }
+
     function openModal(id, front = false) {
       const modal = document.getElementById(id);
       modal.classList.add('active');
@@ -6479,6 +6502,7 @@
         
         await loadSchedules();
         renderSchedules();
+        closeModal('modalAddSchedule'); // Tutup modal setelah berhasil
         showToast('Jadwal booking ditambahkan', 'success');
       } catch (error) {
         showToast(error.message, 'error');
