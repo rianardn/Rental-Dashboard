@@ -3130,8 +3130,9 @@
 
             <!-- Row 3: Sub-category (if exists) -->
             ${catInfo.subCategory ? `
-            <div style="font-size: 0.95rem; color: var(--ps3-text); margin-bottom: 10px; padding-left: 2px;">
-              ${subCatEmoji} ${catInfo.subCategory}
+            <div style="font-size: 0.95rem; color: var(--ps3-text); margin-bottom: 10px; padding-left: 2px; display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 1rem;">${subCatEmoji || '🏷️'}</span>
+              <span>${catInfo.subCategory}</span>
             </div>
             ` : ''}
 
@@ -3846,8 +3847,9 @@
 
           <!-- Row 3: Sub-category (if exists) -->
           ${catInfo.subCategory ? `
-          <div style="font-size: 0.95rem; color: var(--ps3-text); margin-bottom: 10px; padding-left: 2px;">
-            ${subCatEmoji} ${catInfo.subCategory}
+          <div style="font-size: 0.95rem; color: var(--ps3-text); margin-bottom: 10px; padding-left: 2px; display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 1rem;">${subCatEmoji || '🏷️'}</span>
+            <span>${catInfo.subCategory}</span>
           </div>
           ` : ''}
 
@@ -4458,16 +4460,33 @@
       const catNorm = category.toLowerCase().trim();
       const subNorm = subCategory.toLowerCase().trim();
 
-      // Find matching category key
-      const catKey = Object.keys(EXPENSE_SUB_CATEGORIES).find(k => k.toLowerCase() === catNorm);
+      // Direct lookup first
+      let catKey = EXPENSE_SUB_CATEGORIES[category] ? category : null;
+
+      // Case-insensitive fallback
+      if (!catKey) {
+        catKey = Object.keys(EXPENSE_SUB_CATEGORIES).find(k => k.toLowerCase() === catNorm);
+      }
+
       if (!catKey) return '';
 
       // Find matching sub-category
       const subCats = EXPENSE_SUB_CATEGORIES[catKey];
-      const sub = subCats.find(s => s.value.toLowerCase().trim() === subNorm);
+      if (!subCats || !Array.isArray(subCats)) return '';
+
+      const sub = subCats.find(s => {
+        const val = (s.value || '').toLowerCase().trim();
+        return val === subNorm;
+      });
 
       // Return emoji (first char of label which is the emoji)
-      return sub ? sub.label.charAt(0) : '📦';
+      if (sub && sub.label) {
+        const emoji = sub.label.charAt(0);
+        // Verify it's actually an emoji (not a regular letter)
+        return emoji;
+      }
+
+      return '';
     }
 
     function onExpenseCategoryChange() {
