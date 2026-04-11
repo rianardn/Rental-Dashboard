@@ -958,10 +958,12 @@
     }
 
     .suggestion-item mark {
-      background: rgba(230,0,18,0.3);
-      color: var(--ps3-text);
-      padding: 0 2px;
-      border-radius: 2px;
+      background: var(--ps3-red);
+      color: #fff;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-weight: 600;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
     }
 
     .suggestion-empty {
@@ -969,6 +971,68 @@
       text-align: center;
       color: var(--ps3-muted);
       font-size: 0.85rem;
+    }
+
+    /* ═════════════════ Sort Options (Mobile Optimized) ═════════════════ */
+    .sort-options {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .sort-label {
+      font-size: 0.75rem;
+      color: var(--ps3-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .sort-selects {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .sort-selects select {
+      background: var(--ps3-surface);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      font-family: var(--font-body);
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sort-selects select:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+      box-shadow: 0 0 0 2px rgba(230,0,18,0.15);
+    }
+
+    @media (max-width: 480px) {
+      .sort-options {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+
+      .sort-selects {
+        width: 100%;
+      }
+
+      .sort-selects select {
+        padding: 10px 8px;
+        font-size: 0.9rem;
+      }
     }
 
     /* Report Tabs */
@@ -2135,19 +2199,21 @@
               </div>
             </div>
 
-            <!-- Sort Options -->
-            <div style="display: flex; gap: 12px; align-items: center;">
-              <label style="font-size: 0.8rem; color: var(--ps3-muted);">📊 Urutkan:</label>
-              <select id="txSortBy" onchange="searchTransactions()" style="background: var(--ps3-bg); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 6px 10px; font-size: 0.85rem;">
-                <option value="date">Tanggal</option>
-                <option value="amount">Jumlah</option>
-                <option value="customer">Nama Penyewa</option>
-                <option value="id">TX ID</option>
-              </select>
-              <select id="txSortOrder" onchange="searchTransactions()" style="background: var(--ps3-bg); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 6px 10px; font-size: 0.85rem;">
-                <option value="desc">Terbaru ↓</option>
-                <option value="asc">Terlama ↑</option>
-              </select>
+            <!-- Sort Options (Optimized for Mobile) -->
+            <div class="sort-options">
+              <label class="sort-label">📊 Urutkan:</label>
+              <div class="sort-selects">
+                <select id="txSortBy" onchange="searchTransactions()">
+                  <option value="date">Tanggal</option>
+                  <option value="amount">Jumlah</option>
+                  <option value="customer">Nama Penyewa</option>
+                  <option value="id">TX ID</option>
+                </select>
+                <select id="txSortOrder" onchange="searchTransactions()">
+                  <option value="desc">Terbaru ↓</option>
+                  <option value="asc">Terlama ↑</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
