@@ -6487,7 +6487,9 @@
 
     async function loadSchedules() {
       try {
-        schedules = await api('GET', '/schedules');
+        const response = await api('GET', '/schedules');
+        // Ensure schedules is always an array
+        schedules = Array.isArray(response) ? response : [];
       } catch (error) {
         console.error('Failed to load schedules:', error);
         schedules = [];
@@ -6497,6 +6499,11 @@
     function renderSchedules() {
       const container = document.getElementById('scheduleList');
       if (!container) return;
+      
+      // Ensure schedules is always an array
+      if (!Array.isArray(schedules)) {
+        schedules = [];
+      }
       
       if (schedules.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada jadwal booking</p>';
@@ -6630,7 +6637,9 @@
 
     async function loadInventory() {
       try {
-        inventory = await api('GET', '/inventory');
+        const response = await api('GET', '/inventory');
+        // Ensure inventory is always an array
+        inventory = Array.isArray(response) ? response : [];
       } catch (error) {
         console.error('Failed to load inventory:', error);
         inventory = [];
@@ -6640,6 +6649,11 @@
     function renderInventory() {
       const container = document.getElementById('inventoryList');
       if (!container) return;
+      
+      // Ensure inventory is always an array
+      if (!Array.isArray(inventory)) {
+        inventory = [];
+      }
       
       if (inventory.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada item inventori</p>';
@@ -6774,7 +6788,16 @@
     async function loadCapital() {
       try {
         const response = await api('GET', '/capital');
-        capitalData = response;
+        // Ensure capitalData has proper structure
+        if (response && typeof response === 'object') {
+          capitalData = {
+            capital: Array.isArray(response.capital) ? response.capital : [],
+            expenses: Array.isArray(response.expenses) ? response.expenses : [],
+            summary: response.summary || { totalCapital: 0, totalSpent: 0, remaining: 0 }
+          };
+        } else {
+          throw new Error('Invalid response format');
+        }
       } catch (error) {
         console.error('Failed to load capital:', error);
         capitalData = { capital: [], expenses: [], summary: { totalCapital: 0, totalSpent: 0, remaining: 0 } };
@@ -6784,6 +6807,14 @@
     async function renderCapitalSummary() {
       const container = document.getElementById('roiContent');
       if (!container) return;
+      
+      // Ensure capitalData is properly structured
+      if (!capitalData || typeof capitalData !== 'object') {
+        capitalData = { capital: [], expenses: [], summary: { totalCapital: 0, totalSpent: 0, remaining: 0 } };
+      }
+      if (!capitalData.summary || typeof capitalData.summary !== 'object') {
+        capitalData.summary = { totalCapital: 0, totalSpent: 0, remaining: 0 };
+      }
       
       // Load ROI projections from API
       let projections = {};
