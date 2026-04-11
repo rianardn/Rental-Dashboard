@@ -3037,9 +3037,8 @@
       params.set('sortOrder', txSearchState.sortOrder);
 
       try {
-        const token = localStorage.getItem('token');
         const response = await fetch(`${API_URL}/api/transactions?${params.toString()}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
         if (!response.ok) {
