@@ -447,6 +447,17 @@ Starts with 1 unit (PS 1). Add more units via Settings → "Unit Management" →
 - Audio alert system with 4 jingles
 - PS3 2006-2007 aesthetic design
 
+## 📱 UI Optimization Updates
+
+### Mobile-First Report Page (v2.3.1)
+- Fixed negative number display breaking across lines
+- Responsive font scaling for stat cards (1.6rem → 1.25rem → 1.1rem)
+- Optimized stat card padding for small screens
+- Tab buttons now scale down on mobile devices
+- Chart section with responsive height and padding
+- Export buttons adapt to 2-column or 1-column layout on mobile
+- Improved text overflow handling with ellipsis
+
 ## 🐛 Troubleshooting
 
 | Issue | Solution |
