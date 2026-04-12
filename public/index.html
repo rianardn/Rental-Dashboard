@@ -8895,13 +8895,6 @@
           'status': 'Status'
         };
 
-        // Urutkan berdasarkan waktu edit terbaru (descending)
-        const sortedLogs = response.logs.sort((a, b) => {
-          const dateA = new Date(a.editedAt || 0);
-          const dateB = new Date(b.editedAt || 0);
-          return dateB - dateA; // Descending: terbaru dulu
-        });
-
         container.innerHTML = sortedLogs.map(log => {
           const fieldName = fieldLabels[log.fieldName] || log.fieldName;
           const editedAtWIB = new Date(log.editedAt + (7 * 60 * 60 * 1000));
