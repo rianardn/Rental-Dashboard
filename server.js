@@ -1487,7 +1487,13 @@ app.post('/api/schedules', requireAuth, (req, res) => {
     }
 
     // ===== CHECK 2: Conflict with currently active unit =====
-    const activeUnit = db.prepare('SELECT * FROM units WHERE id = ? AND active = 1').get(unitId);
+    // Ensure unitId is integer for proper database comparison
+    const unitIdInt = parseInt(unitId);
+    console.log(`[Conflict Check] Checking active unit for unitId=${unitIdInt}, scheduledDate=${scheduledDate}, scheduledTime=${scheduledTime}`);
+
+    const activeUnit = db.prepare('SELECT * FROM units WHERE id = ? AND active = 1').get(unitIdInt);
+    console.log(`[Conflict Check] Active unit query result:`, activeUnit ? `Found active unit: ${activeUnit.name}, startTime=${activeUnit.startTime}, duration=${activeUnit.duration}` : 'No active unit found');
+
     if (activeUnit) {
       // Calculate active rental times
       const activeStartTime = parseInt(activeUnit.startTime);
@@ -1504,8 +1510,12 @@ app.post('/api/schedules', requireAuth, (req, res) => {
       const newStartTimestamp = newStartDateTime.getTime();
       const newEndTimestamp = newEndDateTime.getTime();
 
+      console.log(`[Conflict Check] Timestamps - newStart: ${newStartTimestamp}, newEnd: ${newEndTimestamp}, activeStart: ${activeStartTime}, activeEnd: ${activeEndTime}`);
+      console.log(`[Conflict Check] Comparison - newStart < activeEnd: ${newStartTimestamp < activeEndTime}, newEnd > activeStart: ${newEndTimestamp > activeStartTime}`);
+
       // Check overlap: (StartA < EndB) && (EndA > StartB)
       const overlap = (newStartTimestamp < activeEndTime) && (newEndTimestamp > activeStartTime);
+      console.log(`[Conflict Check] Overlap result: ${overlap}`);
 
       if (overlap) {
         const activeStartStr = new Date(activeStartTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
