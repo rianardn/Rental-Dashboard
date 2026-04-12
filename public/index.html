@@ -1894,6 +1894,11 @@
         <div id="scheduleList" style="max-height: 400px; overflow-y: auto;">
           <p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada jadwal booking</p>
         </div>
+        
+        <!-- Tombol Lihat Semua di LUAR area scroll -->
+        <div id="scheduleViewAllContainer" style="margin-top: 15px; border-top: 1px solid var(--ps3-border); padding-top: 15px;">
+          <!-- Tombol akan di-render oleh JavaScript -->
+        </div>
       </div>
 
       <!-- Inventory Section -->
@@ -8339,40 +8344,49 @@
         `;
       }).join('');
       
-      // Tombol "Lihat Semua Jadwal" di BAWAH (sticky saat scroll)
-      if (otherSchedules.length > 0) {
-        const totalActive = activeSchedules.length;
-        html += `
-          <div style="position: sticky; bottom: -10px; background: var(--ps3-bg); padding: 25px 0 15px; margin-top: 20px; z-index: 100; border-top: 1px solid var(--ps3-border);">
-            <button onclick="openScheduleCalendarModal()" class="btn-view-all" style="width: 100%; background: linear-gradient(135deg, var(--ps3-surface) 0%, var(--ps3-card) 100%); border: 1px solid var(--ps3-border); color: var(--ps3-silver); padding: 14px 18px; border-radius: 12px; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 -2px 8px rgba(230,0,18,0.1); transition: all 0.3s ease;">
-              <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: rgba(230,0,18,0.15); border-radius: 8px; color: var(--ps3-red);">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-              </span>
-              <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
-                <span style="font-weight: 600; color: var(--ps3-text);">Lihat Semua Jadwal</span>
-                <span style="font-size: 0.75rem; color: var(--ps3-muted);">${totalActive} jadwal aktif</span>
-              </span>
-              <span style="margin-left: auto; display: flex; align-items: center; color: var(--ps3-red);">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </span>
-            </button>
-          </div>
-        `;
-      }
-      
       container.innerHTML = html;
+      
+      // Render tombol "Lihat Semua Jadwal" di LUAR area scroll
+      renderViewAllButton(otherSchedules.length, activeSchedules.length);
     }
 
     function toggleShowAllSchedules() {
       showAllSchedules = !showAllSchedules;
       renderSchedules();
+    }
+
+    // ═════════════════ View All Button (Outside Scroll Area) ═════════════════
+    function renderViewAllButton(otherCount, totalActive) {
+      const container = document.getElementById('scheduleViewAllContainer');
+      if (!container) return;
+      
+      if (otherCount > 0) {
+        container.innerHTML = `
+          <button onclick="openScheduleCalendarModal()" class="btn-view-all" style="width: 100%; background: linear-gradient(135deg, var(--ps3-surface) 0%, var(--ps3-card) 100%); border: 1px solid var(--ps3-border); color: var(--ps3-silver); padding: 14px 18px; border-radius: 12px; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 -2px 8px rgba(230,0,18,0.1); transition: all 0.3s ease;">
+            <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: rgba(230,0,18,0.15); border-radius: 8px; color: var(--ps3-red);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </span>
+            <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
+              <span style="font-weight: 600; color: var(--ps3-text);">Lihat Semua Jadwal</span>
+              <span style="font-size: 0.75rem; color: var(--ps3-muted);">${totalActive} jadwal aktif</span>
+            </span>
+            <span style="margin-left: auto; display: flex; align-items: center; color: var(--ps3-red);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </span>
+          </button>
+        `;
+        container.style.display = 'block';
+      } else {
+        container.innerHTML = '';
+        container.style.display = 'none';
+      }
     }
 
     // ═════════════════ Schedule Calendar Modal Functions ═════════════════
