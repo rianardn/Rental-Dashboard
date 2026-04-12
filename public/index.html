@@ -2194,21 +2194,37 @@
       <div id="editStep1" style="padding: 20px;">
         <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Pilih data yang ingin diedit:</p>
         <div style="display: flex; flex-direction: column; gap: 12px;">
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
             <input type="checkbox" id="editCheckCustomer" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
-            <span>Nama Penyewa</span>
+            <span>👤 Nama Penyewa</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-            <input type="checkbox" id="editCheckPaid" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
-            <span>Jumlah Pendapatan</span>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
+            <input type="checkbox" id="editCheckPhone" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <span>📞 Nomor Telepon</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
+            <input type="checkbox" id="editCheckDateTime" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <span>📅 Tanggal & Waktu</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
             <input type="checkbox" id="editCheckDuration" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
-            <span>Durasi Penyewaan (menit)</span>
+            <span>⏱️ Durasi Penyewaan</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
+            <input type="checkbox" id="editCheckUnit" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <span>🎮 Unit PS</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
+            <input type="checkbox" id="editCheckPaid" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <span>💰 Jumlah Pendapatan</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
             <input type="checkbox" id="editCheckPayment" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
-            <span>Metode Pembayaran</span>
+            <span>💳 Metode Pembayaran</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
+            <input type="checkbox" id="editCheckNote" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <span>💬 Catatan</span>
           </label>
         </div>
         <button class="btn btn-red" onclick="proceedToEditStep2()" style="margin-top: 20px; width: 100%;">Lanjutkan</button>
@@ -2216,33 +2232,90 @@
 
       <!-- Step 2: Edit fields -->
       <div id="editStep2" style="padding: 20px; display: none;">
+        <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Masukkan nilai baru:</p>
+
         <div id="editFieldCustomer" style="display: none; margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Nama Penyewa</label>
-          <input type="text" id="editCustomer" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Nama Penyewa</label>
+          <input type="text" id="editCustomer" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+        </div>
+
+        <div id="editFieldPhone" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Nomor Telepon</label>
+          <input type="text" id="editPhone" placeholder="08xxxxxxxxxx" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+        </div>
+
+        <!-- Unified Date/Time/Duration Section -->
+        <div id="editFieldDateTime" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 10px; font-size: 0.85rem; color: var(--ps3-silver); font-weight: 600;">📅 Tanggal & Waktu Penyewaan</label>
+
+          <!-- Row 1: Start Date & Start Time -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Tanggal Mulai</label>
+              <input type="date" id="editStartDate" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editTxInitDefaultEndDate()">
+            </div>
+            <div>
+              <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Jam Mulai</label>
+              <input type="time" id="editStartTime" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editTxUpdateEndTime()">
+            </div>
+          </div>
+
+          <!-- Row 2: Duration & End Time -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Durasi (menit)</label>
+              <input type="number" id="editDurationTime" min="15" step="15" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editTxUpdateEndTime()" oninput="editTxUpdateEndTime()">
+            </div>
+            <div>
+              <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Jam Selesai (Auto)</label>
+              <input type="time" id="editEndTime" style="width: 100%; background: rgba(192,192,192,0.1); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" readonly>
+            </div>
+          </div>
+
+          <!-- Quick Duration Buttons -->
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+            <button type="button" onclick="editTxSetDuration(30)" style="padding: 6px 12px; font-size: 0.75rem; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 6px; color: var(--ps3-text); cursor: pointer;">30m</button>
+            <button type="button" onclick="editTxSetDuration(60)" style="padding: 6px 12px; font-size: 0.75rem; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 6px; color: var(--ps3-text); cursor: pointer;">1j</button>
+            <button type="button" onclick="editTxSetDuration(120)" style="padding: 6px 12px; font-size: 0.75rem; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 6px; color: var(--ps3-text); cursor: pointer;">2j</button>
+            <button type="button" onclick="editTxSetDuration(180)" style="padding: 6px 12px; font-size: 0.75rem; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 6px; color: var(--ps3-text); cursor: pointer;">3j</button>
+          </div>
+        </div>
+
+        <!-- Duration (legacy, for when only duration is selected without datetime) -->
+        <div id="editFieldDuration" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Durasi (menit)</label>
+          <input type="number" id="editDuration" min="15" step="15" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+        </div>
+
+        <div id="editFieldUnit" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Unit PS</label>
+          <select id="editUnitId" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+            <option value="">Pilih Unit</option>
+          </select>
         </div>
 
         <div id="editFieldPaid" style="display: none; margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Jumlah Pendapatan (Rp)</label>
-          <input type="number" id="editPaid" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
-        </div>
-
-        <div id="editFieldDuration" style="display: none; margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Durasi (menit)</label>
-          <input type="number" id="editDuration" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Jumlah Pendapatan (Rp)</label>
+          <input type="number" id="editPaid" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
         </div>
 
         <div id="editFieldPayment" style="display: none; margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Metode Pembayaran</label>
-          <select id="editPayment" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Metode Pembayaran</label>
+          <select id="editPayment" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
             <option value="cash">Tunai (Cash)</option>
             <option value="transfer">Transfer</option>
             <option value="qris">QRIS</option>
           </select>
         </div>
 
+        <div id="editFieldNote" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Catatan</label>
+          <textarea id="editNote" rows="3" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem; resize: vertical;"></textarea>
+        </div>
+
         <div style="margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-red);">Alasan Edit *</label>
-          <input type="text" id="editReason" placeholder="Contoh: Koreksi harga, Perubahan durasi, dll." style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 12px;">
+          <input type="text" id="editReason" placeholder="Contoh: Koreksi harga, Perubahan durasi, dll." style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
         </div>
 
         <div style="display: flex; gap: 10px;">
@@ -5825,15 +5898,15 @@
     function openEditModal(transactionId) {
       // Mobile-friendly debug - show toast immediately
       showToast('Membuka edit... ID: ' + transactionId, 'info');
-      
+
       currentEditTransactionId = transactionId;
-      
+
       // Check if transactions array is loaded
       if (!transactions || transactions.length === 0) {
         showToast('Data transaksi belum dimuat. Tunggu sebentar...', 'error');
         return;
       }
-      
+
       // Use loose equality to handle string/number type mismatch
       const transaction = transactions.find(t => t.id == transactionId);
       if (!transaction) {
@@ -5848,16 +5921,49 @@
 
       // Reset checkboxes
       document.getElementById('editCheckCustomer').checked = false;
-      document.getElementById('editCheckPaid').checked = false;
+      document.getElementById('editCheckPhone').checked = false;
+      document.getElementById('editCheckDateTime').checked = false;
       document.getElementById('editCheckDuration').checked = false;
+      document.getElementById('editCheckUnit').checked = false;
+      document.getElementById('editCheckPaid').checked = false;
       document.getElementById('editCheckPayment').checked = false;
+      document.getElementById('editCheckNote').checked = false;
 
       // Pre-fill current values (hidden until step 2)
       document.getElementById('editCustomer').value = transaction.customer || '';
+      document.getElementById('editPhone').value = transaction.phone || '';
       document.getElementById('editPaid').value = transaction.paid || transaction.total || 0;
       document.getElementById('editDuration').value = transaction.duration || 0;
       document.getElementById('editPayment').value = transaction.payment || 'cash';
+      document.getElementById('editNote').value = transaction.note || '';
       document.getElementById('editReason').value = '';
+
+      // Pre-fill date/time fields from timestamp
+      const txDate = transaction.timestamp ? new Date(transaction.timestamp) : new Date();
+      const dateStr = txDate.toISOString().split('T')[0];
+      const timeStr = txDate.toTimeString().slice(0, 5);
+
+      document.getElementById('editStartDate').value = dateStr;
+      document.getElementById('editStartTime').value = timeStr;
+      document.getElementById('editDurationTime').value = transaction.duration || 60;
+
+      // Calculate and set end time
+      editTxUpdateEndTime();
+
+      // Populate unit dropdown
+      const unitSelect = document.getElementById('editUnitId');
+      unitSelect.innerHTML = '<option value="">Pilih Unit</option>';
+      if (units && units.length > 0) {
+        units.forEach(unit => {
+          const option = document.createElement('option');
+          option.value = unit.id;
+          option.textContent = unit.name;
+          if (unit.id == transaction.unitId) {
+            option.selected = true;
+          }
+          unitSelect.appendChild(option);
+        });
+      }
 
       // Load edit history
       loadEditHistory(transactionId);
@@ -5868,9 +5974,13 @@
     function proceedToEditStep2() {
       const fields = [
         'editCheckCustomer',
-        'editCheckPaid',
+        'editCheckPhone',
+        'editCheckDateTime',
         'editCheckDuration',
-        'editCheckPayment'
+        'editCheckUnit',
+        'editCheckPaid',
+        'editCheckPayment',
+        'editCheckNote'
       ];
 
       const anySelected = fields.some(id => document.getElementById(id).checked);
@@ -5882,12 +5992,20 @@
       // Hide/show fields based on selection
       document.getElementById('editFieldCustomer').style.display =
         document.getElementById('editCheckCustomer').checked ? 'block' : 'none';
-      document.getElementById('editFieldPaid').style.display =
-        document.getElementById('editCheckPaid').checked ? 'block' : 'none';
+      document.getElementById('editFieldPhone').style.display =
+        document.getElementById('editCheckPhone').checked ? 'block' : 'none';
+      document.getElementById('editFieldDateTime').style.display =
+        document.getElementById('editCheckDateTime').checked ? 'block' : 'none';
       document.getElementById('editFieldDuration').style.display =
         document.getElementById('editCheckDuration').checked ? 'block' : 'none';
+      document.getElementById('editFieldUnit').style.display =
+        document.getElementById('editCheckUnit').checked ? 'block' : 'none';
+      document.getElementById('editFieldPaid').style.display =
+        document.getElementById('editCheckPaid').checked ? 'block' : 'none';
       document.getElementById('editFieldPayment').style.display =
         document.getElementById('editCheckPayment').checked ? 'block' : 'none';
+      document.getElementById('editFieldNote').style.display =
+        document.getElementById('editCheckNote').checked ? 'block' : 'none';
 
       document.getElementById('editStep1').style.display = 'none';
       document.getElementById('editStep2').style.display = 'block';
@@ -5896,6 +6014,38 @@
     function backToEditStep1() {
       document.getElementById('editStep1').style.display = 'block';
       document.getElementById('editStep2').style.display = 'none';
+    }
+
+    // ═════════════════ Transaction Edit Date/Time Helpers ═════════════════
+
+    function editTxInitDefaultEndDate() {
+      // Set default end date to match start date when start date changes
+      const startDate = document.getElementById('editStartDate').value;
+      if (startDate) {
+        editTxUpdateEndTime();
+      }
+    }
+
+    function editTxUpdateEndTime() {
+      const startDate = document.getElementById('editStartDate').value;
+      const startTime = document.getElementById('editStartTime').value;
+      const duration = parseInt(document.getElementById('editDurationTime').value) || 60;
+
+      if (!startDate || !startTime) return;
+
+      // Calculate end time
+      const startDateTime = new Date(`${startDate}T${startTime}:00`);
+      const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+
+      // Format end time for input (HH:MM)
+      const endHours = String(endDateTime.getHours()).padStart(2, '0');
+      const endMinutes = String(endDateTime.getMinutes()).padStart(2, '0');
+      document.getElementById('editEndTime').value = `${endHours}:${endMinutes}`;
+    }
+
+    function editTxSetDuration(minutes) {
+      document.getElementById('editDurationTime').value = minutes;
+      editTxUpdateEndTime();
     }
 
     async function saveTransactionEdit() {
@@ -5910,14 +6060,45 @@
       if (document.getElementById('editCheckCustomer').checked) {
         updates.customer = document.getElementById('editCustomer').value.trim();
       }
-      if (document.getElementById('editCheckPaid').checked) {
-        updates.paid = parseInt(document.getElementById('editPaid').value) || 0;
+      if (document.getElementById('editCheckPhone').checked) {
+        updates.phone = document.getElementById('editPhone').value.trim();
+      }
+      if (document.getElementById('editCheckDateTime').checked) {
+        const startDate = document.getElementById('editStartDate').value;
+        const startTime = document.getElementById('editStartTime').value;
+        const duration = parseInt(document.getElementById('editDurationTime').value) || 60;
+
+        // Convert to timestamp (milliseconds)
+        const dateTimeStr = `${startDate}T${startTime}:00`;
+        const timestamp = new Date(dateTimeStr).getTime();
+
+        updates.timestamp = timestamp;
+        updates.duration = duration;
+
+        // Calculate startTime and endTime
+        const startDateTime = new Date(dateTimeStr);
+        const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+
+        updates.startTime = startDateTime.getTime();
+        updates.endTime = endDateTime.getTime();
       }
       if (document.getElementById('editCheckDuration').checked) {
         updates.duration = parseInt(document.getElementById('editDuration').value) || 0;
       }
+      if (document.getElementById('editCheckUnit').checked) {
+        const unitId = document.getElementById('editUnitId').value;
+        if (unitId) {
+          updates.unitId = parseInt(unitId);
+        }
+      }
+      if (document.getElementById('editCheckPaid').checked) {
+        updates.paid = parseInt(document.getElementById('editPaid').value) || 0;
+      }
       if (document.getElementById('editCheckPayment').checked) {
         updates.payment = document.getElementById('editPayment').value;
+      }
+      if (document.getElementById('editCheckNote').checked) {
+        updates.note = document.getElementById('editNote').value.trim();
       }
 
       if (Object.keys(updates).length === 0) {
@@ -5968,9 +6149,16 @@
 
         const fieldLabels = {
           'customer': 'Nama Penyewa',
+          'phone': 'Nomor Telepon',
+          'timestamp': 'Waktu Transaksi',
+          'startTime': 'Waktu Mulai',
+          'endTime': 'Waktu Selesai',
           'paid': 'Jumlah Pendapatan',
           'duration': 'Durasi',
-          'payment': 'Metode Pembayaran'
+          'unitId': 'Unit ID',
+          'unitName': 'Nama Unit',
+          'payment': 'Metode Pembayaran',
+          'note': 'Catatan'
         };
 
         container.innerHTML = response.logs.map(log => {
@@ -5993,9 +6181,22 @@
             newValue = formatMoney(parseInt(newValue) || 0);
           }
           // Format duration with minutes
-          if (log.fieldName === 'duration') {
+          else if (log.fieldName === 'duration') {
             oldValue = oldValue + ' menit';
             newValue = newValue + ' menit';
+          }
+          // Format timestamp fields as readable dates
+          else if (['timestamp', 'startTime', 'endTime'].includes(log.fieldName)) {
+            const tsOld = parseInt(oldValue);
+            const tsNew = parseInt(newValue);
+            if (!isNaN(tsOld) && tsOld > 0) {
+              const dOld = new Date(tsOld);
+              oldValue = `${dOld.toLocaleDateString('id-ID')} ${String(dOld.getHours()).padStart(2,'0')}:${String(dOld.getMinutes()).padStart(2,'0')}`;
+            }
+            if (!isNaN(tsNew) && tsNew > 0) {
+              const dNew = new Date(tsNew);
+              newValue = `${dNew.toLocaleDateString('id-ID')} ${String(dNew.getHours()).padStart(2,'0')}:${String(dNew.getMinutes()).padStart(2,'0')}`;
+            }
           }
 
           return `

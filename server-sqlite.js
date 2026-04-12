@@ -146,6 +146,30 @@ try {
   // Column already exists
 }
 
+// Migration: Add phone column to transactions
+try {
+  db.exec(`ALTER TABLE transactions ADD COLUMN phone TEXT`);
+  console.log('[DB] Migration: Added phone column to transactions table');
+} catch (e) {
+  // Column already exists
+}
+
+// Migration: Add startTime column to transactions (for tracking rental start time)
+try {
+  db.exec(`ALTER TABLE transactions ADD COLUMN startTime INTEGER`);
+  console.log('[DB] Migration: Added startTime column to transactions table');
+} catch (e) {
+  // Column already exists
+}
+
+// Migration: Add endTime column to transactions (for tracking rental end time)
+try {
+  db.exec(`ALTER TABLE transactions ADD COLUMN endTime INTEGER`);
+  console.log('[DB] Migration: Added endTime column to transactions table');
+} catch (e) {
+  // Column already exists
+}
+
 // Migration: Create edit_logs table for audit trail
 try {
   db.exec(`
@@ -252,10 +276,23 @@ function addUnit(unit) {
 
 function addTransaction(tx) {
   const stmt = db.prepare(`
-    INSERT INTO transactions (unitId, unitName, customer, duration, rate, total, timestamp, note, payment)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO transactions (unitId, unitName, customer, phone, duration, rate, total, timestamp, note, payment, startTime, endTime)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  const result = stmt.run(tx.unitId, tx.unitName, tx.customer, tx.duration, tx.rate, tx.total, tx.timestamp, tx.note || '', tx.payment || 'cash');
+  const result = stmt.run(
+    tx.unitId,
+    tx.unitName,
+    tx.customer,
+    tx.phone || '',
+    tx.duration,
+    tx.rate,
+    tx.total,
+    tx.timestamp,
+    tx.note || '',
+    tx.payment || 'cash',
+    tx.startTime || tx.timestamp,
+    tx.endTime || (tx.timestamp + (tx.duration || 0) * 60000)
+  );
   return { ...tx, id: result.lastInsertRowid };
 }
 
@@ -273,7 +310,13 @@ function updateTransaction(id, updates, editReason, editedBy) {
     'customer': 'customer',
     'paid': 'total',  // paid maps to total
     'duration': 'duration',
-    'payment': 'payment'
+    'payment': 'payment',
+    'phone': 'phone',
+    'note': 'note',
+    'unitId': 'unitId',
+    'timestamp': 'timestamp',
+    'startTime': 'startTime',
+    'endTime': 'endTime'
   };
 
   for (const [field, value] of Object.entries(updates)) {
@@ -291,6 +334,27 @@ function updateTransaction(id, updates, editReason, editedBy) {
         editedAt: Date.now(),
         editedBy: editedBy || 'admin'
       });
+    }
+  }
+
+  // Handle unitName update when unitId changes
+  if (updates.unitId !== undefined && updates.unitId !== current.unitId) {
+    const unit = db.prepare('SELECT name FROM units WHERE id = ?').get(updates.unitId);
+    if (unit) {
+      dbFields.push('unitName = ?');
+      dbValues.push(unit.name);
+      // Log unitName change as well
+      if (current.unitName !== unit.name) {
+        editLogs.push({
+          transactionId: id,
+          fieldName: 'unitName',
+          oldValue: String(current.unitName || ''),
+          newValue: String(unit.name),
+          editReason,
+          editedAt: Date.now(),
+          editedBy: editedBy || 'admin'
+        });
+      }
     }
   }
 
@@ -429,6 +493,96 @@ app.post('/api/expenses', (req, res) => {
   broadcast({ type: 'expenses', data: db.prepare('SELECT * FROM expenses ORDER BY timestamp DESC').all() });
   res.json({ ok: true, expense });
 });
+
+app.put('/api/expenses/:id', (req, res) => {
+  try {
+    const { updates, reason } = req.body;
+    if (!updates || typeof updates !== 'object') {
+      return res.status(400).json({ ok: false, error: 'Invalid updates object' });
+    }
+    const result = updateExpense(req.params.id, updates, reason, req.body.editedBy);
+    broadcast({ type: 'expenses', data: db.prepare('SELECT * FROM expenses ORDER BY timestamp DESC').all() });
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
+app.get('/api/expenses/:id/edits', (req, res) => {
+  try {
+    const logs = getExpenseEditLogs(req.params.id);
+    res.json({ ok: true, logs });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
+function updateExpense(id, updates, editReason, editedBy) {
+  // Get current expense data
+  const current = db.prepare('SELECT * FROM expenses WHERE id = ?').get(id);
+  if (!current) throw new Error('Expense not found');
+
+  const dbFields = [];
+  const dbValues = [];
+  const editLogs = [];
+
+  // Map frontend field names to database columns
+  const fieldMapping = {
+    'description': 'description',
+    'item': 'description',
+    'amount': 'amount',
+    'timestamp': 'timestamp',
+    'date': 'timestamp',
+    'note': 'note',
+    'category': 'category'
+  };
+
+  for (const [field, value] of Object.entries(updates)) {
+    const dbField = fieldMapping[field];
+    if (dbField && current[dbField] !== value) {
+      dbFields.push(`${dbField} = ?`);
+      // Convert timestamp to number if needed
+      const dbValue = dbField === 'timestamp' ? parseInt(value) || Date.now() : value;
+      dbValues.push(dbValue);
+      // Log the edit
+      editLogs.push({
+        transactionId: id,
+        fieldName: field,
+        oldValue: String(current[dbField] || ''),
+        newValue: String(value),
+        editReason,
+        editedAt: Date.now(),
+        editedBy: editedBy || 'admin'
+      });
+    }
+  }
+
+  if (dbFields.length === 0) {
+    return { updated: false, message: 'No changes detected' };
+  }
+
+  // Update expense
+  dbValues.push(id);
+  const stmt = db.prepare(`UPDATE expenses SET ${dbFields.join(', ')} WHERE id = ?`);
+  stmt.run(...dbValues);
+
+  // Insert edit logs
+  const logStmt = db.prepare(`
+    INSERT INTO edit_logs (transactionId, fieldName, oldValue, newValue, editReason, editedAt, editedBy)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  for (const log of editLogs) {
+    logStmt.run(log.transactionId, log.fieldName, log.oldValue, log.newValue, log.editReason, log.editedAt, log.editedBy);
+  }
+
+  return { updated: true, id, changes: editLogs.length, logs: editLogs };
+}
+
+function getExpenseEditLogs(expenseId) {
+  return db.prepare(
+    'SELECT * FROM edit_logs WHERE transactionId = ? ORDER BY editedAt DESC'
+  ).all(expenseId);
+}
 
 // ── Schedules ───────────────────────────────────────────────────
 app.get('/api/schedules', (req, res) => {
