@@ -597,12 +597,12 @@ app.post('/api/units/:id/start', requireAuth, (req, res) => {
   for (const schedule of pendingSchedules) {
     if (!schedule.scheduledTime) continue;
 
-    // Parse schedule datetime range
-    let scheduleStart = new Date(`${schedule.scheduledDate}T${schedule.scheduledTime}`);
+    // Parse schedule datetime range with explicit timezone +07:00 (WIB)
+    let scheduleStart = new Date(`${schedule.scheduledDate}T${schedule.scheduledTime}:00+07:00`);
     let scheduleEnd;
 
     if (schedule.scheduledEndDate && schedule.scheduledEndTime) {
-      scheduleEnd = new Date(`${schedule.scheduledEndDate}T${schedule.scheduledEndTime}`);
+      scheduleEnd = new Date(`${schedule.scheduledEndDate}T${schedule.scheduledEndTime}:00+07:00`);
     } else if (schedule.duration) {
       scheduleEnd = new Date(scheduleStart.getTime() + schedule.duration * 60000);
     } else {
@@ -610,8 +610,11 @@ app.post('/api/units/:id/start', requireAuth, (req, res) => {
     }
 
     // Check overlap: (StartA < EndB) && (EndA > StartB)
-    const newRentalEnd = new Date(startTime + durationMinutes * 60000);
-    const overlap = (new Date(startTime) < scheduleEnd) && (newRentalEnd > scheduleStart);
+    // startTime is Date.now() (UTC timestamp), convert schedule times to UTC for comparison
+    const newRentalEnd = startTime + (durationMinutes * 60000);
+    const scheduleStartUTC = scheduleStart.getTime();
+    const scheduleEndUTC = scheduleEnd.getTime();
+    const overlap = (startTime < scheduleEndUTC) && (newRentalEnd > scheduleStartUTC);
 
     if (overlap) {
       const scheduleEndStr = schedule.scheduledEndTime ||
@@ -1430,10 +1433,11 @@ app.post('/api/schedules', requireAuth, (req, res) => {
   if (unitId && scheduledDate && scheduledTime) {
     let newStartDateTime, newEndDateTime;
 
-    // Parse new booking dates/times
-    newStartDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+    // Parse new booking dates/times with explicit timezone handling
+    // Use explicit timezone +07:00 (WIB/Indonesia) to ensure consistent parsing
+    newStartDateTime = new Date(`${scheduledDate}T${scheduledTime}:00+07:00`);
     if (scheduledEndDate && scheduledEndTime) {
-      newEndDateTime = new Date(`${scheduledEndDate}T${scheduledEndTime}`);
+      newEndDateTime = new Date(`${scheduledEndDate}T${scheduledEndTime}:00+07:00`);
     } else if (durationMinutes > 0) {
       newEndDateTime = new Date(newStartDateTime.getTime() + durationMinutes * 60000);
     }
@@ -1460,12 +1464,12 @@ app.post('/api/schedules', requireAuth, (req, res) => {
     for (const existing of existingSchedules) {
       if (!existing.scheduledTime) continue;
 
-      // Calculate existing booking datetime range
-      let existStartDateTime = new Date(`${existing.scheduledDate}T${existing.scheduledTime}`);
+      // Calculate existing booking datetime range with explicit timezone +07:00
+      let existStartDateTime = new Date(`${existing.scheduledDate}T${existing.scheduledTime}:00+07:00`);
       let existEndDateTime;
 
       if (existing.scheduledEndDate && existing.scheduledEndTime) {
-        existEndDateTime = new Date(`${existing.scheduledEndDate}T${existing.scheduledEndTime}`);
+        existEndDateTime = new Date(`${existing.scheduledEndDate}T${existing.scheduledEndTime}:00+07:00`);
       } else if (existing.duration) {
         existEndDateTime = new Date(existStartDateTime.getTime() + existing.duration * 60000);
       } else {
@@ -1473,7 +1477,7 @@ app.post('/api/schedules', requireAuth, (req, res) => {
       }
 
       // Check for overlap: (StartA < EndB) && (EndA > StartB)
-      const overlap = (newStartDateTime < existEndDateTime) && (newEndDateTime > existStartDateTime);
+      const overlap = (newStartDateTime.getTime() < existEndDateTime.getTime()) && (newEndDateTime.getTime() > existStartDateTime.getTime());
 
       if (overlap) {
         const existEndTimeStr = existing.scheduledEndTime ||
@@ -1487,16 +1491,12 @@ app.post('/api/schedules', requireAuth, (req, res) => {
     }
 
     // ===== CHECK 2: Conflict with currently active unit =====
-    // Ensure unitId is integer for proper database comparison
     const unitIdInt = parseInt(unitId);
-    console.log(`[Conflict Check] Checking active unit for unitId=${unitIdInt}, scheduledDate=${scheduledDate}, scheduledTime=${scheduledTime}`);
-
     const activeUnit = db.prepare('SELECT * FROM units WHERE id = ? AND active = 1').get(unitIdInt);
-    console.log(`[Conflict Check] Active unit query result:`, activeUnit ? `Found active unit: ${activeUnit.name}, startTime=${activeUnit.startTime}, duration=${activeUnit.duration}` : 'No active unit found');
 
     if (activeUnit) {
       // Calculate active rental times
-      const activeStartTime = parseInt(activeUnit.startTime);
+      const activeStartTime = parseInt(activeUnit.startTime); // Unix timestamp (UTC ms)
       const activeDuration = parseInt(activeUnit.duration) || 0;
 
       let activeEndTime;
@@ -1507,15 +1507,12 @@ app.post('/api/schedules', requireAuth, (req, res) => {
         activeEndTime = activeStartTime + (24 * 60 * 60000);
       }
 
+      // newStartDateTime already parsed with +07:00 timezone, getTime() returns UTC timestamp
       const newStartTimestamp = newStartDateTime.getTime();
       const newEndTimestamp = newEndDateTime.getTime();
 
-      console.log(`[Conflict Check] Timestamps - newStart: ${newStartTimestamp}, newEnd: ${newEndTimestamp}, activeStart: ${activeStartTime}, activeEnd: ${activeEndTime}`);
-      console.log(`[Conflict Check] Comparison - newStart < activeEnd: ${newStartTimestamp < activeEndTime}, newEnd > activeStart: ${newEndTimestamp > activeStartTime}`);
-
       // Check overlap: (StartA < EndB) && (EndA > StartB)
       const overlap = (newStartTimestamp < activeEndTime) && (newEndTimestamp > activeStartTime);
-      console.log(`[Conflict Check] Overlap result: ${overlap}`);
 
       if (overlap) {
         const activeStartStr = new Date(activeStartTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
