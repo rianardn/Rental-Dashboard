@@ -6203,7 +6203,14 @@
           return;
         }
 
-        const html = data.completed.map(item => {
+        // Urutkan berdasarkan TX ID terbesar ke terkecil (descending)
+        const sortedCompleted = data.completed.sort((a, b) => {
+          const idA = a.scheduleId || '';
+          const idB = b.scheduleId || '';
+          return idB.localeCompare(idA); // Descending: Z-A, 9-0
+        });
+
+        const html = sortedCompleted.map(item => {
           const badge = getHistoryScheduleStatusBadge(item.status);
 
           // Gunakan format yang sama dengan renderSchedules
