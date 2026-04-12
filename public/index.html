@@ -2742,13 +2742,11 @@
 
       <!-- Step 3: History -->
       <div id="editExpenseStep3" style="padding: 20px; display: none;">
-        <!-- Edit History Content -->
-        <div id="expenseEditHistoryContent">
-          <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Riwayat Perubahan:</p>
-          <div id="editExpenseHistoryList" style="max-height: 300px; overflow-y: auto;"></div>
+        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+          <button id="btnShowExpenseEditLogs" class="btn btn-sm" style="flex: 1; background: var(--ps3-red);">✏️ Riwayat Edit</button>
         </div>
-        
-        <button class="btn" onclick="closeModal('modalEditExpense')" style="margin-top: 16px; width: 100%;">Tutup</button>
+        <div id="editExpenseHistoryList" style="max-height: 300px; overflow-y: auto;"></div>
+        <button class="btn-confirm" onclick="closeModal('modalEditExpense')" style="margin-top: 16px; width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Tutup</button>
       </div>
     </div>
   </div>
@@ -7297,6 +7295,8 @@
           // Show history after successful edit
           document.getElementById('editExpenseStep2').style.display = 'none';
           document.getElementById('editExpenseStep3').style.display = 'block';
+          document.getElementById('btnShowExpenseEditLogs').style.background = 'var(--ps3-red)';
+          document.getElementById('btnShowExpenseEditLogs').style.opacity = '1';
           await loadExpenseEditHistory(currentEditExpenseId);
 
           // Refresh data and re-render
@@ -7344,9 +7344,18 @@
             minute: '2-digit',
             timeZone: 'UTC'
           });
+
+          let oldValue = log.oldValue;
+          let newValue = log.newValue;
+
+          // Format currency for amount field
+          if (log.fieldName === 'amount') {
+            oldValue = formatMoney(parseInt(oldValue) || 0);
+            newValue = formatMoney(parseInt(newValue) || 0);
+          }
           
           return `
-            <div style="border-left: 3px solid var(--ps3-chrome); padding: 12px; margin-bottom: 12px; background: rgba(255,255,255,0.05);">
+            <div style="border-left: 3px solid var(--ps3-red); padding: 12px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border-radius: 0 10px 10px 0;">
               <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 6px;">
                 ${dateStr} • oleh ${log.editedBy || 'admin'}
               </div>
@@ -7354,9 +7363,9 @@
                 ${fieldLabels[log.fieldName] || log.fieldName}
               </div>
               <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
-                <span style="text-decoration: line-through; color: var(--ps3-red);">${log.oldValue || '(kosong)'}</span>
+                <span style="text-decoration: line-through; color: var(--ps3-red);">${oldValue || '(kosong)'}</span>
                 <span style="color: var(--ps3-muted);">→</span>
-                <span style="color: var(--ps3-green); font-weight: 500;">${log.newValue || '(kosong)'}</span>
+                <span style="color: var(--ps3-green); font-weight: 500;">${newValue || '(kosong)'}</span>
               </div>
               ${log.editReason ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 6px; font-style: italic;">💬 ${log.editReason}</div>` : ''}
             </div>
@@ -7380,6 +7389,10 @@
       document.getElementById('editExpenseStep1').style.display = 'none';
       document.getElementById('editExpenseStep2').style.display = 'none';
       document.getElementById('editExpenseStep3').style.display = 'block';
+
+      // Reset button style
+      document.getElementById('btnShowExpenseEditLogs').style.background = 'var(--ps3-red)';
+      document.getElementById('btnShowExpenseEditLogs').style.opacity = '1';
       
       openModal('modalEditExpense', true);
       
