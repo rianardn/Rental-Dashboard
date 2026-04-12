@@ -1478,6 +1478,10 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
   if (status === 'cancelled') {
     const cancelReason = reason || editReason || 'Dibatalkan';
 
+    // Update status to 'cancelled' before saving to deletion_logs
+    // so trash modal can display correct "❌ Dibatalkan" badge
+    existing.status = 'cancelled';
+
     // Log cancellation to deletion_logs (trash)
     try {
       db.prepare(`
