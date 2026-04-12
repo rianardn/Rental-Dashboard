@@ -1395,13 +1395,13 @@ app.post('/api/schedules', requireAuth, (req, res) => {
       // Check schedules where the date range overlaps
       const existingSchedules = db.prepare(
         `SELECT * FROM schedules 
-         WHERE unitId = ? AND status != ? 
+         WHERE unitId = ? AND status NOT IN ('cancelled', 'completed') 
          AND (
            (scheduledDate <= ? AND (scheduledEndDate >= ? OR scheduledDate = ?))
            OR 
            (scheduledEndDate IS NULL AND scheduledDate >= ? AND scheduledDate <= ?)
          )`
-      ).all(unitId, 'cancelled', scheduledEndDate || scheduledDate, scheduledDate, scheduledDate, scheduledDate, scheduledEndDate || scheduledDate);
+      ).all(unitId, scheduledEndDate || scheduledDate, scheduledDate, scheduledDate, scheduledDate, scheduledEndDate || scheduledDate);
       
       for (const existing of existingSchedules) {
         if (!existing.scheduledTime) continue;
@@ -1568,13 +1568,13 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
     if (newEndDateTime) {
       const existingSchedules = db.prepare(
         `SELECT * FROM schedules 
-         WHERE unitId = ? AND status != ? AND id != ?
+         WHERE unitId = ? AND status NOT IN ('cancelled', 'completed') AND id != ?
          AND (
            (scheduledDate <= ? AND (scheduledEndDate >= ? OR scheduledDate = ?))
            OR 
            (scheduledEndDate IS NULL AND scheduledDate >= ? AND scheduledDate <= ?)
          )`
-      ).all(updateUnitId, 'cancelled', scheduleId, updateScheduledEndDate || updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledEndDate || updateScheduledDate);
+      ).all(updateUnitId, scheduleId, updateScheduledEndDate || updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledEndDate || updateScheduledDate);
       
       for (const exist of existingSchedules) {
         if (!exist.scheduledTime) continue;
