@@ -1386,11 +1386,19 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
   const durationMinutes = parseInt(duration) || 0;
   const editReasonText = reason || editReason || '-';
   const editor = editedBy || 'admin';
-  
+
   // Get existing schedule first for partial updates
   const existing = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
   if (!existing) {
     return res.status(404).json({ ok: false, error: 'Jadwal tidak ditemukan' });
+  }
+
+  // Prevent editing completed or cancelled schedules
+  if (existing.status === 'completed' || existing.status === 'cancelled') {
+    return res.status(400).json({
+      ok: false,
+      error: `Jadwal dengan status "${existing.status === 'completed' ? 'Selesai' : 'Dibatalkan'}" tidak dapat diedit.`
+    });
   }
   
   // Use existing values if not provided (partial update support)
