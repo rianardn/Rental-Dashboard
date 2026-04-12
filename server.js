@@ -572,9 +572,57 @@ app.post('/api/units/:id/start', requireAuth, (req, res) => {
   const unit = db.prepare('SELECT * FROM units WHERE id = ?').get(id);
   if (!unit) return res.status(404).json({ error: 'Unit tidak ditemukan' });
   if (unit.active) return res.status(400).json({ error: 'Unit sudah aktif' });
-  
+
   const { customer = '', duration = 0, note = '', linkedScheduleId = null } = req.body;
   const startTime = Date.now();
+  const durationMinutes = parseInt(duration) || 0;
+
+  // Conflict detection: Check if there are pending schedules that overlap with this rental
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+  // Calculate end time of this new rental
+  const rentalEndTime = new Date(startTime + durationMinutes * 60000);
+  const rentalEndDate = rentalEndTime.toISOString().split('T')[0];
+  const rentalEndTimeStr = String(rentalEndTime.getHours()).padStart(2, '0') + ':' + String(rentalEndTime.getMinutes()).padStart(2, '0');
+
+  // Find pending schedules for this unit that would overlap
+  const pendingSchedules = db.prepare(
+    `SELECT * FROM schedules
+     WHERE unitId = ? AND status = 'pending'
+     AND scheduledDate >= ?`
+  ).all(id, today);
+
+  for (const schedule of pendingSchedules) {
+    if (!schedule.scheduledTime) continue;
+
+    // Parse schedule datetime range
+    let scheduleStart = new Date(`${schedule.scheduledDate}T${schedule.scheduledTime}`);
+    let scheduleEnd;
+
+    if (schedule.scheduledEndDate && schedule.scheduledEndTime) {
+      scheduleEnd = new Date(`${schedule.scheduledEndDate}T${schedule.scheduledEndTime}`);
+    } else if (schedule.duration) {
+      scheduleEnd = new Date(scheduleStart.getTime() + schedule.duration * 60000);
+    } else {
+      continue;
+    }
+
+    // Check overlap: (StartA < EndB) && (EndA > StartB)
+    const newRentalEnd = new Date(startTime + durationMinutes * 60000);
+    const overlap = (new Date(startTime) < scheduleEnd) && (newRentalEnd > scheduleStart);
+
+    if (overlap) {
+      const scheduleEndStr = schedule.scheduledEndTime ||
+        String(scheduleEnd.getHours()).padStart(2, '0') + ':' +
+        String(scheduleEnd.getMinutes()).padStart(2, '0');
+      return res.status(409).json({
+        ok: false,
+        error: `Tidak dapat mengaktifkan unit. Ada booking dari ${schedule.customer} pada ${schedule.scheduledDate} pukul ${schedule.scheduledTime}-${scheduleEndStr}. Silakan pilih waktu lain atau batalkan booking terlebih dahulu.`
+      });
+    }
+  }
   
   db.prepare('UPDATE units SET active = 1, startTime = ?, customer = ?, duration = ?, note = ?, linkedScheduleId = ? WHERE id = ?')
     .run(startTime, customer, duration, note, linkedScheduleId, id);
@@ -1431,9 +1479,41 @@ app.post('/api/schedules', requireAuth, (req, res) => {
           });
         }
       }
+
+      // Conflict detection: Check if unit is currently active and would overlap
+      if (unitId) {
+        const activeUnit = db.prepare('SELECT * FROM units WHERE id = ? AND active = 1').get(unitId);
+        if (activeUnit) {
+          // Calculate active rental end time
+          const activeStart = new Date(activeUnit.startTime);
+          let activeEnd;
+
+          if (activeUnit.duration && activeUnit.duration > 0) {
+            activeEnd = new Date(activeUnit.startTime + activeUnit.duration * 60000);
+          } else {
+            // If no duration set, assume running rental with no fixed end
+            // Use a far future date to block any overlapping bookings
+            activeEnd = new Date(activeUnit.startTime + 24 * 60 * 60000); // 24 hours later
+          }
+
+          // Check overlap: (StartA < EndB) && (EndA > StartB)
+          const overlap = (newStartDateTime < activeEnd) && (newEndDateTime > activeStart);
+
+          if (overlap) {
+            const activeEndStr = activeUnit.duration > 0
+              ? String(activeEnd.getHours()).padStart(2, '0') + ':' + String(activeEnd.getMinutes()).padStart(2, '0')
+              : 'selesai';
+            const activeStartStr = String(activeStart.getHours()).padStart(2, '0') + ':' + String(activeStart.getMinutes()).padStart(2, '0');
+            return res.status(409).json({
+              ok: false,
+              error: `Unit sedang aktif oleh ${activeUnit.customer || 'pelanggan'} dari pukul ${activeStartStr}${activeUnit.duration > 0 ? '-' + activeEndStr : ''}. Silakan pilih unit lain atau waktu berbeda.`
+            });
+          }
+        }
+      }
     }
   }
-  
+
   // Generate schedule ID (PSJxxxxx)
   const scheduleId = generateScheduleId();
 
