@@ -5696,11 +5696,7 @@
       trashList.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 30px;">⏳ Memuat data...</p>';
 
       try {
-        const response = await api('GET', '/schedules/deleted');
-        if (!response.ok) {
-          throw new Error('Failed to load deleted schedules');
-        }
-        const data = await response.json();
+        const data = await api('GET', '/schedules/deleted');
 
         if (!data.deleted || data.deleted.length === 0) {
           trashList.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 30px;">🗑️ Belum ada data yang dihapus</p>';
