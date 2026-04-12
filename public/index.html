@@ -2283,12 +2283,7 @@
 
           <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
             <input type="checkbox" id="editScheduleCheckDateTime" style="width: 20px; height: 20px; accent-color: var(--ps3-red);">
-            <span>📅 Tanggal & Waktu</span>
-          </label>
-
-          <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
-            <input type="checkbox" id="editScheduleCheckDuration" style="width: 20px; height: 20px; accent-color: var(--ps3-red);">
-            <span>⏱️ Durasi (menit)</span>
+            <span>📅 Tanggal, Waktu & Durasi</span>
           </label>
 
           <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
@@ -2322,16 +2317,52 @@
           <input type="text" id="editSchedulePhone" placeholder="08xxxxxxxxxx" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
         </div>
 
+        <!-- Unified Date/Time/Duration Section (like Add Schedule form) -->
         <div id="editScheduleFieldDateTime" style="display: none; margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Tanggal</label>
-          <input type="date" id="editScheduleDate" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem; margin-bottom: 12px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Waktu Mulai</label>
-          <input type="time" id="editScheduleTime" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
-        </div>
+          <label style="display: block; margin-bottom: 10px; font-size: 0.85rem; color: var(--ps3-silver); font-weight: 600;">📅 Tanggal & Waktu Penyewaan</label>
 
-        <div id="editScheduleFieldDuration" style="display: none; margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Durasi (menit)</label>
-          <input type="number" id="editScheduleDuration" placeholder="60" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+          <!-- Baris 1: Tanggal Mulai - Jam Mulai -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Tanggal Mulai</label>
+              <input type="date" id="editScheduleStartDate" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editScheduleInitDefaultEndDate()">
+            </div>
+            <div>
+              <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Jam Mulai</label>
+              <input type="time" id="editScheduleStartTime" step="60" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editScheduleUpdateEndDateTimeFromDuration()">
+            </div>
+          </div>
+
+          <!-- Baris 2: Tanggal Berakhir - Jam Berakhir -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Tanggal Berakhir</label>
+              <input type="date" id="editScheduleEndDate" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editScheduleUpdateDurationFromEndDateTime()">
+            </div>
+            <div>
+              <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Jam Berakhir</label>
+              <input type="time" id="editScheduleEndTime" step="60" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editScheduleUpdateDurationFromEndDateTime()">
+            </div>
+          </div>
+
+          <!-- Baris 3: Durasi - Custom menit -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Durasi</label>
+              <select id="editScheduleDuration" onchange="editScheduleHandleDurationChange(this)" style="width: 100%; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; color: var(--ps3-text); font-family: var(--font-body); font-size: 0.9rem; cursor: pointer;">
+                <option value="60">1 Jam</option>
+                <option value="120" selected>2 Jam</option>
+                <option value="180">3 Jam</option>
+                <option value="240">4 Jam</option>
+                <option value="300">5 Jam</option>
+                <option value="custom">Custom (menit)</option>
+              </select>
+            </div>
+            <div>
+              <label id="editScheduleCustomDurationLabel" style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Menit (jika Custom)</label>
+              <input type="number" id="editScheduleDurationCustom" placeholder="Masukkan durasi (menit)" min="30" step="10" style="width: 100%; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; color: var(--ps3-text); font-family: var(--font-body); font-size: 0.9rem; display: none;" onchange="editScheduleUpdateEndDateTimeFromDuration()">
+            </div>
+          </div>
         </div>
 
         <div id="editScheduleFieldUnit" style="display: none; margin-bottom: 16px;">
@@ -7500,16 +7531,37 @@
       document.getElementById('editScheduleCheckCustomer').checked = false;
       document.getElementById('editScheduleCheckPhone').checked = false;
       document.getElementById('editScheduleCheckDateTime').checked = false;
-      document.getElementById('editScheduleCheckDuration').checked = false;
       document.getElementById('editScheduleCheckUnit').checked = false;
       document.getElementById('editScheduleCheckNote').checked = false;
 
       // Pre-fill current values
       document.getElementById('editScheduleCustomer').value = schedule.customer || '';
       document.getElementById('editSchedulePhone').value = schedule.phone || '';
-      document.getElementById('editScheduleDate').value = schedule.scheduledDate || '';
-      document.getElementById('editScheduleTime').value = schedule.scheduledTime || '';
-      document.getElementById('editScheduleDuration').value = schedule.duration || '';
+
+      // Pre-fill date/time fields
+      document.getElementById('editScheduleStartDate').value = schedule.scheduledDate || '';
+      document.getElementById('editScheduleStartTime').value = schedule.scheduledTime || '';
+      document.getElementById('editScheduleEndDate').value = schedule.scheduledEndDate || schedule.scheduledDate || '';
+      document.getElementById('editScheduleEndTime').value = schedule.scheduledEndTime || '';
+
+      // Set duration dropdown (preset or custom)
+      const duration = schedule.duration || 120;
+      const presetOptions = [60, 120, 180, 240, 300];
+      const durationSelect = document.getElementById('editScheduleDuration');
+      const customInput = document.getElementById('editScheduleDurationCustom');
+      const customLabel = document.getElementById('editScheduleCustomDurationLabel');
+
+      if (presetOptions.includes(duration)) {
+        durationSelect.value = duration.toString();
+        customInput.style.display = 'none';
+        customLabel.style.color = 'var(--ps3-muted)';
+      } else {
+        durationSelect.value = 'custom';
+        customInput.value = duration;
+        customInput.style.display = 'block';
+        customLabel.style.color = 'var(--ps3-text)';
+      }
+
       document.getElementById('editScheduleNote').value = schedule.note || '';
       document.getElementById('editScheduleReason').value = '';
 
@@ -7532,7 +7584,6 @@
         'editScheduleCheckCustomer',
         'editScheduleCheckPhone',
         'editScheduleCheckDateTime',
-        'editScheduleCheckDuration',
         'editScheduleCheckUnit',
         'editScheduleCheckNote'
       ];
@@ -7550,8 +7601,6 @@
         document.getElementById('editScheduleCheckPhone').checked ? 'block' : 'none';
       document.getElementById('editScheduleFieldDateTime').style.display =
         document.getElementById('editScheduleCheckDateTime').checked ? 'block' : 'none';
-      document.getElementById('editScheduleFieldDuration').style.display =
-        document.getElementById('editScheduleCheckDuration').checked ? 'block' : 'none';
       document.getElementById('editScheduleFieldUnit').style.display =
         document.getElementById('editScheduleCheckUnit').checked ? 'block' : 'none';
       document.getElementById('editScheduleFieldNote').style.display =
@@ -7564,6 +7613,88 @@
     function backToEditScheduleStep1() {
       document.getElementById('editScheduleStep1').style.display = 'block';
       document.getElementById('editScheduleStep2').style.display = 'none';
+    }
+
+    // ═════════════════ Edit Schedule Date/Time Handler Functions ═════════════════
+
+    // Handle duration dropdown change for edit modal
+    function editScheduleHandleDurationChange(select) {
+      const customInput = document.getElementById('editScheduleDurationCustom');
+      const customLabel = document.getElementById('editScheduleCustomDurationLabel');
+
+      if (select.value === 'custom') {
+        customInput.style.display = 'block';
+        customLabel.style.color = 'var(--ps3-text)';
+        customInput.focus();
+      } else {
+        customInput.style.display = 'none';
+        customLabel.style.color = 'var(--ps3-muted)';
+        // Auto update end date/time when selecting preset duration
+        editScheduleUpdateEndDateTimeFromDuration();
+      }
+    }
+
+    // Initialize default end date when start date changes for edit modal
+    function editScheduleInitDefaultEndDate() {
+      const startDate = document.getElementById('editScheduleStartDate').value;
+      const endDateInput = document.getElementById('editScheduleEndDate');
+
+      if (startDate && !endDateInput.value) {
+        endDateInput.value = startDate;
+      }
+
+      // Also update end time if we have start time and duration
+      editScheduleUpdateEndDateTimeFromDuration();
+    }
+
+    // When duration changes, update end date and time for edit modal
+    function editScheduleUpdateEndDateTimeFromDuration() {
+      const startDate = document.getElementById('editScheduleStartDate').value;
+      const startTime = document.getElementById('editScheduleStartTime').value;
+      const durationSelect = document.getElementById('editScheduleDuration').value;
+      let duration = 0;
+
+      if (durationSelect === 'custom') {
+        duration = parseInt(document.getElementById('editScheduleDurationCustom').value) || 0;
+      } else {
+        duration = parseInt(durationSelect) || 0;
+      }
+
+      if (startDate && startTime && duration > 0) {
+        const result = addMinutesToDateTime(startDate, startTime, duration);
+        document.getElementById('editScheduleEndDate').value = result.date;
+        document.getElementById('editScheduleEndTime').value = result.time;
+      }
+    }
+
+    // When end date/time changes, update duration for edit modal
+    function editScheduleUpdateDurationFromEndDateTime() {
+      const startDate = document.getElementById('editScheduleStartDate').value;
+      const startTime = document.getElementById('editScheduleStartTime').value;
+      const endDate = document.getElementById('editScheduleEndDate').value;
+      const endTime = document.getElementById('editScheduleEndTime').value;
+
+      if (startDate && startTime && endDate && endTime) {
+        const duration = getDurationMinutesWithDate(startDate, startTime, endDate, endTime);
+        if (duration > 0) {
+          const durationSelect = document.getElementById('editScheduleDuration');
+          const customInput = document.getElementById('editScheduleDurationCustom');
+          const customLabel = document.getElementById('editScheduleCustomDurationLabel');
+
+          // Check if duration matches preset options
+          const presetOptions = [60, 120, 180, 240, 300];
+          if (presetOptions.includes(duration)) {
+            durationSelect.value = duration.toString();
+            customInput.style.display = 'none';
+            customLabel.style.color = 'var(--ps3-muted)';
+          } else {
+            durationSelect.value = 'custom';
+            customInput.value = duration;
+            customInput.style.display = 'block';
+            customLabel.style.color = 'var(--ps3-text)';
+          }
+        }
+      }
     }
 
     async function saveScheduleEdit() {
@@ -7582,11 +7713,18 @@
         updates.phone = document.getElementById('editSchedulePhone').value.trim();
       }
       if (document.getElementById('editScheduleCheckDateTime').checked) {
-        updates.scheduledDate = document.getElementById('editScheduleDate').value;
-        updates.scheduledTime = document.getElementById('editScheduleTime').value;
-      }
-      if (document.getElementById('editScheduleCheckDuration').checked) {
-        updates.duration = parseInt(document.getElementById('editScheduleDuration').value) || 0;
+        updates.scheduledDate = document.getElementById('editScheduleStartDate').value;
+        updates.scheduledTime = document.getElementById('editScheduleStartTime').value;
+        updates.scheduledEndDate = document.getElementById('editScheduleEndDate').value;
+        updates.scheduledEndTime = document.getElementById('editScheduleEndTime').value;
+
+        // Calculate duration
+        const durationSelect = document.getElementById('editScheduleDuration').value;
+        if (durationSelect === 'custom') {
+          updates.duration = parseInt(document.getElementById('editScheduleDurationCustom').value) || 0;
+        } else {
+          updates.duration = parseInt(durationSelect) || 0;
+        }
       }
       if (document.getElementById('editScheduleCheckUnit').checked) {
         updates.unitId = document.getElementById('editScheduleUnit').value;
