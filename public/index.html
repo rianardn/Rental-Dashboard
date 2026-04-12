@@ -2690,11 +2690,8 @@
       </div>
 
       <!-- Footer Actions -->
-      <div style="padding: 16px 20px; border-top: 1px solid var(--ps3-border); display: flex; gap: 10px;">
-        <button class="btn-cancel" onclick="closeModal('modalTrashIncome')" style="flex: 1;">Tutup</button>
-        <button id="btnEmptyTrashIncome" class="btn" onclick="confirmEmptyTrashIncome()" style="flex: 1; background: var(--ps3-red); display: none;">
-          🗑️ Kosongkan Sampah
-        </button>
+      <div style="padding: 16px 20px; border-top: 1px solid var(--ps3-border);">
+        <button class="btn-cancel" onclick="closeModal('modalTrashIncome')" style="width: 100%;">Tutup</button>
       </div>
     </div>
   </div>
@@ -7151,19 +7148,16 @@
       const container = document.getElementById('trashIncomeList');
       const emptyState = document.getElementById('trashIncomeEmpty');
       const countEl = document.getElementById('trashIncomeCount');
-      const btnEmpty = document.getElementById('btnEmptyTrashIncome');
 
       countEl.textContent = deletedTransactions.length;
 
       if (deletedTransactions.length === 0) {
         container.innerHTML = '';
         emptyState.style.display = 'block';
-        btnEmpty.style.display = 'none';
         return;
       }
 
       emptyState.style.display = 'none';
-      btnEmpty.style.display = 'block';
 
       container.innerHTML = deletedTransactions.map((t, index) => {
         const nomor = index + 1;
@@ -7266,21 +7260,6 @@
       } catch (error) {
         showToast('Gagal menghapus permanen: ' + error.message, 'error');
       }
-    }
-
-    function confirmEmptyTrashIncome() {
-      if (deletedTransactions.length === 0) {
-        showToast('Tempat sampah sudah kosong', 'info');
-        return;
-      }
-
-      if (!confirm(`Yakin ingin mengosongkan tempat sampah?\n\n${deletedTransactions.length} transaksi akan dihapus permanen.\n\nTindakan ini tidak dapat dibatalkan!`)) {
-        return;
-      }
-
-      deletedTransactions = [];
-      showToast('Tempat sampah berhasil dikosongkan', 'success');
-      renderTrashIncomeList();
     }
 
     // Tab switching functions for history modal
