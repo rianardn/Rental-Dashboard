@@ -8375,7 +8375,6 @@
               ` : ''}
               ${s.status === 'pending' || s.status === 'running' ? `<button onclick="openEditScheduleModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-yellow); border: 1px solid var(--ps3-yellow); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-yellow)';this.style.color='#000'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-yellow)'">✏️ Edit</button>` : ''}
               ${s.editCount > 0 ? `<button onclick="openScheduleHistoryModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-silver); border: 1px solid var(--ps3-border); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-blue)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-silver)'">📜 Riwayat</button>` : ''}
-              ${s.status !== 'completed' ? `<button onclick="deleteSchedule(${s.id})" style="background: transparent; color: var(--ps3-muted); border: 1px solid var(--ps3-border); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#fff';this.style.borderColor='var(--ps3-muted)'" onmouseout="this.style.color='var(--ps3-muted)';this.style.borderColor='var(--ps3-border)'">🗑️ Hapus</button>` : ''}
             </div>
           </div>
         `;
@@ -9305,19 +9304,6 @@
         renderAll();
         renderSchedules();
         showToast('Jadwal dimulai! Unit aktif dengan data booking.', 'success');
-      } catch (error) {
-        showToast(error.message, 'error');
-      }
-    }
-
-    async function deleteSchedule(id) {
-      if (!confirm('Hapus jadwal ini?')) return;
-      
-      try {
-        await api('DELETE', `/schedules/${id}`);
-        await loadSchedules();
-        renderSchedules();
-        showToast('Jadwal dihapus', 'success');
       } catch (error) {
         showToast(error.message, 'error');
       }
