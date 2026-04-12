@@ -5720,9 +5720,9 @@
         } else {
           // Refresh data biasa
           await loadSchedules();
-          await loadTrashedSchedules();
+          await loadDeletedSchedules();
           renderSchedules();
-          renderTrashedSchedules();
+          filterCalendarSchedules();
         }
       } catch (error) {
         showToast(error.message, 'error');
