@@ -3225,6 +3225,68 @@
     </div>
   </div>
 
+  <!-- Modal: Kalender Jadwal (Schedule Calendar Filter) -->
+  <div id="modalScheduleCalendar" class="modal" style="z-index: 3000;">
+    <div class="modal-content" style="max-width: 600px; max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
+        <div class="modal-title">📅 Kalender Jadwal</div>
+        <button class="modal-close" onclick="closeModal('modalScheduleCalendar')">×</button>
+      </div>
+
+      <div style="padding: 20px;">
+        <!-- Filter Aktif -->
+        <div id="calendarActiveFilter" style="display: none; margin-bottom: 15px; padding: 10px 15px; background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.85rem; color: var(--ps3-text);">
+              🔍 Filter: <span id="calendarFilterText"></span>
+            </span>
+            <button onclick="clearCalendarFilter()" style="background: var(--ps3-red); color: #fff; border: none; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">
+              ❌ Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- Kalender Filter (tanpa label untuk hemat space) -->
+        <div id="calendarContainer">
+          <!-- Tahun -->
+          <div style="margin-bottom: 12px;">
+            <div id="calendarYears" style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <!-- Years will be rendered here -->
+            </div>
+          </div>
+
+          <!-- Bulan -->
+          <div style="margin-bottom: 12px;">
+            <div id="calendarMonths" style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <!-- Months will be rendered here -->
+            </div>
+          </div>
+
+          <!-- Tanggal -->
+          <div style="margin-bottom: 12px;">
+            <div id="calendarDates" style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <!-- Dates will be rendered here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Hasil Filter -->
+        <div style="margin-top: 20px; border-top: 1px solid var(--ps3-border); padding-top: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 0.85rem; color: var(--ps3-muted);">
+              📋 <span id="calendarResultCount">0</span> jadwal ditemukan
+            </span>
+          </div>
+          <div id="calendarScheduleList" style="max-height: 300px; overflow-y: auto;">
+            <!-- Filtered schedules will be rendered here -->
+          </div>
+        </div>
+
+        <button class="btn" onclick="closeModal('modalScheduleCalendar')" style="width: 100%; margin-top: 15px;">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Pembatalan Jadwal dengan Alasan -->
   <div id="modalCancelSchedule" class="modal" style="z-index: 3500;">
     <div class="modal-content" style="max-width: 480px; max-height: 85vh; overflow-y: auto;">
@@ -8141,17 +8203,26 @@
       // Filter out completed schedules - they only appear in History modal
       const activeSchedules = sorted.filter(s => s.status !== 'completed');
       
-      // Filter: tampilkan semua jika showAllSchedules, atau hanya hari ini jika tidak
-      const filtered = showAllSchedules ? activeSchedules : activeSchedules.filter(s => s.scheduledDate === today);
+      // Selalu filter hanya jadwal hari ini di halaman utama
+      const filtered = activeSchedules.filter(s => s.scheduledDate === today);
       
-      // Count other schedules (non-today)
+      // Count other schedules (non-today) untuk tombol "Lihat Semua"
       const otherSchedules = activeSchedules.filter(s => s.scheduledDate !== today);
       
       let html = '';
       
+      // Tombol "Lihat Semua" di ATAS (tidak perlu scroll ke bawah)
+      if (otherSchedules.length > 0) {
+        const totalActive = activeSchedules.length;
+        html += `
+          <button onclick="openScheduleCalendarModal()" style="width: 100%; background: var(--ps3-surface); border: 2px dashed var(--ps3-border); color: var(--ps3-text); padding: 12px; border-radius: 10px; font-size: 0.9rem; cursor: pointer; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            📅 Lihat Semua (${totalActive} Jadwal)
+          </button>
+        `;
+      }
+      
       // Card untuk hari ini (exclude completed)
-      const todaySchedules = activeSchedules.filter(s => s.scheduledDate === today);
-      if (!showAllSchedules && todaySchedules.length === 0) {
+      if (filtered.length === 0) {
         html += '<p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Tidak ada jadwal untuk hari ini</p>';
       }
       
@@ -8200,22 +8271,318 @@
         `;
       }).join('');
       
-      // Tambah tombol toggle view more / view less
-      if (otherSchedules.length > 0) {
-        const btnText = showAllSchedules ? '📅 Tampilkan Hanya Hari Ini' : `📅 Lihat ${otherSchedules.length} Jadwal Lainnya`;
-        html += `
-          <button onclick="toggleShowAllSchedules()" style="width: 100%; background: var(--ps3-surface); border: 2px dashed var(--ps3-border); color: var(--ps3-text); padding: 12px; border-radius: 10px; font-size: 0.9rem; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            ${btnText}
-          </button>
-        `;
-      }
-      
       container.innerHTML = html;
     }
 
     function toggleShowAllSchedules() {
       showAllSchedules = !showAllSchedules;
       renderSchedules();
+    }
+
+    // ═════════════════ Schedule Calendar Modal Functions ═════════════════
+    let calendarFilter = { year: null, month: null, date: null };
+
+    function openScheduleCalendarModal() {
+      calendarFilter = { year: null, month: null, date: null };
+      buildScheduleCalendar();
+      openModal('modalScheduleCalendar');
+    }
+
+    function buildScheduleCalendar() {
+      const activeSchedules = schedules.filter(s => s.status !== 'completed');
+      
+      // Extract unique years, months, and dates
+      const yearSet = new Set();
+      const monthSet = new Set();
+      const dateMap = new Map(); // key: "year-month", value: Set of dates
+
+      activeSchedules.forEach(s => {
+        if (s.scheduledDate) {
+          const d = new Date(s.scheduledDate + 'T00:00:00');
+          const year = d.getFullYear();
+          const month = d.getMonth(); // 0-11
+          const date = d.getDate();
+          const dayName = d.toLocaleDateString('id-ID', { weekday: 'short' });
+          
+          yearSet.add(year);
+          monthSet.add(month);
+          
+          const key = `${year}-${month}`;
+          if (!dateMap.has(key)) {
+            dateMap.set(key, new Set());
+          }
+          dateMap.get(key).add({ date, dayName, fullDate: s.scheduledDate });
+        }
+      });
+
+      // Sort years ascending (terkecil ke terbesar)
+      const years = Array.from(yearSet).sort((a, b) => a - b);
+      
+      // Sort months ascending
+      const months = Array.from(monthSet).sort((a, b) => a - b);
+
+      // Render Years (dengan tombol SEMUA di paling kiri)
+      const yearsContainer = document.getElementById('calendarYears');
+      const allYearsActive = calendarFilter.year === null && calendarFilter.month === null && calendarFilter.date === null;
+      let yearsHtml = `
+        <button onclick="selectCalendarYear(null)" 
+          style="padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; cursor: pointer;
+            background: ${allYearsActive ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; 
+            color: ${allYearsActive ? '#fff' : 'var(--ps3-text)'}; 
+            border: 1px solid ${allYearsActive ? 'var(--ps3-red)' : 'var(--ps3-border)'};">
+          📋 SEMUA
+        </button>
+      `;
+      yearsHtml += years.map(year => {
+        const isActive = calendarFilter.year === year;
+        return `
+          <button onclick="selectCalendarYear(${year})" 
+            style="padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; cursor: pointer;
+              background: ${isActive ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; 
+              color: ${isActive ? '#fff' : 'var(--ps3-text)'}; 
+              border: 1px solid ${isActive ? 'var(--ps3-red)' : 'var(--ps3-border)'};">
+            ${year}
+          </button>
+        `;
+      }).join('');
+      yearsContainer.innerHTML = yearsHtml;
+
+      // Render Months (filtered by selected year or all)
+      const monthsContainer = document.getElementById('calendarMonths');
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      
+      // Get months that have schedules in the selected year (or all years)
+      const availableMonths = new Set();
+      activeSchedules.forEach(s => {
+        if (s.scheduledDate) {
+          const d = new Date(s.scheduledDate + 'T00:00:00');
+          const year = d.getFullYear();
+          const month = d.getMonth();
+          if (!calendarFilter.year || calendarFilter.year === year) {
+            availableMonths.add(month);
+          }
+        }
+      });
+      
+      monthsContainer.innerHTML = Array.from(availableMonths).sort((a, b) => a - b).map(month => {
+        const isActive = calendarFilter.month === month;
+        return `
+          <button onclick="selectCalendarMonth(${month})" 
+            style="padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; cursor: pointer;
+              background: ${isActive ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; 
+              color: ${isActive ? '#fff' : 'var(--ps3-text)'}; 
+              border: 1px solid ${isActive ? 'var(--ps3-red)' : 'var(--ps3-border)'};">
+            ${monthNames[month]}
+          </button>
+        `;
+      }).join('');
+
+      // Render Dates (filtered by selected year and month)
+      const datesContainer = document.getElementById('calendarDates');
+      const availableDates = new Set();
+      const dateInfoMap = new Map();
+      
+      activeSchedules.forEach(s => {
+        if (s.scheduledDate) {
+          const d = new Date(s.scheduledDate + 'T00:00:00');
+          const year = d.getFullYear();
+          const month = d.getMonth();
+          const date = d.getDate();
+          const dayName = d.toLocaleDateString('id-ID', { weekday: 'short' });
+          
+          const yearMatch = !calendarFilter.year || calendarFilter.year === year;
+          const monthMatch = calendarFilter.month === null || calendarFilter.month === month;
+          
+          if (yearMatch && monthMatch) {
+            availableDates.add(s.scheduledDate);
+            dateInfoMap.set(s.scheduledDate, { date, dayName });
+          }
+        }
+      });
+
+      // Sort dates ascending (terkecil ke terbesar)
+      const sortedDates = Array.from(availableDates).sort((a, b) => new Date(a) - new Date(b));
+      
+      datesContainer.innerHTML = sortedDates.map(dateStr => {
+        const info = dateInfoMap.get(dateStr);
+        const isActive = calendarFilter.date === dateStr;
+        return `
+          <button onclick="selectCalendarDate('${dateStr}')" 
+            style="padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; min-width: 80px;
+              background: ${isActive ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; 
+              color: ${isActive ? '#fff' : 'var(--ps3-text)'}; 
+              border: 1px solid ${isActive ? 'var(--ps3-red)' : 'var(--ps3-border)'};">
+            <div style="font-size: 0.65rem; opacity: 0.8; text-transform: uppercase;">${info.dayName}</div>
+            <div style="font-weight: 600;">${info.date}</div>
+          </button>
+        `;
+      }).join('');
+
+      // Update filter display
+      updateCalendarFilterDisplay();
+      
+      // Render filtered schedules
+      filterCalendarSchedules();
+    }
+
+    function selectCalendarYear(year) {
+      if (year === null) {
+        // Klik SEMUA - reset semua filter
+        calendarFilter = { year: null, month: null, date: null };
+      } else {
+        calendarFilter.year = calendarFilter.year === year ? null : year;
+        // Reset month and date when year changes
+        if (calendarFilter.year !== year) {
+          calendarFilter.month = null;
+          calendarFilter.date = null;
+        }
+      }
+      buildScheduleCalendar();
+    }
+
+    function selectCalendarMonth(month) {
+      calendarFilter.month = calendarFilter.month === month ? null : month;
+      // Reset date when month changes
+      if (calendarFilter.month !== month) {
+        calendarFilter.date = null;
+      }
+      buildScheduleCalendar();
+    }
+
+    function selectCalendarDate(dateStr) {
+      calendarFilter.date = calendarFilter.date === dateStr ? null : dateStr;
+      buildScheduleCalendar();
+    }
+
+    function clearCalendarFilter() {
+      calendarFilter = { year: null, month: null, date: null };
+      buildScheduleCalendar();
+    }
+
+    function updateCalendarFilterDisplay() {
+      const filterContainer = document.getElementById('calendarActiveFilter');
+      const filterText = document.getElementById('calendarFilterText');
+      
+      const hasFilter = calendarFilter.year !== null || calendarFilter.month !== null || calendarFilter.date !== null;
+      
+      if (hasFilter) {
+        const parts = [];
+        if (calendarFilter.year) parts.push(`Tahun ${calendarFilter.year}`);
+        if (calendarFilter.month !== null) {
+          const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                             'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+          parts.push(monthNames[calendarFilter.month]);
+        }
+        if (calendarFilter.date) {
+          const d = new Date(calendarFilter.date + 'T00:00:00');
+          parts.push(`${d.getDate()} ${d.toLocaleDateString('id-ID', { month: 'short' })}`);
+        }
+        
+        filterText.textContent = parts.join(' + ');
+        filterContainer.style.display = 'block';
+      } else {
+        filterContainer.style.display = 'none';
+      }
+    }
+
+    function filterCalendarSchedules() {
+      const listContainer = document.getElementById('calendarScheduleList');
+      const countElement = document.getElementById('calendarResultCount');
+      
+      // Get active schedules (not completed)
+      let filtered = schedules.filter(s => s.status !== 'completed');
+      
+      // Apply filters
+      if (calendarFilter.year) {
+        filtered = filtered.filter(s => {
+          if (!s.scheduledDate) return false;
+          const d = new Date(s.scheduledDate + 'T00:00:00');
+          return d.getFullYear() === calendarFilter.year;
+        });
+      }
+      
+      if (calendarFilter.month !== null) {
+        filtered = filtered.filter(s => {
+          if (!s.scheduledDate) return false;
+          const d = new Date(s.scheduledDate + 'T00:00:00');
+          return d.getMonth() === calendarFilter.month;
+        });
+      }
+      
+      if (calendarFilter.date) {
+        filtered = filtered.filter(s => s.scheduledDate === calendarFilter.date);
+      }
+      
+      // Sort by date then time
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.scheduledDate + 'T' + (a.scheduledTime || '00:00'));
+        const dateB = new Date(b.scheduledDate + 'T' + (b.scheduledTime || '00:00'));
+        return dateA - dateB;
+      });
+      
+      countElement.textContent = filtered.length;
+      
+      if (filtered.length === 0) {
+        listContainer.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 30px;">Tidak ada jadwal untuk filter ini</p>';
+        return;
+      }
+      
+      // Group by date
+      const grouped = {};
+      filtered.forEach(s => {
+        if (!grouped[s.scheduledDate]) {
+          grouped[s.scheduledDate] = [];
+        }
+        grouped[s.scheduledDate].push(s);
+      });
+      
+      // Render grouped schedules
+      let html = '';
+      const today = new Date().toISOString().split('T')[0];
+      
+      Object.keys(grouped).sort().forEach(dateStr => {
+        const date = new Date(dateStr + 'T00:00:00');
+        const dayName = date.toLocaleDateString('id-ID', { weekday: 'long' });
+        const dateFormatted = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        const isToday = dateStr === today;
+        
+        html += `
+          <div style="margin-bottom: 15px;">
+            <div style="font-size: 0.8rem; color: ${isToday ? 'var(--ps3-green)' : 'var(--ps3-muted)'}; 
+                        margin-bottom: 8px; padding: 6px 10px; background: var(--ps3-surface); 
+                        border-radius: 6px; font-weight: 600; ${isToday ? 'border: 1px solid var(--ps3-green);' : ''}">
+              ${isToday ? '📌 ' : '📅 '}${dayName}, ${dateFormatted} ${isToday ? '(Hari Ini)' : ''}
+            </div>
+        `;
+        
+        grouped[dateStr].forEach(s => {
+          const badge = getScheduleStatusBadge(s);
+          html += `
+            <div style="background: var(--ps3-card); border: 1px solid var(--ps3-border); 
+                        border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <span style="font-weight: 600; color: var(--ps3-text);">${s.customer}</span>
+                  ${s.scheduleId ? `<span style="font-size: 0.7rem; color: var(--ps3-muted); margin-left: 6px;">(${s.scheduleId})</span>` : ''}
+                </div>
+                <span style="font-size: 0.7rem; padding: 3px 8px; border-radius: 4px; 
+                              background: ${badge.bg}; color: ${badge.color}; white-space: nowrap;">
+                  ${badge.text}
+                </span>
+              </div>
+              <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 4px;">
+                ⏰ ${s.scheduledTime || '--:--'}${s.duration ? ` → ${calculateEndTime(s.scheduledTime, s.duration)}` : ''}
+                ${s.unitName ? ` · 🎮 ${s.unitName}` : ''}
+              </div>
+              ${s.phone ? `<div style="font-size: 0.75rem; color: var(--ps3-muted); margin-top: 2px;">📞 ${s.phone}</div>` : ''}
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+      });
+      
+      listContainer.innerHTML = html;
     }
 
     function getStatusColor(status) {
@@ -8308,6 +8675,19 @@
       
       const durationText = s.duration ? `⏰ ${s.duration} menit` : '';
       return `🕐 ${startTime} → ${endTime} ${durationText}`;
+    }
+
+    /**
+     * Calculate end time from start time and duration
+     * Returns HH:mm format
+     */
+    function calculateEndTime(startTime, durationMinutes) {
+      if (!startTime || !durationMinutes) return '--:--';
+      const [hours, minutes] = startTime.split(':').map(Number);
+      const start = new Date();
+      start.setHours(hours, minutes, 0, 0);
+      const end = new Date(start.getTime() + parseInt(durationMinutes) * 60000);
+      return end.toTimeString().slice(0, 5);
     }
 
     async function updateScheduleStatus(id, status) {
