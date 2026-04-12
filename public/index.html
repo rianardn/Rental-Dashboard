@@ -6359,8 +6359,9 @@
           return idB.localeCompare(idA); // Descending: Z-A, 9-0
         });
 
-        const html = sortedCompleted.map(item => {
+        const html = sortedCompleted.map((item, index) => {
           const badge = getHistoryScheduleStatusBadge(item.status);
+          const nomor = index + 1;
 
           // Gunakan format yang sama dengan renderSchedules
           const fakeSchedule = {
@@ -6375,8 +6376,9 @@
           const formattedTime = formatScheduleTime(fakeSchedule);
 
           return `
-            <div style="background: ${badge.bg}; border: 2px solid ${badge.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="background: ${badge.bg}; border: 2px solid ${badge.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative;">
+              <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-green-dark); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; margin-top: 4px;">
                 <div>
                   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <span style="font-weight: 700; color: var(--ps3-text);">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
@@ -6443,9 +6445,10 @@
           return idB.localeCompare(idA); // Descending: Z-A, 9-0
         });
 
-        const html = sortedDeleted.map(item => {
+        const html = sortedDeleted.map((item, index) => {
           const deletedDate = formatDateTimeWIB(item.deletedAt);
           const badge = getDeletedScheduleStatusBadge(item.status);
+          const nomor = index + 1;
 
           // Gunakan format yang sama dengan renderSchedules
           const fakeSchedule = {
@@ -6460,8 +6463,9 @@
           const formattedTime = formatScheduleTime(fakeSchedule);
 
           return `
-            <div style="background: ${badge.bg}; border: 2px solid ${badge.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="background: ${badge.bg}; border: 2px solid ${badge.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative;">
+              <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red-danger); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; margin-top: 4px;">
                 <div>
                   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <span style="font-weight: 700; color: var(--ps3-text);">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
@@ -8299,13 +8303,15 @@
         html += '<p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Tidak ada jadwal untuk hari ini</p>';
       }
       
-      html += filtered.map(s => {
+      html += filtered.map((s, index) => {
         const highlight = getScheduleHighlight(s);
         const badge = getScheduleStatusBadge(s);
-        
+        const nomor = index + 1;
+
         return `
-          <div style="background: ${highlight.bg}; border: 2px solid ${highlight.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+          <div style="background: ${highlight.bg}; border: 2px solid ${highlight.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative;">
+            <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; margin-top: 4px;">
               <div>
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                   <span style="font-weight: 700; color: var(--ps3-text);">${s.customer}</span>
@@ -8878,33 +8884,36 @@
       // Render grouped schedules
       let html = '';
       const today = new Date().toISOString().split('T')[0];
-      
+      let globalCounter = 0;
+
       Object.keys(grouped).sort().forEach(dateStr => {
         const date = new Date(dateStr + 'T00:00:00');
         const dayName = date.toLocaleDateString('id-ID', { weekday: 'long' });
         const dateFormatted = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
         const isToday = dateStr === today;
-        
+
         html += `
           <div style="margin-bottom: 15px;">
-            <div style="font-size: 0.8rem; color: ${isToday ? 'var(--ps3-green)' : 'var(--ps3-muted)'}; 
-                        margin-bottom: 8px; padding: 6px 10px; background: var(--ps3-surface); 
+            <div style="font-size: 0.8rem; color: ${isToday ? 'var(--ps3-green)' : 'var(--ps3-muted)'};
+                        margin-bottom: 8px; padding: 6px 10px; background: var(--ps3-surface);
                         border-radius: 6px; font-weight: 600; ${isToday ? 'border: 1px solid var(--ps3-green);' : ''}">
               ${isToday ? '📌 ' : '📅 '}${dayName}, ${dateFormatted} ${isToday ? '(Hari Ini)' : ''}
             </div>
         `;
-        
+
         grouped[dateStr].forEach(s => {
+          globalCounter++;
           const badge = getScheduleStatusBadge(s);
           html += `
-            <div style="background: var(--ps3-card); border: 1px solid var(--ps3-border); 
-                        border-radius: 8px; padding: 10px; margin-bottom: 8px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="background: var(--ps3-card); border: 1px solid var(--ps3-border);
+                        border-radius: 8px; padding: 10px; margin-bottom: 8px; position: relative;">
+              <div style="position: absolute; top: -6px; left: 8px; background: var(--ps3-red); color: #fff; font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 8px; z-index: 1;">${globalCounter}</div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 6px;">
                 <div>
                   <span style="font-weight: 600; color: var(--ps3-text);">${s.customer}</span>
                   ${s.scheduleId ? `<span style="font-size: 0.7rem; color: var(--ps3-muted); margin-left: 6px;">(${s.scheduleId})</span>` : ''}
                 </div>
-                <span style="font-size: 0.7rem; padding: 3px 8px; border-radius: 4px; 
+                <span style="font-size: 0.7rem; padding: 3px 8px; border-radius: 4px;
                               background: ${badge.bg}; color: ${badge.color}; white-space: nowrap;">
                   ${badge.text}
                 </span>
@@ -8917,7 +8926,7 @@
             </div>
           `;
         });
-        
+
         html += '</div>';
       });
       
