@@ -2305,11 +2305,11 @@
         <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
             <span style="color: var(--ps3-muted); font-size: 0.8rem;">Pelanggan:</span>
-            <span style="font-weight: 600;" id="scheduleUnitCustomer"></span>
+            <span style="font-weight: 700; color: var(--ps3-text);" id="scheduleUnitCustomer"></span>
           </div>
           <div style="display: flex; justify-content: space-between;">
             <span style="color: var(--ps3-muted); font-size: 0.8rem;">Durasi:</span>
-            <span id="scheduleUnitDuration"></span>
+            <span style="font-weight: 600; color: var(--ps3-text);" id="scheduleUnitDuration"></span>
           </div>
         </div>
         <div class="form-group">
@@ -3764,26 +3764,26 @@
           <div class="customer-info">
             <div class="customer-info-row">
               <span class="customer-info-label">Pelanggan</span>
-              <span class="customer-info-value">${unit.customer || '-'}</span>
+              <span class="customer-info-value" style="font-weight: 700; color: var(--ps3-text);">${unit.customer || '-'}</span>
             </div>
             <div class="customer-info-row">
               <span class="customer-info-label">Waktu Mulai</span>
-              <span class="customer-info-value">${startDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false})} WIB</span>
+              <span class="customer-info-value" style="font-weight: 600; color: var(--ps3-text);">${startDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false})} WIB</span>
             </div>
             ${endDate ? `
             <div class="customer-info-row">
               <span class="customer-info-label">Waktu Akhir</span>
-              <span class="customer-info-value">${endDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false})} WIB</span>
+              <span class="customer-info-value" style="font-weight: 600; color: var(--ps3-text);">${endDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false})} WIB</span>
             </div>
             ` : ''}
             <div class="customer-info-row">
               <span class="customer-info-label">Estimasi Pendapatan</span>
-              <span class="customer-info-value" style="color: var(--ps3-green); font-weight: 600;">${formatMoney(estimatedRevenue)}</span>
+              <span class="customer-info-value" style="color: var(--ps3-green); font-weight: 700;">${formatMoney(estimatedRevenue)}</span>
             </div>
             ${unit.duration > 0 ? `
             <div class="customer-info-row">
               <span class="customer-info-label">Durasi</span>
-              <span class="customer-info-value">${unit.duration} menit</span>
+              <span class="customer-info-value" style="font-weight: 600; color: var(--ps3-text);">${unit.duration} menit</span>
             </div>
             ` : ''}
             ${unit.note ? `
@@ -5433,36 +5433,32 @@
       openModal('modalConfirmActivationWithCancel');
     }
 
-    // Render card untuk booking yang konflik (sama dengan card daftar jadwal)
+    // Render card untuk booking yang konflik (sama persis dengan card daftar jadwal)
     function renderActivationConflictCard(s) {
-      const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' };
-      const startTime = new Date(s.startTimestamp).toLocaleTimeString('id-ID', timeOptions);
-      const endTime = new Date(s.endTimestamp).toLocaleTimeString('id-ID', timeOptions);
-      
-      // Format tanggal WIB
-      const dateObj = new Date(s.date + 'T00:00:00+07:00');
-      const dateStr = dateObj.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' });
+      // Gunakan fungsi yang sama dengan daftar jadwal untuk konsistensi
+      const highlight = getScheduleHighlight(s);
+      const badge = getScheduleStatusBadge(s);
       
       return `
-        <div style="background: var(--ps3-surface); border: 2px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+        <div style="background: ${highlight.bg}; border: 2px solid ${highlight.border}; border-radius: 10px; padding: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
             <div>
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <span style="font-weight: 600; color: var(--ps3-text);">${escapeHtml(s.customer)}</span>
-                ${s.id ? `
-                  <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; color: var(--ps3-muted);">TX ID:</span>
-                  <span onclick="copyToClipboard('${s.id}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem; color: var(--ps3-muted); cursor: pointer;">${s.id}</span>
+                <span style="font-weight: 700; color: var(--ps3-text);">${escapeHtml(s.customer)}</span>
+                ${s.scheduleId ? `
+                  <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
+                  <span onclick="copyToClipboard('${s.scheduleId}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem; cursor: pointer;">${s.scheduleId}</span>
                 ` : ''}
               </div>
               ${s.phone ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">📞 ${escapeHtml(s.phone)}</div>` : ''}
             </div>
-            <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: var(--ps3-yellow-badge); color: #000; font-weight: 600; white-space: nowrap;">⏳ Menunggu</span>
+            <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.bg}; color: ${badge.color}; font-weight: 600; white-space: nowrap;">${badge.text}</span>
           </div>
           <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
-            📅 ${dateStr}
+            ${formatScheduleDate(s)}
           </div>
-          <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 6px;">
-            ⏰ ${startTime} → ${endTime}
+          <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
+            ${formatScheduleTime(s)}
           </div>
           ${s.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${escapeHtml(s.unitName)}</div>` : ''}
           ${s.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${escapeHtml(s.note)}</div>` : ''}
@@ -6208,9 +6204,11 @@
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                 <div>
                   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="font-weight: 600; color: var(--ps3-silver);">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
-                    <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
-                    <span style="font-size: 0.75rem; color: var(--ps3-muted);">${item.id}</span>
+                    <span style="font-weight: 700; color: var(--ps3-text);">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
+                    ${item.scheduleId ? `
+                      <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
+                      <span onclick="copyToClipboard('${item.scheduleId}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${item.scheduleId}</span>
+                    ` : ''}
                   </div>
                   ${item.phone ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">📞 ${item.phone}</div>` : ''}
                 </div>
@@ -6219,7 +6217,7 @@
               <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
                 ${formattedDate}
               </div>
-              <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 6px;">
+              <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
                 ${formattedTime}
               </div>
               ${item.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${escapeHtml(item.unitName)}</div>` : ''}
@@ -6284,10 +6282,10 @@
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                 <div>
                   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="font-weight: 600; color: var(--ps3-silver);">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
+                    <span style="font-weight: 700; color: var(--ps3-text);">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
                     ${item.originalId ? `
                       <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
-                      <span style="font-size: 0.75rem; color: var(--ps3-muted);">${item.originalId}</span>
+                      <span onclick="copyToClipboard('${item.originalId}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${item.originalId}</span>
                     ` : ''}
                   </div>
                   ${item.phone ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">📞 ${item.phone}</div>` : ''}
@@ -6297,7 +6295,7 @@
               <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
                 ${formattedDate}
               </div>
-              <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 6px;">
+              <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
                 ${formattedTime}
               </div>
               ${item.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${escapeHtml(item.unitName)}</div>` : ''}
@@ -8129,7 +8127,7 @@
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
               <div>
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <span style="font-weight: 600;">${s.customer}</span>
+                  <span style="font-weight: 700; color: var(--ps3-text);">${s.customer}</span>
                   ${s.scheduleId ? `
                     <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
                     <span onclick="copyToClipboard('${s.scheduleId}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${s.scheduleId}</span>
@@ -8142,7 +8140,7 @@
             <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
               ${formatScheduleDate(s)}
             </div>
-            <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 6px;">
+            <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
               ${formatScheduleTime(s)}
             </div>
             ${s.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${s.unitName} ${s.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem;">● AKTIF</span>' : ''}</div>` : ''}
@@ -8365,41 +8363,38 @@
     }
 
     function renderCancelScheduleCard(s) {
-      const statusConfig = {
-        'pending': { text: '⏳ Menunggu', bg: 'var(--ps3-surface)', color: 'var(--ps3-yellow)', border: 'var(--ps3-yellow)' },
-        'running': { text: '🔥 Berjalan', bg: 'rgba(119,221,119,0.15)', color: 'var(--ps3-green)', border: 'var(--ps3-green)' },
-        'completed': { text: '✅ Selesai', bg: 'var(--ps3-surface)', color: 'var(--ps3-green-dark)', border: 'var(--ps3-border)' },
-        'cancelled': { text: '❌ Dibatalkan', bg: 'rgba(255,68,68,0.15)', color: 'var(--ps3-red)', border: 'var(--ps3-red)' }
-      };
-      const status = statusConfig[s.status] || statusConfig.pending;
+      // Gunakan fungsi yang sama dengan daftar jadwal untuk konsistensi warna badge dan highlight
+      const highlight = getScheduleHighlight(s);
+      const badge = getScheduleStatusBadge(s);
 
       return `
-        <div style="background: ${status.bg}; border: 1px solid ${status.border}; border-radius: 12px; padding: 15px; font-size: 0.85rem;">
+        <div style="background: ${highlight.bg}; border: 2px solid ${highlight.border}; border-radius: 10px; padding: 12px; font-size: 0.85rem;">
           <!-- Header: Customer & Status -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div style="font-weight: 700; font-size: 1rem; color: var(--ps3-text);">${escapeHtml(s.customer)}</div>
-            <div style="background: ${status.border}; color: ${s.status === 'pending' ? '#000' : '#fff'}; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
-              ${status.text}
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-weight: 700; font-size: 1rem; color: var(--ps3-text);">${escapeHtml(s.customer)}</span>
+                ${s.scheduleId ? `
+                  <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
+                  <span onclick="copyToClipboard('${s.scheduleId}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem; cursor: pointer;">${s.scheduleId}</span>
+                ` : ''}
+              </div>
+              ${s.phone ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">📞 ${escapeHtml(s.phone)}</div>` : ''}
             </div>
+            <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.bg}; color: ${badge.color}; font-weight: 600; white-space: nowrap;">${badge.text}</span>
           </div>
 
-          <!-- TX ID -->
-          <div style="opacity: 0.7; font-size: 0.75rem; margin-bottom: 10px;">
-            TX ID: ${s.scheduleId || s.id}
+          <!-- Date/Time dengan bold -->
+          <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
+            ${formatScheduleDate(s)}
           </div>
-
-          <!-- Phone & Date/Time -->
-          <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
-            <div style="color: var(--ps3-muted);">📞 ${escapeHtml(s.phone || '-')}</div>
-            <div style="color: var(--ps3-text);">${formatScheduleDate(s)}</div>
-            <div style="color: var(--ps3-muted);">${formatScheduleTime(s)}</div>
+          <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
+            ${formatScheduleTime(s)}
           </div>
 
           <!-- Unit & Note -->
-          <div style="display: flex; flex-direction: column; gap: 4px;">
-            <div style="color: var(--ps3-muted);">🎮 ${escapeHtml(s.unitName || 'Unit belum dipilih')}</div>
-            ${s.note ? `<div style="color: var(--ps3-muted); font-style: italic;">💬 ${escapeHtml(s.note)}</div>` : ''}
-          </div>
+          ${s.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${escapeHtml(s.unitName)}</div>` : ''}
+          ${s.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${escapeHtml(s.note)}</div>` : ''}
         </div>
       `;
     }
