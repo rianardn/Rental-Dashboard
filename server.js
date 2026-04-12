@@ -1528,6 +1528,36 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
   res.json({ ok: true, schedule, changes: editLogs.length });
 });
 
+// GET deleted schedules (trash) - MUST be before /:id route
+app.get('/api/schedules/deleted', requireAuth, (req, res) => {
+  try {
+    const deleted = db.prepare(`
+      SELECT 
+        id,
+        recordId as originalId,
+        json_extract(recordData, '$.customer') as customer,
+        json_extract(recordData, '$.phone') as phone,
+        json_extract(recordData, '$.unitId') as unitId,
+        json_extract(recordData, '$.unitName') as unitName,
+        json_extract(recordData, '$.scheduledDate') as scheduledDate,
+        json_extract(recordData, '$.scheduledTime') as scheduledTime,
+        json_extract(recordData, '$.duration') as duration,
+        json_extract(recordData, '$.note') as note,
+        json_extract(recordData, '$.status') as status,
+        deleteReason,
+        deletedAt,
+        deletedBy
+      FROM deletion_logs 
+      WHERE recordType = 'schedule'
+      ORDER BY deletedAt DESC
+    `).all();
+    res.json({ ok: true, deleted });
+  } catch (error) {
+    console.error('[API] Error fetching deleted schedules:', error.message);
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
 // GET edit history for a schedule
 app.get('/api/schedules/:id/edits', requireAuth, (req, res) => {
   const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(req.params.id);
