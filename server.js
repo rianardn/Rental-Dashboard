@@ -630,8 +630,8 @@ app.get('/api/db', requireAuth, (req, res) => {
   const data = {
     settings: getSettings(),
     units: db.prepare('SELECT * FROM units ORDER BY id').all(),
-    transactions: db.prepare('SELECT * FROM transactions ORDER BY created_at DESC').all(),
-    expenses: db.prepare('SELECT * FROM expenses ORDER BY created_at DESC').all()
+    transactions: db.prepare(`SELECT t.*, (SELECT COUNT(*) FROM edit_logs WHERE transactionId = t.id) as editCount FROM transactions t ORDER BY t.created_at DESC`).all(),
+    expenses: db.prepare(`SELECT e.*, (SELECT COUNT(*) FROM edit_logs WHERE expenseId = e.id) as editCount FROM expenses e ORDER BY e.created_at DESC`).all()
   };
   res.json(data);
 });
@@ -1057,8 +1057,8 @@ app.get('/api/transactions', requireAuth, (req, res) => {
   const countResult = db.prepare(countQuery).get(...params);
   const totalCount = countResult.total;
 
-  // Execute main query
-  const query = `SELECT * FROM transactions ${whereClause} ORDER BY ${sortColumn} ${order} LIMIT ? OFFSET ?`;
+  // Execute main query with editCount
+  const query = `SELECT t.*, (SELECT COUNT(*) FROM edit_logs WHERE transactionId = t.id) as editCount FROM transactions t ${whereClause} ORDER BY ${sortColumn} ${order} LIMIT ? OFFSET ?`;
   const transactions = db.prepare(query).all(...params, parseInt(limit), parseInt(offset));
 
   res.json({
@@ -1368,8 +1368,8 @@ app.get('/api/expenses', requireAuth, (req, res) => {
   const countResult = db.prepare(countQuery).get(...params);
   const totalCount = countResult.total;
 
-  // Execute main query
-  const query = `SELECT * FROM expenses ${whereClause} ORDER BY ${sortColumn} ${order} LIMIT ? OFFSET ?`;
+  // Execute main query with editCount
+  const query = `SELECT e.*, (SELECT COUNT(*) FROM edit_logs WHERE expenseId = e.id) as editCount FROM expenses e ${whereClause} ORDER BY ${sortColumn} ${order} LIMIT ? OFFSET ?`;
   const expenses = db.prepare(query).all(...params, parseInt(limit), parseInt(offset));
 
   res.json({
