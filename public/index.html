@@ -2149,6 +2149,45 @@
     </div>
   </div>
 
+  <!-- ═════════════════ MODAL: COMPLETE RUNNING SCHEDULE ═════════════════ -->
+  <div id="modalCompleteSchedule" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>✅ Selesaikan Sewa - <span id="completeScheduleUnitName"></span></h3>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Pelanggan</label>
+          <div id="completeScheduleCustomer" style="font-family: var(--font-body); font-size: 1rem; padding: 14px; background: var(--ps3-surface); border-radius: 8px; border: 1px solid var(--ps3-border);"></div>
+        </div>
+        <div class="form-group">
+          <label>Total Waktu</label>
+          <div id="completeScheduleDuration" style="font-family: var(--font-display); font-size: 1.2rem; padding: 14px; background: var(--ps3-surface); border-radius: 8px;"></div>
+        </div>
+        <div class="form-group">
+          <label>Biaya Sewa (Rp)</label>
+          <input type="number" id="completeScheduleCost" readonly>
+        </div>
+        <div class="form-group">
+          <label>Total Dibayar (Rp)</label>
+          <input type="number" id="completeSchedulePaid" placeholder="Masukkan jumlah pembayaran">
+        </div>
+        <div class="form-group">
+          <label>Metode Pembayaran</label>
+          <select id="completeSchedulePayment">
+            <option value="cash">Tunai (Cash)</option>
+            <option value="transfer">Transfer</option>
+            <option value="qris">QRIS</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modalCompleteSchedule')">Batal</button>
+        <button class="btn btn-green" onclick="confirmCompleteSchedule()">✅ Selesai & Bayar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═════════════════ MODAL: SELECT UNIT FOR SCHEDULE ═════════════════ -->
   <div id="modalScheduleUnit" class="modal">
     <div class="modal-content">
@@ -7948,14 +7987,54 @@
       try {
         const schedule = schedules.find(s => s.id === id);
         
-        // If completing a running schedule, use the complete endpoint which also stops the unit
+        // If completing a running schedule, show payment modal first (same as stopSession)
         if (status === 'completed' && schedule && schedule.status === 'running') {
-          await api('POST', `/schedules/${id}/complete`, {});
-          showToast('Jadwal selesai! Unit dihentikan dan transaksi tercatat.', 'success');
-        } else {
-          await api('PUT', `/schedules/${id}`, { status });
-          showToast(`Status jadwal diperbarui`, 'success');
+          // Get linked unit info
+          const unit = units.find(u => u.id === schedule.unitId);
+          if (!unit || !unit.active) {
+            showToast('Unit tidak aktif atau tidak ditemukan', 'error');
+            return;
+          }
+          
+          // Store schedule ID for confirmation
+          currentCompleteScheduleId = id;
+          
+          // Populate modal with data (same calculation as stopSession)
+          const elapsed = Math.floor((Date.now() - unit.startTime) / 60000);
+          const cost = Math.round((elapsed / 60) * settings.ratePerHour);
+          
+          document.getElementById('completeScheduleUnitName').textContent = unit.name;
+          document.getElementById('completeScheduleCustomer').textContent = unit.customer || '-';
+          document.getElementById('completeScheduleDuration').textContent = `${elapsed} menit`;
+          document.getElementById('completeScheduleCost').value = cost;
+          document.getElementById('completeSchedulePaid').value = cost;
+          document.getElementById('completeSchedulePayment').value = 'cash';
+          
+          openModal('modalCompleteSchedule');
+          return;
         }
+        
+        // For non-running schedules, just update status directly
+        await api('PUT', `/schedules/${id}`, { status });
+        showToast(`Status jadwal diperbarui`, 'success');
+        
+        await loadData();
+        await loadSchedules();
+        renderAll();
+        renderSchedules();
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    async function confirmCompleteSchedule() {
+      const paid = parseInt(document.getElementById('completeSchedulePaid').value) || 0;
+      const payment = document.getElementById('completeSchedulePayment').value;
+      
+      try {
+        await api('POST', `/schedules/${currentCompleteScheduleId}/complete`, { paid, payment });
+        closeModal('modalCompleteSchedule');
+        showToast('Jadwal selesai! Unit dihentikan dan transaksi tercatat.', 'success');
         
         await loadData();
         await loadSchedules();
@@ -7968,6 +8047,9 @@
 
     // ═════════════════ Cancel Schedule Modal Functions ═════════════════
     let currentCancelScheduleId = null;
+
+    // ═════════════════ Complete Schedule Modal Functions ═════════════════
+    let currentCompleteScheduleId = null;
 
     function openCancelScheduleModal(scheduleId) {
       const schedule = schedules.find(s => s.id === scheduleId);
