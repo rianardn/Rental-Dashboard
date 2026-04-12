@@ -4062,22 +4062,22 @@
         container.innerHTML = latest5.map((t, index) => {
           const nomor = index + 1;
           return `
-          <div class="transaction-item" style="position: relative; padding: 14px;" data-tx-id="${t.id || ''}">
+          <div style="background: rgba(34, 197, 94, 0.15); border: 2px solid var(--ps3-green); border-radius: 10px; padding: 14px; margin-bottom: 10px; position: relative;" data-tx-id="${t.id || ''}">
             <!-- Number Badge -->
-            <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-green); color: #000; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
+            <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-green-dark); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
             <!-- Row 1: Date (left) + Amount (right) -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
               <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
                 ${formatDateOnlyWIB(t.endTime)}
               </div>
-              <div class="transaction-amount" style="color: var(--ps3-green); font-size: 1.15rem; font-weight: 600;">
+              <div style="color: var(--ps3-green-dark); font-size: 1.15rem; font-weight: 600;">
                 ${formatMoney(t.paid)}
               </div>
             </div>
 
             <!-- Row 2: Unit Name + Action Buttons -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${t.customer ? '6px' : '10px'};">
-              <div class="transaction-unit" style="font-size: 1.05rem; line-height: 1.4; flex: 1; min-width: 0; padding-right: 10px;">
+              <div style="font-size: 1.05rem; line-height: 1.4; flex: 1; min-width: 0; padding-right: 10px; color: var(--ps3-text);">
                 🎮 ${t.unitName}
               </div>
               <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
@@ -4098,7 +4098,7 @@
             ` : ''}
 
             <!-- Row 4: Time | TX ID (centered) | Payment -->
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-border); opacity: 0.85;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-green); opacity: 0.85;">
               <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
                 <span>🕐</span>
                 <span>${formatTimeOnlyWIB(t.endTime)}</span>
@@ -4110,6 +4110,11 @@
               <div style="text-align: right; flex: 1;">
                 💳 ${t.payment || 'cash'}
               </div>
+            </div>
+
+            <!-- Bottom Highlight: Green like completed schedules -->
+            <div style="font-size: 0.75rem; color: var(--ps3-green-dark); margin-top: 10px; padding: 4px 8px; background: rgba(34, 197, 94, 0.1); border-radius: 4px; border: 1px solid rgba(34, 197, 94, 0.3);">
+              ✅ Pendapatan Diterima: Transaksi tercatat otomatis
             </div>
           </div>
         `;}).join('') + (hasMore ? `
@@ -4191,22 +4196,22 @@
           const subCatEmoji = catInfo.subCategory ? getSubCategoryEmoji(catInfo.category, catInfo.subCategory) : '';
           const nomor = index + 1;
           return `
-          <div class="transaction-item" style="position: relative; padding: 14px;" data-exp-id="${e.id || ''}">
+          <div style="background: rgba(220, 38, 38, 0.15); border: 2px solid var(--ps3-red-badge); border-radius: 10px; padding: 14px; margin-bottom: 10px; position: relative;" data-exp-id="${e.id || ''}">
             <!-- Number Badge -->
-            <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
+            <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red-danger); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
             <!-- Row 1: Date (left) + Amount (right) -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
               <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
                 ${formatDateOnlyWIB(e.created_at)}
               </div>
-              <div class="transaction-amount" style="color: var(--ps3-red); font-size: 1.15rem; font-weight: 600;">
+              <div style="color: var(--ps3-red); font-size: 1.15rem; font-weight: 600;">
                 ${formatMoney(e.amount)}
               </div>
             </div>
 
             <!-- Row 2: Category + Action Buttons -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${catInfo.subCategory ? '6px' : '10px'};">
-              <div class="transaction-unit" style="font-size: 1.05rem; line-height: 1.4; flex: 1; min-width: 0; padding-right: 10px;">
+              <div style="font-size: 1.05rem; line-height: 1.4; flex: 1; min-width: 0; padding-right: 10px; color: var(--ps3-text);">
                 ${catInfo.icon} ${catInfo.category}
               </div>
               <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
@@ -4225,7 +4230,7 @@
             ` : ''}
 
             <!-- Row 4: Time | TX ID (centered) | Note -->
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-border); opacity: 0.85;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-red-badge); opacity: 0.85;">
               <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
                 <span>🕐</span>
                 <span>${formatTimeOnlyWIB(e.created_at)}</span>
@@ -4237,6 +4242,11 @@
               <div style="font-style: italic; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; flex: 1;">
                 ${e.note ? `💬 ${e.note}` : ''}
               </div>
+            </div>
+
+            <!-- Bottom Highlight: Red like deleted/cancelled schedules -->
+            <div style="font-size: 0.75rem; color: var(--ps3-red); margin-top: 10px; padding: 4px 8px; background: rgba(230, 0, 18, 0.1); border-radius: 4px; border: 1px solid rgba(230, 0, 18, 0.3);">
+              🗑️ Pengeluaran Dicatat: Biaya operasional tercatat otomatis
             </div>
           </div>
         `}).join('') + (hasMoreExpenses ? `
@@ -4703,22 +4713,22 @@
       container.innerHTML = transactions.map((t, index) => {
         const nomor = index + 1;
         return `
-        <div class="transaction-item" style="position: relative; padding: 14px; margin-bottom: 12px;" data-tx-id="${t.id || ''}">
+        <div style="background: rgba(34, 197, 94, 0.15); border: 2px solid var(--ps3-green); border-radius: 10px; padding: 14px; margin-bottom: 12px; position: relative;" data-tx-id="${t.id || ''}">
           <!-- Number Badge -->
-          <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-green); color: #000; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
+          <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-green-dark); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
           <!-- Row 1: Date (left) + Amount (right) -->
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
             <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
               ${formatDateOnlyWIB(t.endTime)}
             </div>
-            <div class="transaction-amount" style="color: var(--ps3-green); font-size: 1.15rem; font-weight: 600;">
+            <div style="color: var(--ps3-green-dark); font-size: 1.15rem; font-weight: 600;">
               ${formatMoney(t.paid)}
             </div>
           </div>
 
           <!-- Row 2: Unit Name + Action Buttons -->
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${t.customer ? '6px' : '10px'};">
-            <div class="transaction-unit" style="font-size: 1.05rem; line-height: 1.4; flex: 1; min-width: 0; padding-right: 10px;">
+            <div style="font-size: 1.05rem; line-height: 1.4; flex: 1; min-width: 0; padding-right: 10px; color: var(--ps3-text);">
               🎮 ${t.unitName}
             </div>
             <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
@@ -4739,7 +4749,7 @@
           ` : ''}
 
           <!-- Row 4: Time | TX ID (centered) | Payment -->
-          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-border); opacity: 0.85;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-green); opacity: 0.85;">
             <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
               <span>🕐</span>
               <span>${formatTimeOnlyWIB(t.endTime)}</span>
@@ -4751,6 +4761,11 @@
             <div style="text-align: right; flex: 1;">
               💳 ${t.payment || 'cash'}
             </div>
+          </div>
+
+          <!-- Bottom Highlight: Green like completed schedules -->
+          <div style="font-size: 0.75rem; color: var(--ps3-green-dark); margin-top: 10px; padding: 4px 8px; background: rgba(34, 197, 94, 0.1); border-radius: 4px; border: 1px solid rgba(34, 197, 94, 0.3);">
+            ✅ Pendapatan Diterima: Transaksi tercatat otomatis
           </div>
         </div>
       `;}).join('');
@@ -5020,24 +5035,28 @@
         return;
       }
 
-      container.innerHTML = expenses.map(e => {
+      container.innerHTML = expenses.map((e, index) => {
+        const nomor = index + 1;
         const catInfo = getExpenseCategoryInfo(e.item, e.category);
         const subCatEmoji = catInfo.subCategory ? getSubCategoryEmoji(catInfo.category, catInfo.subCategory) : '';
         return `
-        <div class="transaction-item" style="position: relative; padding: 14px; margin-bottom: 12px;" data-exp-id="${e.id || ''}">
+        <div style="background: rgba(220, 38, 38, 0.15); border: 2px solid var(--ps3-red-badge); border-radius: 10px; padding: 14px; margin-bottom: 12px; position: relative;" data-exp-id="${e.id || ''}">
+          <!-- Number Badge -->
+          <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red-danger); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
+
           <!-- Row 1: Date (left) + Amount (right) -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
             <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
               ${formatDate(new Date(e.date).getTime())}
             </div>
-            <div class="transaction-amount" style="color: var(--ps3-red); font-size: 1.15rem; font-weight: 600;">
+            <div style="color: var(--ps3-red); font-size: 1.15rem; font-weight: 600;">
               ${formatMoney(e.amount)}
             </div>
           </div>
 
           <!-- Row 2: Category + Action Buttons -->
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${catInfo.subCategory ? '6px' : '10px'};">
-            <div class="transaction-unit" style="font-size: 1.05rem; line-height: 1.4; flex: 1; min-width: 0; padding-right: 10px;">
+            <div style="font-size: 1.05rem; line-height: 1.4; flex: 1; min-width: 0; padding-right: 10px; color: var(--ps3-text);">
               ${catInfo.icon} ${catInfo.category}
             </div>
             <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
@@ -5056,7 +5075,7 @@
           ` : ''}
 
           <!-- Row 4: Time | TX ID (centered) | Note -->
-          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-border); opacity: 0.85;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-red-badge); opacity: 0.85;">
             <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
               <span>🕐</span>
               <span>${formatTimeOnlyWIB(e.date)}</span>
@@ -5068,6 +5087,11 @@
             <div style="font-style: italic; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; flex: 1;">
               ${e.note ? `💬 ${e.note}` : ''}
             </div>
+          </div>
+
+          <!-- Bottom Highlight: Red like deleted/cancelled schedules -->
+          <div style="font-size: 0.75rem; color: var(--ps3-red); margin-top: 10px; padding: 4px 8px; background: rgba(230, 0, 18, 0.1); border-radius: 4px; border: 1px solid rgba(230, 0, 18, 0.3);">
+            🗑️ Pengeluaran Dicatat: Biaya operasional tercatat otomatis
           </div>
         </div>
       `}).join('');
