@@ -2258,6 +2258,117 @@
     </div>
   </div>
 
+  <!-- Edit Schedule Modal -->
+  <div id="modalEditSchedule" class="modal">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title">✏️ Edit Jadwal</div>
+        <button class="modal-close" onclick="closeModal('modalEditSchedule')">×</button>
+      </div>
+
+      <!-- Step 1: Select fields to edit -->
+      <div id="editScheduleStep1" style="padding: 20px;">
+        <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Pilih data yang ingin diedit:</p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+          <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
+            <input type="checkbox" id="editScheduleCheckCustomer" style="width: 20px; height: 20px; accent-color: var(--ps3-red);">
+            <span>👤 Nama Penyewa</span>
+          </label>
+
+          <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
+            <input type="checkbox" id="editScheduleCheckPhone" style="width: 20px; height: 20px; accent-color: var(--ps3-red);">
+            <span>📞 Nomor Telepon</span>
+          </label>
+
+          <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
+            <input type="checkbox" id="editScheduleCheckDateTime" style="width: 20px; height: 20px; accent-color: var(--ps3-red);">
+            <span>📅 Tanggal & Waktu</span>
+          </label>
+
+          <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
+            <input type="checkbox" id="editScheduleCheckDuration" style="width: 20px; height: 20px; accent-color: var(--ps3-red);">
+            <span>⏱️ Durasi (menit)</span>
+          </label>
+
+          <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
+            <input type="checkbox" id="editScheduleCheckUnit" style="width: 20px; height: 20px; accent-color: var(--ps3-red);">
+            <span>🎮 Unit PS</span>
+          </label>
+
+          <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
+            <input type="checkbox" id="editScheduleCheckNote" style="width: 20px; height: 20px; accent-color: var(--ps3-red);">
+            <span>💬 Catatan</span>
+          </label>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-cancel" onclick="closeModal('modalEditSchedule')" style="flex: 1;">Batal</button>
+          <button class="btn" onclick="proceedToEditScheduleStep2()" style="flex: 2;">Lanjutkan →</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Edit selected fields -->
+      <div id="editScheduleStep2" style="display: none; padding: 20px;">
+        <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Masukkan nilai baru:</p>
+
+        <div id="editScheduleFieldCustomer" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Nama Penyewa</label>
+          <input type="text" id="editScheduleCustomer" placeholder="Nama penyewa" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+        </div>
+
+        <div id="editScheduleFieldPhone" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Nomor Telepon</label>
+          <input type="text" id="editSchedulePhone" placeholder="08xxxxxxxxxx" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+        </div>
+
+        <div id="editScheduleFieldDateTime" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Tanggal</label>
+          <input type="date" id="editScheduleDate" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem; margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Waktu Mulai</label>
+          <input type="time" id="editScheduleTime" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+        </div>
+
+        <div id="editScheduleFieldDuration" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Durasi (menit)</label>
+          <input type="number" id="editScheduleDuration" placeholder="60" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+        </div>
+
+        <div id="editScheduleFieldUnit" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Unit PS</label>
+          <select id="editScheduleUnit" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+            <!-- Populated by JS -->
+          </select>
+        </div>
+
+        <div id="editScheduleFieldNote" style="display: none; margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Catatan</label>
+          <textarea id="editScheduleNote" placeholder="Catatan tambahan..." style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem; min-height: 80px; resize: vertical;"></textarea>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-red);">Alasan Edit * <span style="color: var(--ps3-muted); font-size: 0.75rem;">(wajib diisi)</span></label>
+          <textarea id="editScheduleReason" placeholder="Contoh: Perubahan jadwal, kesalahan input, permintaan pelanggan, dll." style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem; min-height: 80px; resize: vertical;"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-cancel" onclick="backToEditScheduleStep1()" style="flex: 1;">← Kembali</button>
+          <button class="btn" onclick="saveScheduleEdit()" style="flex: 2;">💾 Simpan Perubahan</button>
+        </div>
+      </div>
+
+      <!-- Step 3: History -->
+      <div id="editScheduleStep3" style="display: none; padding: 20px;">
+        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+          <button id="btnShowScheduleEditLogs" class="btn btn-sm" onclick="showScheduleEditLogsTab()" style="flex: 1; background: var(--ps3-red);">✏️ Riwayat Edit</button>
+          <button id="btnShowScheduleDeleteLogs" class="btn btn-sm" onclick="showScheduleDeleteLogsTab()" style="flex: 1; opacity: 0.7;">🗑️ Log Hapus</button>
+        </div>
+        <div id="editScheduleHistoryList" style="max-height: 300px; overflow-y: auto;"></div>
+        <button class="btn" onclick="closeModal('modalEditSchedule')" style="margin-top: 16px; width: 100%;">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Delete Transaction Modal -->
   <div id="modalDeleteTransaction" class="modal">
     <div class="modal-content" style="max-width: 420px;">
@@ -7131,6 +7242,7 @@
                 <button onclick="updateScheduleStatus(${s.id}, 'completed')" style="background: var(--ps3-green-dark); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-green)'" onmouseout="this.style.background='var(--ps3-green-dark)'">✅ Selesai</button>
                 <button onclick="updateScheduleStatus(${s.id}, 'cancelled')" style="background: var(--ps3-surface); color: var(--ps3-red-danger); border: 1px solid var(--ps3-red-danger); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-red-danger)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-red-danger)'">❌ Batal</button>
               ` : ''}
+              <button onclick="openEditScheduleModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-yellow); border: 1px solid var(--ps3-yellow); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-yellow)';this.style.color='#000'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-yellow)'">✏️ Edit</button>
               <button onclick="deleteSchedule(${s.id})" style="background: transparent; color: var(--ps3-muted); border: 1px solid var(--ps3-border); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#fff';this.style.borderColor='var(--ps3-muted)'" onmouseout="this.style.color='var(--ps3-muted)';this.style.borderColor='var(--ps3-border)'">🗑️ Hapus</button>
             </div>
           </div>
@@ -7358,6 +7470,260 @@
       } catch (error) {
         showToast(error.message, 'error');
       }
+    }
+
+    // ═════════════════ Schedule Edit Functions ═════════════════
+    let currentEditScheduleId = null;
+
+    function openEditScheduleModal(scheduleId) {
+      showToast('Membuka edit jadwal...', 'info');
+      
+      currentEditScheduleId = scheduleId;
+      
+      if (!schedules || schedules.length === 0) {
+        showToast('Data jadwal belum dimuat. Tunggu sebentar...', 'error');
+        return;
+      }
+      
+      const schedule = schedules.find(s => s.id == scheduleId);
+      if (!schedule) {
+        showToast('Jadwal tidak ditemukan', 'error');
+        return;
+      }
+
+      // Reset steps
+      document.getElementById('editScheduleStep1').style.display = 'block';
+      document.getElementById('editScheduleStep2').style.display = 'none';
+      document.getElementById('editScheduleStep3').style.display = 'none';
+
+      // Reset checkboxes
+      document.getElementById('editScheduleCheckCustomer').checked = false;
+      document.getElementById('editScheduleCheckPhone').checked = false;
+      document.getElementById('editScheduleCheckDateTime').checked = false;
+      document.getElementById('editScheduleCheckDuration').checked = false;
+      document.getElementById('editScheduleCheckUnit').checked = false;
+      document.getElementById('editScheduleCheckNote').checked = false;
+
+      // Pre-fill current values
+      document.getElementById('editScheduleCustomer').value = schedule.customer || '';
+      document.getElementById('editSchedulePhone').value = schedule.phone || '';
+      document.getElementById('editScheduleDate').value = schedule.scheduledDate || '';
+      document.getElementById('editScheduleTime').value = schedule.scheduledTime || '';
+      document.getElementById('editScheduleDuration').value = schedule.duration || '';
+      document.getElementById('editScheduleNote').value = schedule.note || '';
+      document.getElementById('editScheduleReason').value = '';
+
+      // Populate unit dropdown
+      const unitSelect = document.getElementById('editScheduleUnit');
+      unitSelect.innerHTML = '<option value="">-- Pilih Unit --</option>';
+      units.forEach(u => {
+        const selected = u.id == schedule.unitId ? 'selected' : '';
+        unitSelect.innerHTML += `<option value="${u.id}" ${selected}>${u.name}</option>`;
+      });
+
+      // Load edit history
+      loadScheduleEditHistory(scheduleId);
+
+      openModal('modalEditSchedule', true);
+    }
+
+    function proceedToEditScheduleStep2() {
+      const fields = [
+        'editScheduleCheckCustomer',
+        'editScheduleCheckPhone',
+        'editScheduleCheckDateTime',
+        'editScheduleCheckDuration',
+        'editScheduleCheckUnit',
+        'editScheduleCheckNote'
+      ];
+
+      const anySelected = fields.some(id => document.getElementById(id).checked);
+      if (!anySelected) {
+        showToast('Pilih minimal 1 data yang ingin diedit', 'error');
+        return;
+      }
+
+      // Hide/show fields based on selection
+      document.getElementById('editScheduleFieldCustomer').style.display =
+        document.getElementById('editScheduleCheckCustomer').checked ? 'block' : 'none';
+      document.getElementById('editScheduleFieldPhone').style.display =
+        document.getElementById('editScheduleCheckPhone').checked ? 'block' : 'none';
+      document.getElementById('editScheduleFieldDateTime').style.display =
+        document.getElementById('editScheduleCheckDateTime').checked ? 'block' : 'none';
+      document.getElementById('editScheduleFieldDuration').style.display =
+        document.getElementById('editScheduleCheckDuration').checked ? 'block' : 'none';
+      document.getElementById('editScheduleFieldUnit').style.display =
+        document.getElementById('editScheduleCheckUnit').checked ? 'block' : 'none';
+      document.getElementById('editScheduleFieldNote').style.display =
+        document.getElementById('editScheduleCheckNote').checked ? 'block' : 'none';
+
+      document.getElementById('editScheduleStep1').style.display = 'none';
+      document.getElementById('editScheduleStep2').style.display = 'block';
+    }
+
+    function backToEditScheduleStep1() {
+      document.getElementById('editScheduleStep1').style.display = 'block';
+      document.getElementById('editScheduleStep2').style.display = 'none';
+    }
+
+    async function saveScheduleEdit() {
+      const reason = document.getElementById('editScheduleReason').value.trim();
+      if (!reason) {
+        showToast('Alasan edit wajib diisi', 'error');
+        return;
+      }
+
+      const updates = {};
+
+      if (document.getElementById('editScheduleCheckCustomer').checked) {
+        updates.customer = document.getElementById('editScheduleCustomer').value.trim();
+      }
+      if (document.getElementById('editScheduleCheckPhone').checked) {
+        updates.phone = document.getElementById('editSchedulePhone').value.trim();
+      }
+      if (document.getElementById('editScheduleCheckDateTime').checked) {
+        updates.scheduledDate = document.getElementById('editScheduleDate').value;
+        updates.scheduledTime = document.getElementById('editScheduleTime').value;
+      }
+      if (document.getElementById('editScheduleCheckDuration').checked) {
+        updates.duration = parseInt(document.getElementById('editScheduleDuration').value) || 0;
+      }
+      if (document.getElementById('editScheduleCheckUnit').checked) {
+        updates.unitId = document.getElementById('editScheduleUnit').value;
+      }
+      if (document.getElementById('editScheduleCheckNote').checked) {
+        updates.note = document.getElementById('editScheduleNote').value.trim();
+      }
+
+      if (Object.keys(updates).length === 0) {
+        showToast('Tidak ada perubahan untuk disimpan', 'error');
+        return;
+      }
+
+      try {
+        const response = await api('PUT', `/schedules/${currentEditScheduleId}`, {
+          updates,
+          reason,
+          editedBy: 'admin'
+        });
+
+        if (response.ok) {
+          showToast(`Jadwal diperbarui (${response.changes} perubahan)`, 'success');
+
+          // Show history after successful edit
+          document.getElementById('editScheduleStep2').style.display = 'none';
+          document.getElementById('editScheduleStep3').style.display = 'block';
+          await loadScheduleEditHistory(currentEditScheduleId);
+
+          // Refresh data
+          await loadSchedules();
+          renderSchedules();
+        } else {
+          showToast(response.error || 'Gagal mengupdate jadwal', 'error');
+        }
+      } catch (error) {
+        showToast(error.message || 'Terjadi kesalahan', 'error');
+      }
+    }
+
+    async function loadScheduleEditHistory(scheduleId) {
+      try {
+        const response = await api('GET', `/schedules/${scheduleId}/edits`);
+        const container = document.getElementById('editScheduleHistoryList');
+
+        if (!response.ok || !response.logs || response.logs.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: var(--ps3-muted);">
+              <div style="font-size: 2rem; margin-bottom: 10px;">📝</div>
+              <div>Belum ada riwayat edit untuk jadwal ini</div>
+            </div>
+          `;
+          return;
+        }
+
+        const fieldLabels = {
+          'customer': 'Nama Penyewa',
+          'phone': 'Nomor Telepon',
+          'scheduledDate': 'Tanggal',
+          'scheduledTime': 'Waktu',
+          'scheduledEndDate': 'Tanggal Selesai',
+          'scheduledEndTime': 'Waktu Selesai',
+          'duration': 'Durasi',
+          'unitId': 'Unit PS',
+          'unitName': 'Unit PS',
+          'note': 'Catatan',
+          'status': 'Status'
+        };
+
+        container.innerHTML = response.logs.map(log => {
+          const fieldName = fieldLabels[log.fieldName] || log.fieldName;
+          const editedAtWIB = new Date(log.editedAt + (7 * 60 * 60 * 1000));
+          const dateStr = editedAtWIB.toLocaleString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'UTC'
+          });
+
+          let oldValue = log.oldValue;
+          let newValue = log.newValue;
+
+          // Format duration with minutes
+          if (log.fieldName === 'duration') {
+            oldValue = oldValue + ' menit';
+            newValue = newValue + ' menit';
+          }
+
+          return `
+            <div style="border-left: 3px solid var(--ps3-red); padding: 12px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border-radius: 0 10px 10px 0;">
+              <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 6px;">
+                ${dateStr} • oleh ${log.editedBy || 'admin'}
+              </div>
+              <div style="font-weight: 600; margin-bottom: 4px; color: var(--ps3-text);">
+                ${fieldName}
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
+                <span style="text-decoration: line-through; color: var(--ps3-red);">${oldValue || '(kosong)'}</span>
+                <span style="color: var(--ps3-muted);">→</span>
+                <span style="color: var(--ps3-green); font-weight: 500;">${newValue || '(kosong)'}</span>
+              </div>
+              ${log.editReason ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 6px; font-style: italic;">💬 ${log.editReason}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        document.getElementById('editScheduleHistoryList').innerHTML = `
+          <div style="text-align: center; padding: 20px; color: var(--ps3-muted);">
+            Gagal memuat riwayat edit
+          </div>
+        `;
+      }
+    }
+
+    function showScheduleEditLogsTab() {
+      document.getElementById('btnShowScheduleEditLogs').style.background = 'var(--ps3-red)';
+      document.getElementById('btnShowScheduleEditLogs').style.opacity = '1';
+      document.getElementById('btnShowScheduleDeleteLogs').style.background = 'var(--ps3-surface)';
+      document.getElementById('btnShowScheduleDeleteLogs').style.opacity = '0.7';
+      // Load edit logs
+      if (currentEditScheduleId) {
+        loadScheduleEditHistory(currentEditScheduleId);
+      }
+    }
+
+    function showScheduleDeleteLogsTab() {
+      document.getElementById('btnShowScheduleDeleteLogs').style.background = 'var(--ps3-red)';
+      document.getElementById('btnShowScheduleDeleteLogs').style.opacity = '1';
+      document.getElementById('btnShowScheduleEditLogs').style.background = 'var(--ps3-surface)';
+      document.getElementById('btnShowScheduleEditLogs').style.opacity = '0.7';
+      // Show placeholder for delete logs (not implemented yet for schedules)
+      document.getElementById('editScheduleHistoryList').innerHTML = `
+        <div style="text-align: center; padding: 20px; color: var(--ps3-muted);">
+          <div style="font-size: 2rem; margin-bottom: 10px;">🗑️</div>
+          <div>Log penghapusan jadwal belum tersedia</div>
+        </div>
+      `;
     }
 
     // Inventory Functions

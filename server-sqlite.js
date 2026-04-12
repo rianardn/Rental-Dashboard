@@ -432,33 +432,132 @@ app.post('/api/schedules', (req, res) => {
 });
 
 app.put('/api/schedules/:id', (req, res) => {
-  const stmt = db.prepare(`
-    UPDATE schedules SET
-      customer = ?, phone = ?, unitId = ?, unitName = ?, scheduledDate = ?, scheduledTime = ?,
-      duration = ?, note = ?, status = ?
-    WHERE id = ?
+  const scheduleId = req.params.id;
+  const { updates, reason, editedBy } = req.body;
+
+  // Get old state before update
+  const oldSchedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
+  if (!oldSchedule) {
+    return res.status(404).json({ ok: false, error: 'Schedule not found' });
+  }
+
+  // Track changes for audit log
+  let changes = 0;
+  const oldState = { ...oldSchedule };
+
+  // Build dynamic update query based on provided updates
+  const fields = [];
+  const values = [];
+
+  if (updates.customer !== undefined) {
+    fields.push('customer = ?');
+    values.push(updates.customer);
+    changes++;
+  }
+  if (updates.phone !== undefined) {
+    fields.push('phone = ?');
+    values.push(updates.phone || '');
+    changes++;
+  }
+  if (updates.unitId !== undefined) {
+    fields.push('unitId = ?');
+    values.push(updates.unitId || null);
+    // Also update unitName if unitId changed
+    const unit = db.prepare('SELECT name FROM units WHERE id = ?').get(updates.unitId);
+    if (unit) {
+      fields.push('unitName = ?');
+      values.push(unit.name);
+    }
+    changes++;
+  }
+  if (updates.scheduledDate !== undefined) {
+    fields.push('scheduledDate = ?');
+    values.push(updates.scheduledDate);
+    changes++;
+  }
+  if (updates.scheduledTime !== undefined) {
+    fields.push('scheduledTime = ?');
+    values.push(updates.scheduledTime || '');
+    changes++;
+  }
+  if (updates.duration !== undefined) {
+    fields.push('duration = ?');
+    values.push(parseInt(updates.duration) || 0);
+    changes++;
+  }
+  if (updates.note !== undefined) {
+    fields.push('note = ?');
+    values.push(updates.note || '');
+    changes++;
+  }
+  if (updates.status !== undefined) {
+    fields.push('status = ?');
+    values.push(updates.status);
+    changes++;
+  }
+
+  if (fields.length === 0) {
+    return res.status(400).json({ ok: false, error: 'No fields to update' });
+  }
+
+  // Execute update
+  const updateStmt = db.prepare(`UPDATE schedules SET ${fields.join(', ')} WHERE id = ?`);
+  values.push(scheduleId);
+  updateStmt.run(...values);
+
+  // Get new state after update
+  const newSchedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
+  const newState = { ...newSchedule };
+
+  // Log each changed field to edit_logs
+  const timestamp = new Date().toISOString();
+  const editLogStmt = db.prepare(`
+    INSERT INTO edit_logs (entityType, entityId, scheduleId, fieldName, oldValue, newValue, editReason, editedBy, editedAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  stmt.run(
-    req.body.customer,
-    req.body.phone || '',
-    req.body.unitId || null,
-    req.body.unitName || '',
-    req.body.scheduledDate,
-    req.body.scheduledTime || '',
-    req.body.duration || 0,
-    req.body.note || '',
-    req.body.status || 'pending',
-    req.params.id
-  );
-  const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(req.params.id);
+
+  const entityFields = ['customer', 'phone', 'unitId', 'unitName', 'scheduledDate', 'scheduledTime', 'duration', 'note', 'status'];
+  entityFields.forEach(field => {
+    if (updates[field] !== undefined || (field === 'unitName' && updates.unitId !== undefined)) {
+      const oldVal = oldState[field] !== null && oldState[field] !== undefined ? String(oldState[field]) : '';
+      const newVal = newState[field] !== null && newState[field] !== undefined ? String(newState[field]) : '';
+      if (oldVal !== newVal) {
+        editLogStmt.run(
+          'schedule',
+          scheduleId,
+          scheduleId,
+          field,
+          oldVal,
+          newVal,
+          reason || 'Perubahan data jadwal',
+          editedBy || 'admin',
+          timestamp
+        );
+      }
+    }
+  });
+
   broadcast({ type: 'schedules', data: db.prepare('SELECT * FROM schedules ORDER BY scheduledDate DESC').all() });
-  res.json({ ok: true, schedule });
+  res.json({ ok: true, schedule: newSchedule, changes });
 });
 
 app.delete('/api/schedules/:id', (req, res) => {
   db.prepare('DELETE FROM schedules WHERE id = ?').run(req.params.id);
   broadcast({ type: 'schedules', data: db.prepare('SELECT * FROM schedules ORDER BY scheduledDate DESC').all() });
   res.json({ ok: true });
+});
+
+app.get('/api/schedules/:id/edits', (req, res) => {
+  try {
+    const logs = db.prepare(`
+      SELECT * FROM edit_logs
+      WHERE entityType = 'schedule' AND (entityId = ? OR scheduleId = ?)
+      ORDER BY editedAt DESC
+    `).all(req.params.id, req.params.id);
+    res.json({ ok: true, logs });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
 });
 
 // ── Inventory ───────────────────────────────────────────────────
