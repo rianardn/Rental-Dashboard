@@ -792,6 +792,20 @@
       box-shadow: 0 4px 20px var(--ps3-red-glow);
     }
 
+    /* Elegant "View All" Button */
+    .btn-view-all:hover {
+      background: linear-gradient(135deg, var(--ps3-card) 0%, var(--ps3-surface) 100%) !important;
+      border-color: var(--ps3-red) !important;
+      color: var(--ps3-text) !important;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 -2px 12px rgba(230,0,18,0.2) !important;
+    }
+
+    .btn-view-all:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+    }
+
     /* Forms */
     .form-group {
       margin-bottom: 16px;
@@ -8329,9 +8343,25 @@
       if (otherSchedules.length > 0) {
         const totalActive = activeSchedules.length;
         html += `
-          <div style="position: sticky; bottom: 0; background: linear-gradient(to top, var(--ps3-bg), transparent); padding: 15px 0; margin-top: 10px; z-index: 10;">
-            <button onclick="openScheduleCalendarModal()" style="width: 100%; background: var(--ps3-surface); border: 2px dashed var(--ps3-border); color: var(--ps3-text); padding: 12px; border-radius: 10px; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 -4px 12px rgba(0,0,0,0.3);">
-              📅 Lihat Semua (${totalActive} Jadwal)
+          <div style="position: sticky; bottom: 0; background: linear-gradient(to top, var(--ps3-bg), transparent); padding: 20px 0 10px; margin-top: 15px; z-index: 10;">
+            <button onclick="openScheduleCalendarModal()" class="btn-view-all" style="width: 100%; background: linear-gradient(135deg, var(--ps3-surface) 0%, var(--ps3-card) 100%); border: 1px solid var(--ps3-border); color: var(--ps3-silver); padding: 14px 18px; border-radius: 12px; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 -2px 8px rgba(230,0,18,0.1); transition: all 0.3s ease;">
+              <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: rgba(230,0,18,0.15); border-radius: 8px; color: var(--ps3-red);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </span>
+              <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
+                <span style="font-weight: 600; color: var(--ps3-text);">Lihat Semua Jadwal</span>
+                <span style="font-size: 0.75rem; color: var(--ps3-muted);">${totalActive} jadwal aktif</span>
+              </span>
+              <span style="margin-left: auto; display: flex; align-items: center; color: var(--ps3-red);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </span>
             </button>
           </div>
         `;
