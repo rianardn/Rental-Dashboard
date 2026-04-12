@@ -1429,7 +1429,7 @@ app.post('/api/schedules', requireAuth, (req, res) => {
   // Uses scheduledEndDate and scheduledEndTime if available, otherwise fall back to calculation
   if (unitId && scheduledDate && scheduledTime) {
     let newStartDateTime, newEndDateTime;
-    
+
     // Parse new booking dates/times
     newStartDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
     if (scheduledEndDate && scheduledEndTime) {
@@ -1437,79 +1437,85 @@ app.post('/api/schedules', requireAuth, (req, res) => {
     } else if (durationMinutes > 0) {
       newEndDateTime = new Date(newStartDateTime.getTime() + durationMinutes * 60000);
     }
-    
-    if (newEndDateTime) {
-      // Get existing schedules for overlapping dates and unit
-      // Check schedules where the date range overlaps
-      const existingSchedules = db.prepare(
-        `SELECT * FROM schedules 
-         WHERE unitId = ? AND status NOT IN ('cancelled', 'completed') 
-         AND (
-           (scheduledDate <= ? AND (scheduledEndDate >= ? OR scheduledDate = ?))
-           OR 
-           (scheduledEndDate IS NULL AND scheduledDate >= ? AND scheduledDate <= ?)
-         )`
-      ).all(unitId, scheduledEndDate || scheduledDate, scheduledDate, scheduledDate, scheduledDate, scheduledEndDate || scheduledDate);
-      
-      for (const existing of existingSchedules) {
-        if (!existing.scheduledTime) continue;
-        
-        // Calculate existing booking datetime range
-        let existStartDateTime = new Date(`${existing.scheduledDate}T${existing.scheduledTime}`);
-        let existEndDateTime;
-        
-        if (existing.scheduledEndDate && existing.scheduledEndTime) {
-          existEndDateTime = new Date(`${existing.scheduledEndDate}T${existing.scheduledEndTime}`);
-        } else if (existing.duration) {
-          existEndDateTime = new Date(existStartDateTime.getTime() + existing.duration * 60000);
-        } else {
-          continue; // Skip if no end time info
-        }
-        
-        // Check for overlap: (StartA < EndB) && (EndA > StartB)
-        const overlap = (newStartDateTime < existEndDateTime) && (newEndDateTime > existStartDateTime);
-        
-        if (overlap) {
-          const existEndTimeStr = existing.scheduledEndTime || 
-            String(existEndDateTime.getHours()).padStart(2, '0') + ':' + 
-            String(existEndDateTime.getMinutes()).padStart(2, '0');
-          return res.status(409).json({
-            ok: false,
-            error: `Unit sudah dibooking oleh ${existing.customer} pukul ${existing.scheduledTime}-${existEndTimeStr}. Silakan pilih unit lain atau waktu berbeda.`
-          });
-        }
+
+    // Must have end time to calculate overlap
+    if (!newEndDateTime) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Waktu berakhir atau durasi wajib diisi untuk pengecekan konflik.'
+      });
+    }
+
+    // ===== CHECK 1: Conflict with existing pending/running schedules =====
+    const existingSchedules = db.prepare(
+      `SELECT * FROM schedules
+       WHERE unitId = ? AND status NOT IN ('cancelled', 'completed')
+       AND (
+         (scheduledDate <= ? AND (scheduledEndDate >= ? OR scheduledDate = ?))
+         OR
+         (scheduledEndDate IS NULL AND scheduledDate >= ? AND scheduledDate <= ?)
+       )`
+    ).all(unitId, scheduledEndDate || scheduledDate, scheduledDate, scheduledDate, scheduledDate, scheduledEndDate || scheduledDate);
+
+    for (const existing of existingSchedules) {
+      if (!existing.scheduledTime) continue;
+
+      // Calculate existing booking datetime range
+      let existStartDateTime = new Date(`${existing.scheduledDate}T${existing.scheduledTime}`);
+      let existEndDateTime;
+
+      if (existing.scheduledEndDate && existing.scheduledEndTime) {
+        existEndDateTime = new Date(`${existing.scheduledEndDate}T${existing.scheduledEndTime}`);
+      } else if (existing.duration) {
+        existEndDateTime = new Date(existStartDateTime.getTime() + existing.duration * 60000);
+      } else {
+        continue; // Skip if no end time info
       }
 
-      // Conflict detection: Check if unit is currently active and would overlap
-      if (unitId) {
-        const activeUnit = db.prepare('SELECT * FROM units WHERE id = ? AND active = 1').get(unitId);
-        if (activeUnit) {
-          // Calculate active rental end time
-          const activeStart = new Date(activeUnit.startTime);
-          let activeEnd;
+      // Check for overlap: (StartA < EndB) && (EndA > StartB)
+      const overlap = (newStartDateTime < existEndDateTime) && (newEndDateTime > existStartDateTime);
 
-          if (activeUnit.duration && activeUnit.duration > 0) {
-            activeEnd = new Date(activeUnit.startTime + activeUnit.duration * 60000);
-          } else {
-            // If no duration set, assume running rental with no fixed end
-            // Use a far future date to block any overlapping bookings
-            activeEnd = new Date(activeUnit.startTime + 24 * 60 * 60000); // 24 hours later
-          }
+      if (overlap) {
+        const existEndTimeStr = existing.scheduledEndTime ||
+          String(existEndDateTime.getHours()).padStart(2, '0') + ':' +
+          String(existEndDateTime.getMinutes()).padStart(2, '0');
+        return res.status(409).json({
+          ok: false,
+          error: `Unit sudah dibooking oleh ${existing.customer} pukul ${existing.scheduledTime}-${existEndTimeStr}. Silakan pilih unit lain atau waktu berbeda.`
+        });
+      }
+    }
 
-          // Check overlap: (StartA < EndB) && (EndA > StartB)
-          const overlap = (newStartDateTime < activeEnd) && (newEndDateTime > activeStart);
+    // ===== CHECK 2: Conflict with currently active unit =====
+    const activeUnit = db.prepare('SELECT * FROM units WHERE id = ? AND active = 1').get(unitId);
+    if (activeUnit) {
+      // Calculate active rental times
+      const activeStartTime = parseInt(activeUnit.startTime);
+      const activeDuration = parseInt(activeUnit.duration) || 0;
 
-          if (overlap) {
-            const activeEndStr = activeUnit.duration > 0
-              ? String(activeEnd.getHours()).padStart(2, '0') + ':' + String(activeEnd.getMinutes()).padStart(2, '0')
-              : 'selesai';
-            const activeStartStr = String(activeStart.getHours()).padStart(2, '0') + ':' + String(activeStart.getMinutes()).padStart(2, '0');
-            return res.status(409).json({
-              ok: false,
-              error: `Unit sedang aktif oleh ${activeUnit.customer || 'pelanggan'} dari pukul ${activeStartStr}${activeUnit.duration > 0 ? '-' + activeEndStr : ''}. Silakan pilih unit lain atau waktu berbeda.`
-            });
-          }
-        }
+      let activeEndTime;
+      if (activeDuration > 0) {
+        activeEndTime = activeStartTime + (activeDuration * 60000);
+      } else {
+        // No duration set - block any booking that starts before 24 hours from start
+        activeEndTime = activeStartTime + (24 * 60 * 60000);
+      }
+
+      const newStartTimestamp = newStartDateTime.getTime();
+      const newEndTimestamp = newEndDateTime.getTime();
+
+      // Check overlap: (StartA < EndB) && (EndA > StartB)
+      const overlap = (newStartTimestamp < activeEndTime) && (newEndTimestamp > activeStartTime);
+
+      if (overlap) {
+        const activeStartStr = new Date(activeStartTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const activeEndStr = activeDuration > 0
+          ? new Date(activeEndTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })
+          : 'selesai';
+        return res.status(409).json({
+          ok: false,
+          error: `Unit sedang aktif oleh ${activeUnit.customer || 'pelanggan'} dari pukul ${activeStartStr}${activeDuration > 0 ? '-' + activeEndStr : ''}. Silakan pilih unit lain atau waktu berbeda.`
+        });
       }
     }
   }
