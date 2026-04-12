@@ -5435,9 +5435,20 @@
 
     // Render card untuk booking yang konflik (sama persis dengan card daftar jadwal)
     function renderActivationConflictCard(s) {
+      // Normalize data format untuk konsistensi dengan daftar jadwal
+      // Data dari server mungkin punya format berbeda, jadi kita normalisasi dulu
+      const normalizedSchedule = {
+        ...s,
+        scheduledDate: s.scheduledDate || s.date,
+        scheduledTime: s.scheduledTime || s.startTime,
+        scheduledEndDate: s.scheduledEndDate || s.endDate || s.date,
+        scheduledEndTime: s.scheduledEndTime || s.endTime,
+        status: s.status || 'pending'
+      };
+      
       // Gunakan fungsi yang sama dengan daftar jadwal untuk konsistensi
-      const highlight = getScheduleHighlight(s);
-      const badge = getScheduleStatusBadge(s);
+      const highlight = getScheduleHighlight(normalizedSchedule);
+      const badge = getScheduleStatusBadge(normalizedSchedule);
       
       return `
         <div style="background: ${highlight.bg}; border: 2px solid ${highlight.border}; border-radius: 10px; padding: 12px;">
@@ -5455,10 +5466,10 @@
             <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.bg}; color: ${badge.color}; font-weight: 600; white-space: nowrap;">${badge.text}</span>
           </div>
           <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
-            ${formatScheduleDate(s)}
+            ${formatScheduleDate(normalizedSchedule)}
           </div>
           <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
-            ${formatScheduleTime(s)}
+            ${formatScheduleTime(normalizedSchedule)}
           </div>
           ${s.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${escapeHtml(s.unitName)}</div>` : ''}
           ${s.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${escapeHtml(s.note)}</div>` : ''}

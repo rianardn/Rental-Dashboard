@@ -637,15 +637,22 @@ app.post('/api/units/:id/start', requireAuth, (req, res) => {
           conflictType: 'active_booking',
           schedule: {
             id: schedule.id,
+            scheduleId: schedule.scheduleId,
             customer: schedule.customer,
             phone: schedule.phone,
+            scheduledDate: schedule.scheduledDate,
+            scheduledTime: schedule.scheduledTime,
+            scheduledEndDate: schedule.scheduledEndDate || schedule.scheduledDate,
+            scheduledEndTime: scheduleEndStr,
             date: schedule.scheduledDate,
             startTime: schedule.scheduledTime,
             endTime: scheduleEndStr,
             startTimestamp: scheduleStartUTC,
             endTimestamp: scheduleEndUTC,
             unitName: schedule.unitName,
-            note: schedule.note
+            note: schedule.note,
+            status: schedule.status || 'pending',
+            duration: schedule.duration
           },
           message: `Unit memiliki booking aktif dari <strong>${schedule.customer}</strong> (<strong>${bookingStartStr}-${bookingEndStr}</strong>). Aktifkan unit akan membatalkan booking ini.`,
           error: `Unit memiliki booking aktif dari ${schedule.customer} pada ${schedule.scheduledDate} pukul ${schedule.scheduledTime}-${scheduleEndStr}. Aktifkan unit akan membatalkan booking ini.`
