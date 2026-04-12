@@ -3492,12 +3492,16 @@
     // ═════════════════ Auth Functions ═════════════════
     async function checkServer() {
       try {
+        console.log('[checkServer] Fetching /ping...');
         const response = await fetch(`${API_URL}/ping`);
+        console.log('[checkServer] Response status:', response.status);
         const data = await response.json();
+        console.log('[checkServer] Data:', data);
         document.getElementById('loginStatus').textContent = `Server ready (v${data.version})`;
         document.getElementById('loginStatus').classList.add('connected');
         return true;
       } catch (e) {
+        console.error('[checkServer] Error:', e.message);
         document.getElementById('loginStatus').textContent = 'Server offline - Check Railway deployment';
         document.getElementById('loginStatus').classList.add('error');
         return false;
@@ -9416,10 +9420,13 @@
 
     // Initialize
     (async function init() {
+      console.log('[INIT] Starting...');
       updateClock();
       setInterval(updateClock, 1000);
       
+      console.log('[INIT] Checking server...');
       const serverReady = await checkServer();
+      console.log('[INIT] Server ready:', serverReady);
       if (serverReady && authToken) {
         // Verify token
         try {
