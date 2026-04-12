@@ -8750,25 +8750,45 @@
         grouped[dateStr].forEach(s => {
           globalCounter++;
           const badge = getScheduleStatusBadge(s);
+          const highlight = getScheduleHighlight(s);
+          
           html += `
-            <div style="background: var(--ps3-card); border: 1px solid var(--ps3-border);
-                        border-radius: 8px; padding: 10px; margin-bottom: 8px; position: relative;">
-              <div style="position: absolute; top: -6px; left: 8px; background: var(--ps3-red); color: #fff; font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 8px; z-index: 1;">${globalCounter}</div>
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 6px;">
+            <div style="background: ${highlight.bg}; border: 2px solid ${highlight.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative;">
+              <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${globalCounter}</div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; margin-top: 4px;">
                 <div>
-                  <span style="font-weight: 600; color: var(--ps3-text);">${s.customer}</span>
-                  ${s.scheduleId ? `<span style="font-size: 0.7rem; color: var(--ps3-muted); margin-left: 6px;">(${s.scheduleId})</span>` : ''}
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-weight: 700; color: var(--ps3-text);">${s.customer}</span>
+                    ${s.scheduleId ? `
+                      <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
+                      <span onclick="copyToClipboard('${s.scheduleId}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${s.scheduleId}</span>
+                    ` : ''}
+                  </div>
+                  ${s.phone ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">📞 ${s.phone}</div>` : ''}
                 </div>
-                <span style="font-size: 0.7rem; padding: 3px 8px; border-radius: 4px;
-                              background: ${badge.bg}; color: ${badge.color}; white-space: nowrap;">
-                  ${badge.text}
-                </span>
+                <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.bg}; color: ${badge.color}; font-weight: 600; white-space: nowrap;">${badge.text}</span>
               </div>
-              <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 4px;">
-                ⏰ ${s.scheduledTime || '--:--'}${s.duration ? ` → ${calculateEndTime(s.scheduledTime, s.duration)}` : ''}
-                ${s.unitName ? ` · 🎮 ${s.unitName}` : ''}
+              <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
+                ${formatScheduleDate(s)}
               </div>
-              ${s.phone ? `<div style="font-size: 0.75rem; color: var(--ps3-muted); margin-top: 2px;">📞 ${s.phone}</div>` : ''}
+              <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
+                ${formatScheduleTime(s)}
+              </div>
+              ${s.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${s.unitName} ${s.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem;">● AKTIF</span>' : ''}</div>` : ''}
+              ${s.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${s.note}</div>` : ''}
+              ${s.status === 'running' ? `<div style="font-size: 0.75rem; color: var(--ps3-green); margin-top: 6px; padding: 4px 8px; background: rgba(119,221,119,0.1); border-radius: 4px; border: 1px solid rgba(119,221,119,0.3);">▶️ Sedang berjalan di unit</div>` : ''}
+              <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                ${s.status === 'pending' ? `
+                  <button onclick="startSchedule(${s.id})" style="background: var(--ps3-green); color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-green-dark)'" onmouseout="this.style.background='var(--ps3-green)'">▶️ Mulai</button>
+                  <button onclick="openCancelScheduleModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-red-danger); border: 1px solid var(--ps3-red-danger); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-red-danger)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-red-danger)'">❌ Batal</button>
+                ` : ''}
+                ${s.status === 'running' ? `
+                  <button onclick="updateScheduleStatus(${s.id}, 'completed')" style="background: var(--ps3-green-dark); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-green)'" onmouseout="this.style.background='var(--ps3-green-dark)'">✅ Selesai</button>
+                  <button onclick="openCancelScheduleModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-red-danger); border: 1px solid var(--ps3-red-danger); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-red-danger)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-red-danger)'">❌ Batal</button>
+                ` : ''}
+                ${s.status === 'pending' || s.status === 'running' ? `<button onclick="openEditScheduleModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-yellow); border: 1px solid var(--ps3-yellow); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-yellow)';this.style.color='#000'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-yellow)'">✏️ Edit</button>` : ''}
+                ${s.editCount > 0 ? `<button onclick="openScheduleHistoryModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-silver); border: 1px solid var(--ps3-border); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-blue)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-silver)'">📜 Riwayat Edit</button>` : ''}
+              </div>
             </div>
           `;
         });
@@ -8886,7 +8906,7 @@
 
     async function updateScheduleStatus(id, status) {
       try {
-        const schedule = schedules.find(s => s.id === id);
+        const schedule = schedules.find(s => s.id == id);
         
         // If completing a running schedule, show payment modal first (same as stopSession)
         if (status === 'completed' && schedule && schedule.status === 'running') {
@@ -8953,7 +8973,7 @@
     let currentCompleteScheduleId = null;
 
     function openCancelScheduleModal(scheduleId) {
-      const schedule = schedules.find(s => s.id === scheduleId);
+      const schedule = schedules.find(s => s.id == scheduleId);
       if (!schedule) {
         showToast('Jadwal tidak ditemukan', 'error');
         return;
@@ -9049,7 +9069,7 @@
 
     async function startSchedule(id) {
       try {
-        const schedule = schedules.find(s => s.id === id);
+        const schedule = schedules.find(s => s.id == id);
         if (!schedule) {
           showToast('Jadwal tidak ditemukan', 'error');
           return;
