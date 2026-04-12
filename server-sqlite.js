@@ -547,6 +547,18 @@ app.delete('/api/schedules/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/schedules/:id', (req, res) => {
+  try {
+    const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(req.params.id);
+    if (!schedule) {
+      return res.status(404).json({ ok: false, error: 'Schedule not found' });
+    }
+    res.json({ ok: true, schedule });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
 app.get('/api/schedules/:id/edits', (req, res) => {
   try {
     const logs = db.prepare(`

@@ -7588,17 +7588,19 @@
       currentEditScheduleId = scheduleId;
 
       // Get schedule data for the title
-      const response = await api('GET', `/schedules/${scheduleId}`);
-      if (!response.ok) {
-        showToast('Gagal memuat data jadwal', 'error');
+      let schedule;
+      try {
+        const response = await api('GET', `/schedules/${scheduleId}`);
+        schedule = response.schedule;
+      } catch (error) {
+        showToast('Gagal memuat data jadwal: ' + error.message, 'error');
         return;
       }
-      const schedule = response.schedule;
 
       // Update modal title to show history
       const modalTitle = document.querySelector('#modalEditSchedule .modal-title');
       if (modalTitle) {
-        modalTitle.textContent = `📜 Riwayat: ${schedule.customer || 'Jadwal'}`;
+        modalTitle.textContent = `📜 Riwayat: ${schedule?.customer || 'Jadwal'}`;
       }
 
       // Hide Step 1 and Step 2, show only Step 3

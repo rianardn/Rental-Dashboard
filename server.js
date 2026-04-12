@@ -1571,6 +1571,18 @@ app.delete('/api/schedules/:id', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/schedules/:id', requireAuth, (req, res) => {
+  try {
+    const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(req.params.id);
+    if (!schedule) {
+      return res.status(404).json({ ok: false, error: 'Jadwal tidak ditemukan' });
+    }
+    res.json({ ok: true, schedule });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
 // ─── INVENTORY ───────────────────────────────────────────────────
 app.get('/api/inventory', requireAuth, (req, res) => {
   const items = db.prepare('SELECT * FROM inventory ORDER BY created_at DESC').all();
