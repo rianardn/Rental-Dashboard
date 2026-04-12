@@ -1016,6 +1016,11 @@
       font-size: 0.85rem;
     }
 
+    /* Calendar modal autocomplete specific */
+    #calendarCustomerSuggestions {
+      z-index: 3001; /* Above calendar modal (z-index: 3000) */
+    }
+
     /* ═════════════════ Sort Options (Mobile Optimized) ═════════════════ */
     .sort-options {
       display: flex;
@@ -3249,15 +3254,21 @@
             >
           </div>
 
-          <!-- Filter Customer & Unit -->
+          <!-- Filter Customer (Autocomplete Text Input) & Unit -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <select
-              id="calendarFilterCustomer"
-              onchange="handleCalendarSearch()"
-              style="background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px 12px; font-size: 0.85rem; font-family: inherit; cursor: pointer;"
-            >
-              <option value="">👤 Semua Penyewa</option>
-            </select>
+            <!-- Customer Filter with Autocomplete -->
+            <div style="position: relative;">
+              <input
+                type="text"
+                id="calendarFilterCustomer"
+                placeholder="👤 Ketik nama penyewa..."
+                oninput="onCalendarCustomerInput()"
+                onfocus="showCalendarCustomerSuggestions()"
+                autocomplete="off"
+                style="width: 100%; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px 12px; font-size: 0.85rem; font-family: inherit;"
+              >
+              <div id="calendarCustomerSuggestions" class="suggestions-dropdown" style="display: none;"></div>
+            </div>
 
             <select
               id="calendarFilterUnit"
@@ -8333,6 +8344,7 @@
       // Reset search inputs
       document.getElementById('calendarSearchTxId').value = '';
       document.getElementById('calendarFilterCustomer').value = '';
+      document.getElementById('calendarCustomerSuggestions').style.display = 'none';
       document.getElementById('calendarFilterUnit').value = '';
       document.getElementById('calendarSearchActions').style.display = 'none';
       buildScheduleCalendar();
@@ -8342,12 +8354,12 @@
     // ═════════════════ Calendar Search & Filter Handlers ═════════════════
     function handleCalendarSearch() {
       const txIdInput = document.getElementById('calendarSearchTxId');
-      const customerSelect = document.getElementById('calendarFilterCustomer');
+      const customerInput = document.getElementById('calendarFilterCustomer');
       const unitSelect = document.getElementById('calendarFilterUnit');
       const searchActions = document.getElementById('calendarSearchActions');
 
       calendarSearch.txId = txIdInput.value.trim().toLowerCase();
-      calendarSearch.customer = customerSelect.value;
+      calendarSearch.customer = customerInput.value.trim(); // Text input value
       calendarSearch.unit = unitSelect.value;
 
       // Show/hide clear button
@@ -8362,10 +8374,14 @@
       calendarSearch = { txId: '', customer: '', unit: '' };
       document.getElementById('calendarSearchTxId').value = '';
       document.getElementById('calendarFilterCustomer').value = '';
+      document.getElementById('calendarCustomerSuggestions').style.display = 'none';
       document.getElementById('calendarFilterUnit').value = '';
       document.getElementById('calendarSearchActions').style.display = 'none';
       filterCalendarSchedules();
     }
+
+    // Store unique customers for calendar autocomplete
+    let calendarUniqueCustomers = [];
 
     function buildCalendarFilterOptions(activeSchedules) {
       // Extract unique customers and units
@@ -8378,20 +8394,10 @@
       });
 
       // Sort alphabetically
-      const sortedCustomers = Array.from(customers).sort();
+      calendarUniqueCustomers = Array.from(customers).sort();
       const sortedUnits = Array.from(units).sort();
 
-      // Build customer options
-      const customerSelect = document.getElementById('calendarFilterCustomer');
-      const currentCustomer = customerSelect.value;
-      let customerHtml = '<option value="">👤 Semua Penyewa</option>';
-      sortedCustomers.forEach(customer => {
-        const isSelected = currentCustomer === customer ? 'selected' : '';
-        customerHtml += `<option value="${escapeHtml(customer)}" ${isSelected}>${escapeHtml(customer)}</option>`;
-      });
-      customerSelect.innerHTML = customerHtml;
-
-      // Build unit options
+      // Build unit options (customer is now text input with autocomplete)
       const unitSelect = document.getElementById('calendarFilterUnit');
       const currentUnit = unitSelect.value;
       let unitHtml = '<option value="">🎮 Semua Unit</option>';
@@ -8401,6 +8407,68 @@
       });
       unitSelect.innerHTML = unitHtml;
     }
+
+    // ═════════════════ Calendar Customer Autocomplete ═════════════════
+    let calendarCustomerAutocompleteTimer = null;
+
+    function onCalendarCustomerInput() {
+      // Show suggestions immediately with fresh highlight
+      showCalendarCustomerSuggestions();
+
+      // Debounce the actual search
+      if (calendarCustomerAutocompleteTimer) {
+        clearTimeout(calendarCustomerAutocompleteTimer);
+      }
+      calendarCustomerAutocompleteTimer = setTimeout(() => {
+        handleCalendarSearch();
+      }, 300);
+    }
+
+    function showCalendarCustomerSuggestions() {
+      const input = document.getElementById('calendarFilterCustomer');
+      const dropdown = document.getElementById('calendarCustomerSuggestions');
+      const value = input.value.trim().toLowerCase();
+
+      // Filter customers that match input (case-insensitive)
+      const matches = value
+        ? calendarUniqueCustomers.filter(c => c.toLowerCase().includes(value))
+        : calendarUniqueCustomers.slice(0, 10); // Show first 10 if empty
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = '<div class="suggestion-empty">Tidak ada hasil</div>';
+      } else {
+        dropdown.innerHTML = matches.map(customer => {
+          // Highlight matching portion
+          let display = escapeHtml(customer);
+          if (value) {
+            const regex = new RegExp(`(${escapeHtml(value)})`, 'gi');
+            display = display.replace(regex, '<mark>$1</mark>');
+          }
+          return `<div class="suggestion-item" onclick="selectCalendarCustomer('${escapeHtml(customer)}')">${display}</div>`;
+        }).join('');
+      }
+
+      dropdown.style.display = 'block';
+    }
+
+    function selectCalendarCustomer(customer) {
+      document.getElementById('calendarFilterCustomer').value = customer;
+      document.getElementById('calendarCustomerSuggestions').style.display = 'none';
+      handleCalendarSearch();
+    }
+
+    function hideCalendarCustomerSuggestions() {
+      document.getElementById('calendarCustomerSuggestions').style.display = 'none';
+    }
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+      const input = document.getElementById('calendarFilterCustomer');
+      const dropdown = document.getElementById('calendarCustomerSuggestions');
+      if (input && dropdown && !input.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
 
     function escapeHtml(text) {
       if (!text) return '';
@@ -8667,7 +8735,11 @@
       }
 
       if (calendarSearch.customer) {
-        filtered = filtered.filter(s => s.customer === calendarSearch.customer);
+        const searchCustomer = calendarSearch.customer.toLowerCase();
+        filtered = filtered.filter(s => {
+          const customerMatch = s.customer && s.customer.toLowerCase().includes(searchCustomer);
+          return customerMatch;
+        });
       }
 
       if (calendarSearch.unit) {
