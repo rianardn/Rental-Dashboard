@@ -414,14 +414,22 @@ if (db) {
 
 // ═══════════════════════════════════════════════════════════════
 // AUTO CLEANUP: Delete completed schedules at midnight
+// Handles Fly.io auto-off: cleanup runs on startup if past midnight
 // ═══════════════════════════════════════════════════════════════
+const CLEANUP_SETTINGS_KEY = 'lastCompletedCleanup';
+
+function getWIBDate(date = new Date()) {
+  const wibOffset = 7 * 60 * 60 * 1000;
+  return new Date(date.getTime() + wibOffset);
+}
+
+function formatWIBDate(date) {
+  return date.toISOString().split('T')[0];
+}
+
 function cleanupCompletedSchedules() {
   try {
-    // Get today's date in WIB (UTC+7)
-    const now = new Date();
-    const wibOffset = 7 * 60 * 60 * 1000; // 7 hours in milliseconds
-    const wibTime = new Date(now.getTime() + wibOffset);
-    const today = wibTime.toISOString().split('T')[0];
+    const today = formatWIBDate(getWIBDate());
 
     // Delete completed schedules
     const result = db.prepare(`
@@ -429,29 +437,58 @@ function cleanupCompletedSchedules() {
       WHERE status = 'completed'
     `).run();
 
+    // Save last cleanup timestamp
+    updateSetting(CLEANUP_SETTINGS_KEY, Date.now());
+
     if (result.changes > 0) {
       console.log(`[Cleanup] Deleted ${result.changes} completed schedule(s) at ${today} WIB`);
+    } else {
+      console.log(`[Cleanup] No completed schedules to delete at ${today} WIB`);
     }
   } catch (error) {
     console.error('[Cleanup] Error deleting completed schedules:', error.message);
   }
 }
 
+function shouldRunCleanup() {
+  const settings = getSettings();
+  const lastCleanup = settings[CLEANUP_SETTINGS_KEY] || 0;
+  const now = Date.now();
+  const wibNow = getWIBDate(new Date(now));
+  const wibLast = getWIBDate(new Date(lastCleanup));
+
+  // Get midnight timestamps for comparison
+  const todayMidnight = new Date(wibNow);
+  todayMidnight.setHours(0, 0, 0, 0);
+
+  const lastCleanupDay = new Date(wibLast);
+  lastCleanupDay.setHours(0, 0, 0, 0);
+
+  // Run cleanup if:
+  // 1. Never run before (lastCleanup === 0)
+  // 2. Last cleanup was on a different day
+  return lastCleanup === 0 || todayMidnight > lastCleanupDay;
+}
+
 function scheduleMidnightCleanup() {
-  const now = new Date();
-  const wibOffset = 7 * 60 * 60 * 1000;
-  const wibTime = new Date(now.getTime() + wibOffset);
+  // Check if we missed cleanup while machine was off
+  if (shouldRunCleanup()) {
+    console.log('[Cleanup] Running missed cleanup on startup...');
+    cleanupCompletedSchedules();
+  }
+
+  const wibNow = getWIBDate();
 
   // Calculate time until next midnight (00:00:00) in WIB
-  const tomorrow = new Date(wibTime);
+  const tomorrow = new Date(wibNow);
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(0, 0, 0, 0);
 
-  const msUntilMidnight = tomorrow - wibTime;
+  const msUntilMidnight = tomorrow - wibNow;
 
-  console.log(`[Cleanup] Scheduled cleanup in ${Math.floor(msUntilMidnight / 1000 / 60)} minutes (${tomorrow.toISOString().split('T')[0]} WIB)`);
+  console.log(`[Cleanup] Next scheduled cleanup in ${Math.floor(msUntilMidnight / 1000 / 60)} minutes (${formatWIBDate(tomorrow)} WIB)`);
 
-  // Schedule first cleanup at midnight
+  // Schedule cleanup at midnight
   setTimeout(() => {
     cleanupCompletedSchedules();
     // Then schedule daily cleanup every 24 hours
