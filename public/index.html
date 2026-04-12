@@ -5793,7 +5793,7 @@
           const formattedTime = formatScheduleTime(fakeSchedule);
 
           return `
-            <div style="background: ${badge.bg}; border: 2px solid ${badge.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px; opacity: 0.85;">
+            <div style="background: ${badge.bg}; border: 2px solid ${badge.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                 <div>
                   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -5805,7 +5805,7 @@
                   </div>
                   ${item.phone ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">📞 ${item.phone}</div>` : ''}
                 </div>
-                <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.bg}; color: ${badge.color}; font-weight: 600; white-space: nowrap; border: 1px solid ${badge.border};">${badge.text}</span>
+                <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.badgeBg}; color: ${badge.color}; font-weight: 600; white-space: nowrap; border: 1px solid ${badge.badgeBg};">${badge.text}</span>
               </div>
               <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
                 ${formattedDate}
@@ -5832,43 +5832,70 @@
 
     function getDeletedScheduleStatusBadge(status) {
       // Konsisten dengan getScheduleStatusBadge di daftar jadwal - pakai bahasa Indonesia
+      // Warna card (highlight) mengikuti getScheduleHighlight, warna badge mengikuti getScheduleStatusBadge
       const styles = {
         'pending': {
           text: '⏳ Menunggu',
-          bg: 'var(--ps3-yellow)',
-          border: 'var(--ps3-yellow)',
-          color: '#000'
+          // Card highlight: putih/transparan seperti daftar jadwal
+          cardBg: 'var(--ps3-surface)',
+          cardBorder: 'var(--ps3-border)',
+          // Badge: kuning
+          badgeBg: 'var(--ps3-yellow)',
+          badgeColor: '#000'
         },
         'running': {
           text: '🔥 Berjalan',
-          bg: 'var(--ps3-green)',
-          border: 'var(--ps3-green)',
-          color: '#000'
+          // Card highlight: hijau transparan
+          cardBg: 'rgba(74, 222, 128, 0.15)',
+          cardBorder: 'var(--ps3-green)',
+          // Badge: hijau
+          badgeBg: 'var(--ps3-green)',
+          badgeColor: '#000'
         },
         'completed': {
           text: '✅ Selesai',
-          bg: 'var(--ps3-green-dark)',
-          border: 'var(--ps3-green-dark)',
-          color: '#fff'
+          // Card highlight: abu-abu transparan
+          cardBg: 'rgba(128, 128, 128, 0.2)',
+          cardBorder: '#888',
+          // Badge: hijau tua
+          badgeBg: 'var(--ps3-green-dark)',
+          badgeColor: '#fff'
         },
         'cancelled': {
           text: '❌ Dibatalkan',
-          bg: 'var(--ps3-red-badge)',
-          border: 'var(--ps3-red-badge)',
-          color: '#fff'
+          // Card highlight: merah transparan
+          cardBg: 'rgba(220, 38, 38, 0.15)',
+          cardBorder: 'var(--ps3-red-badge)',
+          // Badge: merah
+          badgeBg: 'var(--ps3-red-badge)',
+          badgeColor: '#fff'
         },
         'deleted': {
           text: '🗑️ Dihapus',
-          bg: 'var(--ps3-red-badge)',
-          border: 'var(--ps3-red-badge)',
-          color: '#fff'
+          // Card highlight: merah transparan
+          cardBg: 'rgba(220, 38, 38, 0.15)',
+          cardBorder: 'var(--ps3-red-badge)',
+          // Badge: merah
+          badgeBg: 'var(--ps3-red-badge)',
+          badgeColor: '#fff'
         }
       };
-      return styles[status] || {
-        text: status,
-        bg: 'var(--ps3-surface)',
-        border: 'var(--ps3-border)',
-        color: 'var(--ps3-muted)'
+
+      const style = styles[status] || {
+        cardBg: 'var(--ps3-surface)',
+        cardBorder: 'var(--ps3-border)',
+        badgeBg: 'var(--ps3-surface)',
+        badgeColor: 'var(--ps3-muted)'
+      };
+
+      return {
+        text: style.text || status,
+        // Untuk card background/border (highlight)
+        bg: style.cardBg,
+        border: style.cardBorder,
+        // Untuk badge background/color
+        color: style.badgeColor,
+        badgeBg: style.badgeBg
       };
     }
 
