@@ -1515,9 +1515,11 @@ app.post('/api/schedules', requireAuth, (req, res) => {
       const overlap = (newStartTimestamp < activeEndTime) && (newEndTimestamp > activeStartTime);
 
       if (overlap) {
-        const activeStartStr = new Date(activeStartTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+        // Format time in WIB timezone (Asia/Jakarta)
+        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' };
+        const activeStartStr = new Date(activeStartTime).toLocaleTimeString('id-ID', timeOptions);
         const activeEndStr = activeDuration > 0
-          ? new Date(activeEndTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })
+          ? new Date(activeEndTime).toLocaleTimeString('id-ID', timeOptions)
           : 'selesai';
         return res.status(409).json({
           ok: false,
