@@ -8943,6 +8943,7 @@
         await loadSchedules();
         renderAll();
         renderSchedules();
+        filterCalendarSchedules();
       } catch (error) {
         showToast(error.message, 'error');
       }
@@ -8961,6 +8962,7 @@
         await loadSchedules();
         renderAll();
         renderSchedules();
+        filterCalendarSchedules();
       } catch (error) {
         showToast(error.message, 'error');
       }
@@ -9059,6 +9061,7 @@
         await loadSchedules();
         renderAll();
         renderSchedules();
+        filterCalendarSchedules();
 
         // Reset
         currentCancelScheduleId = null;
@@ -9095,6 +9098,7 @@
         await loadSchedules();
         renderAll();
         renderSchedules();
+        filterCalendarSchedules();
         showToast('Jadwal dimulai! Unit aktif dengan data booking.', 'success');
       } catch (error) {
         showToast(error.message, 'error');
@@ -9139,6 +9143,7 @@
         await loadSchedules();
         renderAll();
         renderSchedules();
+        filterCalendarSchedules();
         showToast('Jadwal dimulai! Unit aktif dengan data booking.', 'success');
       } catch (error) {
         showToast(error.message, 'error');
@@ -9432,6 +9437,7 @@
           // Refresh data
           await loadSchedules();
           renderSchedules();
+          filterCalendarSchedules();
         } else {
           showToast(response.error || 'Gagal mengupdate jadwal', 'error');
         }
