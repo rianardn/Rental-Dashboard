@@ -2740,28 +2740,12 @@
         </div>
       </div>
 
-      <!-- Step 3: History with Tabs -->
+      <!-- Step 3: History -->
       <div id="editExpenseStep3" style="padding: 20px; display: none;">
-        <!-- Tabs -->
-        <div style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--ps3-border);">
-          <button id="expenseEditTabBtn" onclick="showExpenseEditLogsTab()" style="flex: 1; background: var(--ps3-chrome); color: #000; border: none; padding: 10px; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600;">
-            ✏️ Riwayat Edit
-          </button>
-          <button id="expenseDeleteTabBtn" onclick="showExpenseDeleteLogsTab()" style="flex: 1; background: transparent; color: var(--ps3-muted); border: none; padding: 10px; border-radius: 8px 8px 0 0; cursor: pointer;">
-            🗑️ Log Hapus
-          </button>
-        </div>
-        
         <!-- Edit History Content -->
         <div id="expenseEditHistoryContent">
           <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Riwayat Perubahan:</p>
           <div id="editExpenseHistoryList" style="max-height: 300px; overflow-y: auto;"></div>
-        </div>
-        
-        <!-- Delete Logs Content -->
-        <div id="expenseDeleteLogsContent" style="display: none;">
-          <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Log Penghapusan:</p>
-          <div id="expenseDeleteLogsList" style="max-height: 300px; overflow-y: auto;"></div>
         </div>
         
         <button class="btn" onclick="closeModal('modalEditExpense')" style="margin-top: 16px; width: 100%;">Tutup</button>
@@ -7397,9 +7381,6 @@
       document.getElementById('editExpenseStep2').style.display = 'none';
       document.getElementById('editExpenseStep3').style.display = 'block';
       
-      // Reset to edit tab by default
-      showExpenseEditLogsTab();
-      
       openModal('modalEditExpense', true);
       
       // Load history
@@ -7461,108 +7442,7 @@
       }
     }
 
-    // ═════════════════ Expense History Tabs ═════════════════
-    function showExpenseEditLogsTab() {
-      document.getElementById('expenseEditTabBtn').style.background = 'var(--ps3-chrome)';
-      document.getElementById('expenseEditTabBtn').style.color = '#000';
-      document.getElementById('expenseEditTabBtn').style.fontWeight = '600';
-      document.getElementById('expenseDeleteTabBtn').style.background = 'transparent';
-      document.getElementById('expenseDeleteTabBtn').style.color = 'var(--ps3-muted)';
-      document.getElementById('expenseDeleteTabBtn').style.fontWeight = 'normal';
-      
-      document.getElementById('expenseEditHistoryContent').style.display = 'block';
-      document.getElementById('expenseDeleteLogsContent').style.display = 'none';
-      
-      // Reload edit history
-      if (currentEditExpenseId) {
-        loadExpenseEditHistory(currentEditExpenseId);
-      }
-    }
 
-    function showExpenseDeleteLogsTab() {
-      document.getElementById('expenseDeleteTabBtn').style.background = 'var(--ps3-chrome)';
-      document.getElementById('expenseDeleteTabBtn').style.color = '#000';
-      document.getElementById('expenseDeleteTabBtn').style.fontWeight = '600';
-      document.getElementById('expenseEditTabBtn').style.background = 'transparent';
-      document.getElementById('expenseEditTabBtn').style.color = 'var(--ps3-muted)';
-      document.getElementById('expenseEditTabBtn').style.fontWeight = 'normal';
-      
-      document.getElementById('expenseEditHistoryContent').style.display = 'none';
-      document.getElementById('expenseDeleteLogsContent').style.display = 'block';
-      
-      // Load delete logs
-      if (currentEditExpenseId) {
-        loadExpenseDeleteLogs(currentEditExpenseId);
-      }
-    }
-
-    async function loadExpenseDeleteLogs(expenseId) {
-      try {
-        const response = await api('GET', `/deletion-logs?recordType=expense&limit=50`);
-        const container = document.getElementById('expenseDeleteLogsList');
-        
-        if (!response.ok || !response.logs || response.logs.length === 0) {
-          container.innerHTML = `
-            <div style="text-align: center; padding: 20px; color: var(--ps3-muted);">
-              <div style="font-size: 2rem; margin-bottom: 10px;">🗑️</div>
-              <div>Belum ada log penghapusan</div>
-            </div>
-          `;
-          return;
-        }
-        
-        // Filter logs for this specific expense
-        const expenseLogs = response.logs.filter(log => log.recordId === expenseId);
-        
-        if (expenseLogs.length === 0) {
-          container.innerHTML = `
-            <div style="text-align: center; padding: 20px; color: var(--ps3-muted);">
-              <div style="font-size: 2rem; margin-bottom: 10px;">🗑️</div>
-              <div>Data pengeluaran ini belum pernah dihapus</div>
-            </div>
-          `;
-          return;
-        }
-        
-        container.innerHTML = expenseLogs.map(log => {
-          const deletedAtWIB = new Date(log.deletedAt + (7 * 60 * 60 * 1000));
-          const dateStr = deletedAtWIB.toLocaleString('id-ID', { 
-            day: 'numeric', 
-            month: 'short', 
-            year: 'numeric',
-            hour: '2-digit', 
-            minute: '2-digit',
-            timeZone: 'UTC'
-          });
-          
-          const data = log.recordData || {};
-          
-          return `
-            <div style="border-left: 3px solid var(--ps3-red); padding: 12px; margin-bottom: 12px; background: rgba(230, 0, 18, 0.05);">
-              <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 6px;">
-                ${dateStr} • oleh ${log.deletedBy || 'admin'}
-              </div>
-              <div style="font-weight: 600; margin-bottom: 4px; color: var(--ps3-text);">
-                ${data.item || 'Unknown Item'}
-              </div>
-              <div style="font-size: 0.9rem; color: var(--ps3-red); margin-bottom: 6px;">
-                ${formatMoney(data.amount || 0)}
-              </div>
-              <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 6px; font-style: italic;">
-                💬 ${log.deleteReason || '-'}
-              </div>
-            </div>
-          `;
-        }).join('');
-      } catch (error) {
-        console.error('Error loading expense delete logs:', error);
-        document.getElementById('expenseDeleteLogsList').innerHTML = `
-          <div style="text-align: center; padding: 20px; color: var(--ps3-red);">
-            Gagal memuat log penghapusan
-          </div>
-        `;
-      }
-    }
 
     function showLoading(show) {
       document.getElementById('loadingOverlay').classList.toggle('active', show);
