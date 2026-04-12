@@ -5651,6 +5651,9 @@
       if (id === 'modalEditTransaction') {
         document.querySelector('#modalEditTransaction .modal-title').textContent = '✏️ Edit Transaksi';
       }
+      if (id === 'modalEditSchedule') {
+        document.querySelector('#modalEditSchedule .modal-title').textContent = '✏️ Edit Jadwal';
+      }
     }
 
     // ═════════════════ Transaction Edit Functions ═════════════════
@@ -7274,6 +7277,7 @@
                 <button onclick="updateScheduleStatus(${s.id}, 'cancelled')" style="background: var(--ps3-surface); color: var(--ps3-red-danger); border: 1px solid var(--ps3-red-danger); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-red-danger)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-red-danger)'">❌ Batal</button>
               ` : ''}
               ${s.status === 'pending' || s.status === 'running' ? `<button onclick="openEditScheduleModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-yellow); border: 1px solid var(--ps3-yellow); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-yellow)';this.style.color='#000'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-yellow)'">✏️ Edit</button>` : ''}
+              <button onclick="openScheduleHistoryModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-silver); border: 1px solid var(--ps3-border); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-blue)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-silver)'">📜 Riwayat</button>
               <button onclick="deleteSchedule(${s.id})" style="background: transparent; color: var(--ps3-muted); border: 1px solid var(--ps3-border); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#fff';this.style.borderColor='var(--ps3-muted)'" onmouseout="this.style.color='var(--ps3-muted)';this.style.borderColor='var(--ps3-border)'">🗑️ Hapus</button>
             </div>
           </div>
@@ -7575,6 +7579,35 @@
 
       // Load edit history
       loadScheduleEditHistory(scheduleId);
+
+      openModal('modalEditSchedule', true);
+    }
+
+    // Function to open modal directly to history view (Step 3)
+    async function openScheduleHistoryModal(scheduleId) {
+      currentEditScheduleId = scheduleId;
+
+      // Get schedule data for the title
+      const response = await api('GET', `/schedules/${scheduleId}`);
+      if (!response.ok) {
+        showToast('Gagal memuat data jadwal', 'error');
+        return;
+      }
+      const schedule = response.schedule;
+
+      // Update modal title to show history
+      const modalTitle = document.querySelector('#modalEditSchedule .modal-title');
+      if (modalTitle) {
+        modalTitle.textContent = `📜 Riwayat: ${schedule.customer || 'Jadwal'}`;
+      }
+
+      // Hide Step 1 and Step 2, show only Step 3
+      document.getElementById('editScheduleStep1').style.display = 'none';
+      document.getElementById('editScheduleStep2').style.display = 'none';
+      document.getElementById('editScheduleStep3').style.display = 'block';
+
+      // Load edit history
+      await loadScheduleEditHistory(scheduleId);
 
       openModal('modalEditSchedule', true);
     }
