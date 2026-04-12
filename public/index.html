@@ -4059,17 +4059,21 @@
         const latest5 = sorted.slice(0, 5);
         const hasMore = sorted.length > 5;
         
-        container.innerHTML = latest5.map(t => `
+        container.innerHTML = latest5.map((t, index) => {
+          const nomor = index + 1;
+          return `
           <div class="transaction-item" style="position: relative; padding: 14px;" data-tx-id="${t.id || ''}">
+            <!-- Number Badge -->
+            <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-green); color: #000; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
             <!-- Row 1: Date (left) + Amount (right) -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
               <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
                 ${formatDateOnlyWIB(t.endTime)}
               </div>
               <div class="transaction-amount" style="color: var(--ps3-green); font-size: 1.15rem; font-weight: 600;">
                 ${formatMoney(t.paid)}
               </div>
-            </div>
+            </div>`
 
             <!-- Row 2: Unit Name + Action Buttons -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${t.customer ? '6px' : '10px'};">
@@ -4182,13 +4186,16 @@
           </div>
         `;
       } else {
-        container.innerHTML = latest5Expenses.map(e => {
+        container.innerHTML = latest5Expenses.map((e, index) => {
           const catInfo = getExpenseCategoryInfo(e.item, e.category);
           const subCatEmoji = catInfo.subCategory ? getSubCategoryEmoji(catInfo.category, catInfo.subCategory) : '';
+          const nomor = index + 1;
           return `
           <div class="transaction-item" style="position: relative; padding: 14px;" data-exp-id="${e.id || ''}">
+            <!-- Number Badge -->
+            <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
             <!-- Row 1: Date (left) + Amount (right) -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
               <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
                 ${formatDateOnlyWIB(e.created_at)}
               </div>
@@ -4693,17 +4700,21 @@
         return;
       }
 
-      container.innerHTML = transactions.map(t => `
+      container.innerHTML = transactions.map((t, index) => {
+        const nomor = index + 1;
+        return `
         <div class="transaction-item" style="position: relative; padding: 14px; margin-bottom: 12px;" data-tx-id="${t.id || ''}">
+          <!-- Number Badge -->
+          <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-green); color: #000; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
           <!-- Row 1: Date (left) + Amount (right) -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
             <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
               ${formatDateOnlyWIB(t.endTime)}
             </div>
             <div class="transaction-amount" style="color: var(--ps3-green); font-size: 1.15rem; font-weight: 600;">
               ${formatMoney(t.paid)}
             </div>
-          </div>
+          </div>`
 
           <!-- Row 2: Unit Name + Action Buttons -->
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${t.customer ? '6px' : '10px'};">
