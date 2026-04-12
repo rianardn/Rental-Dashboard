@@ -8056,13 +8056,33 @@
         return { text: '✅ Selesai', bg: 'var(--ps3-green-dark)', color: '#fff' };
       }
       
+      // Helper: get remaining time (for running schedules)
+      function getRemainingTime() {
+        if (!s.scheduledTime || !s.duration) return null;
+        const startTime = new Date(s.scheduledDate + 'T' + s.scheduledTime);
+        const endTime = new Date(startTime.getTime() + parseInt(s.duration) * 60000);
+        const remainingMs = endTime - now;
+        if (remainingMs <= 0) return null;
+        const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+        const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+        if (hours > 0) {
+          return minutes > 0 ? `${hours} jam ${minutes} menit` : `${hours} jam`;
+        }
+        return `${minutes} menit`;
+      }
+
       // 2a. Running + Overtime -> Red badge (distinct shade), "🆘 Melebihi waktu X jam X menit"
       if (s.status === 'running') {
         const overtime = getOvertime();
         if (overtime) {
           return { text: `🆘 Melebihi waktu ${overtime}`, bg: 'var(--ps3-red-badge)', color: '#fff' };
         }
-        // Running on time -> Green badge, "🔥 Berjalan"
+        // Running on time -> Green badge, "🔥 Sisa X jam Y menit"
+        const remaining = getRemainingTime();
+        if (remaining) {
+          return { text: `🔥 Sisa ${remaining}`, bg: 'var(--ps3-green)', color: '#000' };
+        }
+        // Fallback if no duration set
         return { text: '🔥 Berjalan', bg: 'var(--ps3-green)', color: '#000' };
       }
       
