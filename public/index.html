@@ -7217,19 +7217,39 @@
       }
 
       try {
-        // Hapus properti metadata penghapusan
-        const { deletedAt, deleteReason, deletedBy, ...restoredTx } = item;
+        // Hapus properti metadata penghapusan untuk membuat transaksi baru
+        const { id, deletedAt, deleteReason, deletedBy, ...restoredData } = item;
 
-        // Tambahkan kembali ke transactions
-        transactions.unshift(restoredTx);
+        // Buat transaksi baru di server dengan data yang sama
+        const newTx = {
+          unitId: restoredData.unitId,
+          unitName: restoredData.unitName,
+          customer: restoredData.customer,
+          phone: restoredData.phone,
+          duration: restoredData.duration,
+          startTime: restoredData.startTime,
+          endTime: restoredData.endTime,
+          total: restoredData.total,
+          paid: restoredData.paid,
+          payment: restoredData.payment,
+          note: restoredData.note,
+          date: restoredData.date,
+          timestamp: restoredData.timestamp
+        };
 
-        // Hapus dari tempat sampah
+        const res = await api('POST', '/transactions', newTx);
+
+        if (!res.ok) {
+          throw new Error(res.error || 'Gagal membuat transaksi baru');
+        }
+
+        // Hapus dari tempat sampah karena sudah berhasil dibuat ulang
         deletedTransactions.splice(index, 1);
 
-        // TODO: Panggil API untuk restore jika ada endpointnya
-        // const res = await api('POST', '/transactions/restore', { id: item.id });
+        // Refresh data dari server untuk mendapatkan transaksi baru yang valid
+        await loadData();
 
-        showToast('Transaksi berhasil dikembalikan', 'success');
+        showToast('Transaksi berhasil dikembalikan dengan ID baru', 'success');
         renderTrashIncomeList();
         renderReports();
       } catch (error) {
