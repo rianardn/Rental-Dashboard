@@ -8211,16 +8211,6 @@
       
       let html = '';
       
-      // Tombol "Lihat Semua" di ATAS (tidak perlu scroll ke bawah)
-      if (otherSchedules.length > 0) {
-        const totalActive = activeSchedules.length;
-        html += `
-          <button onclick="openScheduleCalendarModal()" style="width: 100%; background: var(--ps3-surface); border: 2px dashed var(--ps3-border); color: var(--ps3-text); padding: 12px; border-radius: 10px; font-size: 0.9rem; cursor: pointer; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            📅 Lihat Semua (${totalActive} Jadwal)
-          </button>
-        `;
-      }
-      
       // Card untuk hari ini (exclude completed)
       if (filtered.length === 0) {
         html += '<p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Tidak ada jadwal untuk hari ini</p>';
@@ -8270,6 +8260,18 @@
           </div>
         `;
       }).join('');
+      
+      // Tombol "Lihat Semua Jadwal" di BAWAH (sticky saat scroll)
+      if (otherSchedules.length > 0) {
+        const totalActive = activeSchedules.length;
+        html += `
+          <div style="position: sticky; bottom: 0; background: linear-gradient(to top, var(--ps3-bg), transparent); padding: 15px 0; margin-top: 10px; z-index: 10;">
+            <button onclick="openScheduleCalendarModal()" style="width: 100%; background: var(--ps3-surface); border: 2px dashed var(--ps3-border); color: var(--ps3-text); padding: 12px; border-radius: 10px; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 -4px 12px rgba(0,0,0,0.3);">
+              📅 Lihat Semua (${totalActive} Jadwal)
+            </button>
+          </div>
+        `;
+      }
       
       container.innerHTML = html;
     }
@@ -8321,7 +8323,7 @@
       // Sort months ascending
       const months = Array.from(monthSet).sort((a, b) => a - b);
 
-      // Render Years (dengan tombol SEMUA di paling kiri)
+      // Render Years (dengan tombol SEMUA tanpa emoji di paling kiri)
       const yearsContainer = document.getElementById('calendarYears');
       const allYearsActive = calendarFilter.year === null && calendarFilter.month === null && calendarFilter.date === null;
       let yearsHtml = `
@@ -8330,7 +8332,7 @@
             background: ${allYearsActive ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; 
             color: ${allYearsActive ? '#fff' : 'var(--ps3-text)'}; 
             border: 1px solid ${allYearsActive ? 'var(--ps3-red)' : 'var(--ps3-border)'};">
-          📋 SEMUA
+          SEMUA
         </button>
       `;
       yearsHtml += years.map(year => {
@@ -8347,76 +8349,87 @@
       }).join('');
       yearsContainer.innerHTML = yearsHtml;
 
-      // Render Months (filtered by selected year or all)
+      // Render Months (HANYA jika tahun sudah dipilih)
       const monthsContainer = document.getElementById('calendarMonths');
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
       
-      // Get months that have schedules in the selected year (or all years)
-      const availableMonths = new Set();
-      activeSchedules.forEach(s => {
-        if (s.scheduledDate) {
-          const d = new Date(s.scheduledDate + 'T00:00:00');
-          const year = d.getFullYear();
-          const month = d.getMonth();
-          if (!calendarFilter.year || calendarFilter.year === year) {
-            availableMonths.add(month);
+      if (calendarFilter.year === null) {
+        // Sembunyikan bulan jika belum pilih tahun
+        monthsContainer.innerHTML = '';
+      } else {
+        // Get months that have schedules in the selected year
+        const availableMonths = new Set();
+        activeSchedules.forEach(s => {
+          if (s.scheduledDate) {
+            const d = new Date(s.scheduledDate + 'T00:00:00');
+            const year = d.getFullYear();
+            const month = d.getMonth();
+            if (calendarFilter.year === year) {
+              availableMonths.add(month);
+            }
           }
-        }
-      });
-      
-      monthsContainer.innerHTML = Array.from(availableMonths).sort((a, b) => a - b).map(month => {
-        const isActive = calendarFilter.month === month;
-        return `
-          <button onclick="selectCalendarMonth(${month})" 
-            style="padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; cursor: pointer;
-              background: ${isActive ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; 
-              color: ${isActive ? '#fff' : 'var(--ps3-text)'}; 
-              border: 1px solid ${isActive ? 'var(--ps3-red)' : 'var(--ps3-border)'};">
-            ${monthNames[month]}
-          </button>
-        `;
-      }).join('');
+        });
+        
+        monthsContainer.innerHTML = Array.from(availableMonths).sort((a, b) => a - b).map(month => {
+          const isActive = calendarFilter.month === month;
+          return `
+            <button onclick="selectCalendarMonth(${month})" 
+              style="padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; cursor: pointer;
+                background: ${isActive ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; 
+                color: ${isActive ? '#fff' : 'var(--ps3-text)'}; 
+                border: 1px solid ${isActive ? 'var(--ps3-red)' : 'var(--ps3-border)'};">
+              ${monthNames[month]}
+            </button>
+          `;
+        }).join('');
+      }
 
-      // Render Dates (filtered by selected year and month)
+      // Render Dates (HANYA jika bulan sudah dipilih)
       const datesContainer = document.getElementById('calendarDates');
-      const availableDates = new Set();
-      const dateInfoMap = new Map();
       
-      activeSchedules.forEach(s => {
-        if (s.scheduledDate) {
-          const d = new Date(s.scheduledDate + 'T00:00:00');
-          const year = d.getFullYear();
-          const month = d.getMonth();
-          const date = d.getDate();
-          const dayName = d.toLocaleDateString('id-ID', { weekday: 'short' });
-          
-          const yearMatch = !calendarFilter.year || calendarFilter.year === year;
-          const monthMatch = calendarFilter.month === null || calendarFilter.month === month;
-          
-          if (yearMatch && monthMatch) {
-            availableDates.add(s.scheduledDate);
-            dateInfoMap.set(s.scheduledDate, { date, dayName });
+      if (calendarFilter.month === null) {
+        // Sembunyikan tanggal jika belum pilih bulan
+        datesContainer.innerHTML = '';
+      } else {
+        const availableDates = new Set();
+        const dateInfoMap = new Map();
+        
+        activeSchedules.forEach(s => {
+          if (s.scheduledDate) {
+            const d = new Date(s.scheduledDate + 'T00:00:00');
+            const year = d.getFullYear();
+            const month = d.getMonth();
+            const date = d.getDate();
+            const dayName = d.toLocaleDateString('id-ID', { weekday: 'short' });
+            
+            const yearMatch = calendarFilter.year === year;
+            const monthMatch = calendarFilter.month === month;
+            
+            if (yearMatch && monthMatch) {
+              availableDates.add(s.scheduledDate);
+              dateInfoMap.set(s.scheduledDate, { date, dayName });
+            }
           }
-        }
-      });
+        });
 
-      // Sort dates ascending (terkecil ke terbesar)
-      const sortedDates = Array.from(availableDates).sort((a, b) => new Date(a) - new Date(b));
-      
-      datesContainer.innerHTML = sortedDates.map(dateStr => {
-        const info = dateInfoMap.get(dateStr);
-        const isActive = calendarFilter.date === dateStr;
-        return `
-          <button onclick="selectCalendarDate('${dateStr}')" 
-            style="padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; min-width: 80px;
-              background: ${isActive ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; 
-              color: ${isActive ? '#fff' : 'var(--ps3-text)'}; 
-              border: 1px solid ${isActive ? 'var(--ps3-red)' : 'var(--ps3-border)'};">
-            <div style="font-size: 0.65rem; opacity: 0.8; text-transform: uppercase;">${info.dayName}</div>
-            <div style="font-weight: 600;">${info.date}</div>
-          </button>
-        `;
-      }).join('');
+        // Sort dates ascending (terkecil ke terbesar)
+        const sortedDates = Array.from(availableDates).sort((a, b) => new Date(a) - new Date(b));
+        
+        datesContainer.innerHTML = sortedDates.map(dateStr => {
+          const info = dateInfoMap.get(dateStr);
+          const isActive = calendarFilter.date === dateStr;
+          return `
+            <button onclick="selectCalendarDate('${dateStr}')" 
+              style="padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; min-width: 80px;
+                background: ${isActive ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; 
+                color: ${isActive ? '#fff' : 'var(--ps3-text)'}; 
+                border: 1px solid ${isActive ? 'var(--ps3-red)' : 'var(--ps3-border)'};">
+              <div style="font-size: 0.65rem; opacity: 0.8; text-transform: uppercase;">${info.dayName}</div>
+              <div style="font-weight: 600;">${info.date}</div>
+            </button>
+          `;
+        }).join('');
+      }
 
       // Update filter display
       updateCalendarFilterDisplay();
@@ -8429,21 +8442,28 @@
       if (year === null) {
         // Klik SEMUA - reset semua filter
         calendarFilter = { year: null, month: null, date: null };
+      } else if (calendarFilter.year === year) {
+        // Klik tahun yang sudah aktif - reset tahun dan turunannya
+        calendarFilter.year = null;
+        calendarFilter.month = null;
+        calendarFilter.date = null;
       } else {
-        calendarFilter.year = calendarFilter.year === year ? null : year;
-        // Reset month and date when year changes
-        if (calendarFilter.year !== year) {
-          calendarFilter.month = null;
-          calendarFilter.date = null;
-        }
+        // Klik tahun baru - set tahun, reset bulan dan tanggal
+        calendarFilter.year = year;
+        calendarFilter.month = null;
+        calendarFilter.date = null;
       }
       buildScheduleCalendar();
     }
 
     function selectCalendarMonth(month) {
-      calendarFilter.month = calendarFilter.month === month ? null : month;
-      // Reset date when month changes
-      if (calendarFilter.month !== month) {
+      if (calendarFilter.month === month) {
+        // Klik bulan yang sudah aktif - reset bulan dan turunannya
+        calendarFilter.month = null;
+        calendarFilter.date = null;
+      } else {
+        // Klik bulan baru - set bulan, reset tanggal
+        calendarFilter.month = month;
         calendarFilter.date = null;
       }
       buildScheduleCalendar();
