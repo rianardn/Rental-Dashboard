@@ -1142,6 +1142,92 @@ app.get('/api/deletion-logs', requireAuth, (req, res) => {
   res.json({ ok: true, logs: parsedLogs });
 });
 
+// POST restore from deletion_logs (trash) - restores with same ID
+app.post('/api/deletion-logs/:id/restore', requireAuth, (req, res) => {
+  const logId = req.params.id;
+  
+  // Get the deletion log entry
+  const logEntry = db.prepare('SELECT * FROM deletion_logs WHERE id = ?').get(logId);
+  if (!logEntry) {
+    return res.status(404).json({ error: 'Data tidak ditemukan di tempat sampah' });
+  }
+  
+  // Parse the record data
+  let recordData;
+  try {
+    recordData = JSON.parse(logEntry.recordData);
+  } catch (e) {
+    return res.status(500).json({ error: 'Gagal memparse data yang dihapus' });
+  }
+  
+  const { recordType, recordId } = logEntry;
+  
+  try {
+    if (recordType === 'transaction') {
+      // Check if transaction with same ID already exists
+      const existing = db.prepare('SELECT id FROM transactions WHERE id = ?').get(recordId);
+      if (existing) {
+        return res.status(409).json({ error: 'Transaksi dengan ID ini sudah ada' });
+      }
+      
+      // Restore transaction with same ID
+      db.prepare(`INSERT INTO transactions 
+        (id, unitId, unitName, customer, phone, startTime, endTime, durationMin, paid, payment, note, date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(
+          recordId,
+          recordData.unitId,
+          recordData.unitName,
+          recordData.customer,
+          recordData.phone || null,
+          recordData.startTime,
+          recordData.endTime,
+          recordData.durationMin,
+          recordData.paid,
+          recordData.payment,
+          recordData.note,
+          recordData.date
+        );
+        
+    } else if (recordType === 'expense') {
+      // Check if expense with same ID already exists
+      const existing = db.prepare('SELECT id FROM expenses WHERE id = ?').get(recordId);
+      if (existing) {
+        return res.status(409).json({ error: 'Pengeluaran dengan ID ini sudah ada' });
+      }
+      
+      // Restore expense with same ID
+      db.prepare(`INSERT INTO expenses 
+        (id, item, category, amount, date, note)
+        VALUES (?, ?, ?, ?, ?, ?)`)
+        .run(
+          recordId,
+          recordData.item,
+          recordData.category || '',
+          recordData.amount,
+          recordData.date,
+          recordData.note
+        );
+    } else {
+      return res.status(400).json({ error: 'Tipe data tidak didukung untuk restore' });
+    }
+    
+    // Delete from deletion_logs after successful restore
+    db.prepare('DELETE FROM deletion_logs WHERE id = ?').run(logId);
+    
+    res.json({ 
+      ok: true, 
+      message: `${recordType === 'transaction' ? 'Transaksi' : 'Pengeluaran'} berhasil dikembalikan dengan ID yang sama`,
+      restoredId: recordId,
+      recordType
+    });
+    
+  } catch (error) {
+    console.error('[Restore Error]', error.message);
+    res.status(500).json({ error: 'Gagal mengembalikan data: ' + error.message });
+  }
+});
+
 app.put('/api/transactions/:id', requireAuth, (req, res) => {
   const id = req.params.id;
   const tx = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);

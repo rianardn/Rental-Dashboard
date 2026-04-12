@@ -7144,113 +7144,110 @@
       openModal('modalTrashIncome');
     }
 
-    function renderTrashIncomeList() {
+    // Cache untuk data trash dari server (supaya tidak fetch berkali-kali)
+    let cachedTrashTransactions = [];
+
+    async function renderTrashIncomeList() {
       const container = document.getElementById('trashIncomeList');
       const emptyState = document.getElementById('trashIncomeEmpty');
       const countEl = document.getElementById('trashIncomeCount');
 
-      countEl.textContent = deletedTransactions.length;
+      // Loading state
+      container.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 20px;">⏳ Memuat...</p>';
 
-      if (deletedTransactions.length === 0) {
-        container.innerHTML = '';
-        emptyState.style.display = 'block';
-        return;
+      try {
+        // Ambil data dari server (deletion_logs) - sudah terurut dari server
+        const res = await api('GET', '/deletion-logs?recordType=transaction&limit=50');
+        if (!res.ok) {
+          throw new Error(res.error || 'Gagal memuat data sampah');
+        }
+
+        const logs = res.logs || [];
+        cachedTrashTransactions = logs; // Simpan untuk digunakan saat restore
+        countEl.textContent = logs.length;
+
+        if (logs.length === 0) {
+          container.innerHTML = '';
+          emptyState.style.display = 'block';
+          return;
+        }
+
+        emptyState.style.display = 'none';
+
+        container.innerHTML = logs.map((log, index) => {
+          const t = log.recordData;
+          const nomor = index + 1;
+          // Gunakan log.id (ID dari deletion_logs) untuk restore
+          return `
+          <div style="background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 14px; position: relative;" data-log-id="${log.id}">
+            <!-- Number Badge -->
+            <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red-dark, #8B0000); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
+
+            <!-- Row 1: Date (left) + Amount (right) -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
+              <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
+                ${formatDateOnlyWIB(t.endTime)}
+              </div>
+              <div style="color: var(--ps3-red); font-size: 1.15rem; font-weight: 600;">
+                ${formatMoney(t.paid)}
+              </div>
+            </div>
+
+            <!-- Row 2: Unit + Customer -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 0.85rem; color: var(--ps3-text);">🎮 ${t.unitName || 'Unknown'}</span>
+              </div>
+              <div style="font-size: 0.85rem; color: var(--ps3-muted);">
+                👤 ${t.customer || 'Unknown'}
+              </div>
+            </div>
+
+            <!-- Deleted Info -->
+            <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="font-size: 0.75rem; color: var(--ps3-muted);">Dihapus:</span>
+                <span style="font-size: 0.75rem; color: var(--ps3-red);">${formatTrashDateTime(log.deletedAt)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="font-size: 0.75rem; color: var(--ps3-muted);">Alasan:</span>
+                <span style="font-size: 0.75rem; color: var(--ps3-text);">${log.deleteReason || '-'}</span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 8px;">
+              <button onclick="restoreIncomeFromTrash(${log.id})" style="flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--ps3-green-dark); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                ♻️ Kembalikan
+              </button>
+            </div>
+          </div>
+          `;
+        }).join('');
+      } catch (error) {
+        container.innerHTML = `<p style="text-align: center; color: var(--ps3-red); padding: 20px;">❌ Error: ${escapeHtml(error.message)}</p>`;
       }
-
-      emptyState.style.display = 'none';
-
-      container.innerHTML = deletedTransactions.map((t, index) => {
-        const nomor = index + 1;
-        return `
-        <div style="background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 14px; position: relative;" data-trash-index="${index}">
-          <!-- Number Badge -->
-          <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red-dark, #8B0000); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
-
-          <!-- Row 1: Date (left) + Amount (right) -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
-            <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
-              ${formatDateOnlyWIB(t.endTime)}
-            </div>
-            <div style="color: var(--ps3-red); font-size: 1.15rem; font-weight: 600;">
-              ${formatMoney(t.paid)}
-            </div>
-          </div>
-
-          <!-- Row 2: Unit + Customer -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-size: 0.85rem; color: var(--ps3-text);">🎮 ${t.unitName || 'Unknown'}</span>
-            </div>
-            <div style="font-size: 0.85rem; color: var(--ps3-muted);">
-              👤 ${t.customer || 'Unknown'}
-            </div>
-          </div>
-
-          <!-- Deleted Info -->
-          <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 12px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span style="font-size: 0.75rem; color: var(--ps3-muted);">Dihapus:</span>
-              <span style="font-size: 0.75rem; color: var(--ps3-red);">${formatTrashDateTime(t.deletedAt)}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="font-size: 0.75rem; color: var(--ps3-muted);">Alasan:</span>
-              <span style="font-size: 0.75rem; color: var(--ps3-text);">${t.deleteReason || '-'}</span>
-            </div>
-          </div>
-
-          <!-- Action Buttons -->
-          <div style="display: flex; gap: 8px;">
-            <button onclick="restoreIncomeFromTrash(${index})" style="flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--ps3-green-dark); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
-              ♻️ Kembalikan
-            </button>
-          </div>
-        </div>
-        `;
-      }).join('');
     }
 
-    async function restoreIncomeFromTrash(index) {
-      const item = deletedTransactions[index];
-      if (!item) {
-        showToast('Transaksi tidak ditemukan di tempat sampah', 'error');
+    async function restoreIncomeFromTrash(logId) {
+      if (!logId) {
+        showToast('ID log tidak valid', 'error');
         return;
       }
 
       try {
-        // Hapus properti metadata penghapusan untuk membuat transaksi baru
-        const { id, deletedAt, deleteReason, deletedBy, ...restoredData } = item;
-
-        // Buat transaksi baru di server dengan data yang sama
-        const newTx = {
-          unitId: restoredData.unitId,
-          unitName: restoredData.unitName,
-          customer: restoredData.customer,
-          phone: restoredData.phone,
-          duration: restoredData.duration,
-          startTime: restoredData.startTime,
-          endTime: restoredData.endTime,
-          total: restoredData.total,
-          paid: restoredData.paid,
-          payment: restoredData.payment,
-          note: restoredData.note,
-          date: restoredData.date,
-          timestamp: restoredData.timestamp
-        };
-
-        const res = await api('POST', '/transactions', newTx);
+        // Gunakan endpoint baru untuk restore dengan ID yang sama
+        const res = await api('POST', `/deletion-logs/${logId}/restore`, {});
 
         if (!res.ok) {
-          throw new Error(res.error || 'Gagal membuat transaksi baru');
+          throw new Error(res.error || 'Gagal mengembalikan transaksi');
         }
 
-        // Hapus dari tempat sampah karena sudah berhasil dibuat ulang
-        deletedTransactions.splice(index, 1);
-
-        // Refresh data dari server untuk mendapatkan transaksi baru yang valid
+        // Refresh data dari server untuk mendapatkan transaksi yang sudah dikembalikan
         await loadData();
 
-        showToast('Transaksi berhasil dikembalikan dengan ID baru', 'success');
-        renderTrashIncomeList();
+        showToast(`Transaksi ${res.restoredId} berhasil dikembalikan dengan ID yang sama`, 'success');
+        renderTrashIncomeList(); // Refresh tampilan trash
         renderReports();
       } catch (error) {
         showToast('Gagal mengembalikan transaksi: ' + error.message, 'error');
