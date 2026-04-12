@@ -1901,75 +1901,14 @@
         </div>
       </div>
 
-      <!-- Inventory Section -->
-      <div class="card" style="margin-top: 20px;">
-        <div class="section-title">📦 Inventori & Peralatan</div>
-        <p style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 15px;">Kelola aset dan peralatan bisnis</p>
-        
-        <div class="form-group">
-          <label>Nama Item</label>
-          <input type="text" id="inventoryName" placeholder="Contoh: Stik PS3 Original">
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <div class="form-group">
-            <label>Kategori</label>
-            <select id="inventoryCategory">
-              <option value="">Pilih kategori...</option>
-              <option value="console">Console</option>
-              <option value="controller">Controller/Stik</option>
-              <option value="tv">TV/Monitor</option>
-              <option value="accessories">Aksesoris</option>
-              <option value="furniture">Furniture</option>
-              <option value="other">Lainnya</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Kondisi</label>
-            <select id="inventoryCondition">
-              <option value="excellent">Sangat Baik</option>
-              <option value="good" selected>Baik</option>
-              <option value="fair">Cukup</option>
-              <option value="poor">Kurang Baik</option>
-            </select>
-          </div>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <div class="form-group">
-            <label>Jumlah</label>
-            <input type="number" id="inventoryQty" value="1" min="1">
-          </div>
-          <div class="form-group">
-            <label>Satuan</label>
-            <input type="text" id="inventoryUnit" value="pcs" placeholder="pcs, unit, set">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Lokasi Penyimpanan</label>
-          <input type="text" id="inventoryLocation" placeholder="Contoh: Rak A, Lemari B">
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <div class="form-group">
-            <label>Tanggal Beli</label>
-            <input type="date" id="inventoryPurchaseDate">
-          </div>
-          <div class="form-group">
-            <label>Harga Beli (Rp)</label>
-            <input type="number" id="inventoryPurchasePrice" placeholder="0" min="0">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Catatan</label>
-          <input type="text" id="inventoryNote" placeholder="Catatan kondisi/riwayat">
-        </div>
-        <button class="btn" onclick="addInventory()">Tambah Inventori</button>
-      </div>
-      
       <!-- Inventory List -->
       <div class="card" style="margin-top: 20px;">
-        <div class="section-title">Daftar Inventori</div>
-        <div id="inventoryList" style="max-height: 300px; overflow-y: auto;">
+        <div class="section-title">📦 Daftar Inventori</div>
+        <p style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 15px;">Kelola aset dan peralatan bisnis</p>
+        <div id="inventoryList" style="max-height: 400px; overflow-y: auto; margin-bottom: 15px;">
           <p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada item inventori</p>
         </div>
+        <button class="btn" onclick="openModal('modalAddInventory')" style="width: 100%;">➕ Tambah Inventori</button>
       </div>
 
       <!-- Initial Capital Section -->
@@ -3245,6 +3184,79 @@
         </div>
 
         <button class="btn" onclick="closeModal('modalHistory')" style="width: 100%; margin-top: 15px;">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Tambah Inventori -->
+  <div id="modalAddInventory" class="modal" style="z-index: 3000;">
+    <div class="modal-content" style="max-width: 420px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div class="modal-title">➕ Tambah Inventori</div>
+        <button class="modal-close" onclick="closeModal('modalAddInventory')">×</button>
+      </div>
+
+      <div style="padding: 20px;">
+        <div class="form-group">
+          <label>Nama Item <span style="color: var(--ps3-red);">*</span></label>
+          <input type="text" id="inventoryName" placeholder="Contoh: Stik PS3 Original">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Kategori</label>
+            <select id="inventoryCategory">
+              <option value="">Pilih kategori...</option>
+              <option value="console">Console</option>
+              <option value="controller">Controller/Stik</option>
+              <option value="tv">TV/Monitor</option>
+              <option value="accessories">Aksesoris</option>
+              <option value="furniture">Furniture</option>
+              <option value="other">Lainnya</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Kondisi</label>
+            <select id="inventoryCondition">
+              <option value="excellent">Sangat Baik</option>
+              <option value="good" selected>Baik</option>
+              <option value="fair">Cukup</option>
+              <option value="poor">Kurang Baik</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Jumlah</label>
+            <input type="number" id="inventoryQty" value="1" min="1">
+          </div>
+          <div class="form-group">
+            <label>Satuan</label>
+            <input type="text" id="inventoryUnit" value="pcs" placeholder="pcs, unit, set">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Lokasi Penyimpanan</label>
+          <input type="text" id="inventoryLocation" placeholder="Contoh: Rak A, Lemari B">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Tanggal Beli</label>
+            <input type="date" id="inventoryPurchaseDate">
+          </div>
+          <div class="form-group">
+            <label>Harga Beli (Rp)</label>
+            <input type="number" id="inventoryPurchasePrice" placeholder="0" min="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Catatan</label>
+          <input type="text" id="inventoryNote" placeholder="Catatan kondisi/riwayat">
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 15px;">
+          <button class="btn-cancel" onclick="closeModal('modalAddInventory')" style="flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Batal</button>
+          <button class="btn-confirm" onclick="addInventory()" style="flex: 2; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Tambah Inventori</button>
+        </div>
       </div>
     </div>
   </div>
@@ -9752,6 +9764,7 @@
         
         await loadInventory();
         renderInventory();
+        closeModal('modalAddInventory');
         showToast('Item inventori ditambahkan', 'success');
       } catch (error) {
         showToast(error.message, 'error');
