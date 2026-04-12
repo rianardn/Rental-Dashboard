@@ -3270,13 +3270,24 @@
               <div id="calendarCustomerSuggestions" class="suggestions-dropdown" style="display: none;"></div>
             </div>
 
-            <select
-              id="calendarFilterUnit"
-              onchange="handleCalendarSearch()"
-              style="background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px 12px; font-size: 0.85rem; font-family: inherit; cursor: pointer;"
-            >
-              <option value="">🎮 Semua Unit</option>
-            </select>
+            <div style="position: relative;">
+              <select
+                id="calendarFilterUnit"
+                onchange="onCalendarUnitChange()"
+                style="width: 100%; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px 12px; font-size: 0.85rem; font-family: inherit; cursor: pointer;"
+              >
+                <option value="">🎮 Semua Unit</option>
+                <option value="__CUSTOM__">✏️ Custom...</option>
+              </select>
+              <!-- Custom Unit Input (hidden by default) -->
+              <input
+                type="text"
+                id="calendarFilterUnitCustom"
+                placeholder="Ketik nama unit..."
+                oninput="handleCalendarSearch()"
+                style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px 12px; font-size: 0.85rem; font-family: inherit;"
+              >
+            </div>
           </div>
 
           <!-- Clear Search Button -->
@@ -8340,12 +8351,18 @@
 
     function openScheduleCalendarModal() {
       calendarFilter = { year: null, month: null, date: null };
-      calendarSearch = { txId: '', customer: '', unit: '' };
+      calendarSearch = { txId: '', customer: '', unit: '', isCustomUnit: false };
       // Reset search inputs
       document.getElementById('calendarSearchTxId').value = '';
       document.getElementById('calendarFilterCustomer').value = '';
       document.getElementById('calendarCustomerSuggestions').style.display = 'none';
-      document.getElementById('calendarFilterUnit').value = '';
+      // Reset unit filter to dropdown (not custom input)
+      const unitSelect = document.getElementById('calendarFilterUnit');
+      const customUnitInput = document.getElementById('calendarFilterUnitCustom');
+      unitSelect.value = '';
+      unitSelect.style.display = 'block';
+      customUnitInput.value = '';
+      customUnitInput.style.display = 'none';
       document.getElementById('calendarSearchActions').style.display = 'none';
       buildScheduleCalendar();
       openModal('modalScheduleCalendar');
@@ -8356,11 +8373,20 @@
       const txIdInput = document.getElementById('calendarSearchTxId');
       const customerInput = document.getElementById('calendarFilterCustomer');
       const unitSelect = document.getElementById('calendarFilterUnit');
+      const customUnitInput = document.getElementById('calendarFilterUnitCustom');
       const searchActions = document.getElementById('calendarSearchActions');
 
       calendarSearch.txId = txIdInput.value.trim().toLowerCase();
       calendarSearch.customer = customerInput.value.trim(); // Text input value
-      calendarSearch.unit = unitSelect.value;
+      
+      // Check if using custom unit input
+      if (unitSelect.value === '__CUSTOM__' && customUnitInput.style.display !== 'none') {
+        calendarSearch.unit = customUnitInput.value.trim(); // Use custom input value
+        calendarSearch.isCustomUnit = true;
+      } else {
+        calendarSearch.unit = unitSelect.value;
+        calendarSearch.isCustomUnit = false;
+      }
 
       // Show/hide clear button
       const hasSearch = calendarSearch.txId || calendarSearch.customer || calendarSearch.unit;
@@ -8371,11 +8397,19 @@
     }
 
     function clearCalendarSearch() {
-      calendarSearch = { txId: '', customer: '', unit: '' };
+      calendarSearch = { txId: '', customer: '', unit: '', isCustomUnit: false };
       document.getElementById('calendarSearchTxId').value = '';
       document.getElementById('calendarFilterCustomer').value = '';
       document.getElementById('calendarCustomerSuggestions').style.display = 'none';
-      document.getElementById('calendarFilterUnit').value = '';
+      
+      // Reset unit filter to dropdown
+      const unitSelect = document.getElementById('calendarFilterUnit');
+      const customUnitInput = document.getElementById('calendarFilterUnitCustom');
+      unitSelect.value = '';
+      unitSelect.style.display = 'block';
+      customUnitInput.value = '';
+      customUnitInput.style.display = 'none';
+      
       document.getElementById('calendarSearchActions').style.display = 'none';
       filterCalendarSchedules();
     }
@@ -8397,15 +8431,39 @@
       calendarUniqueCustomers = Array.from(customers).sort();
       const sortedUnits = Array.from(units).sort();
 
-      // Build unit options (customer is now text input with autocomplete)
+      // Build unit options (preserve Custom option)
       const unitSelect = document.getElementById('calendarFilterUnit');
       const currentUnit = unitSelect.value;
+      const isCustomActive = currentUnit === '__CUSTOM__';
+      
       let unitHtml = '<option value="">🎮 Semua Unit</option>';
       sortedUnits.forEach(unit => {
         const isSelected = currentUnit === unit ? 'selected' : '';
         unitHtml += `<option value="${escapeHtml(unit)}" ${isSelected}>${escapeHtml(unit)}</option>`;
       });
+      // Add Custom option (always last)
+      unitHtml += `<option value="__CUSTOM__" ${isCustomActive ? 'selected' : ''}>✏️ Custom...</option>`;
       unitSelect.innerHTML = unitHtml;
+    }
+
+    // ═════════════════ Calendar Unit Custom Input Handler ═════════════════
+    function onCalendarUnitChange() {
+      const unitSelect = document.getElementById('calendarFilterUnit');
+      const customInput = document.getElementById('calendarFilterUnitCustom');
+      
+      if (unitSelect.value === '__CUSTOM__') {
+        // Show custom input, hide select
+        unitSelect.style.display = 'none';
+        customInput.style.display = 'block';
+        customInput.focus();
+        // Clear any previous custom value
+        customInput.value = '';
+      } else {
+        // Hide custom input, show select
+        customInput.style.display = 'none';
+        unitSelect.style.display = 'block';
+        handleCalendarSearch();
+      }
     }
 
     // ═════════════════ Calendar Customer Autocomplete ═════════════════
@@ -8743,7 +8801,11 @@
       }
 
       if (calendarSearch.unit) {
-        filtered = filtered.filter(s => s.unitName === calendarSearch.unit);
+        const searchUnit = calendarSearch.unit.toLowerCase();
+        filtered = filtered.filter(s => {
+          const unitMatch = s.unitName && s.unitName.toLowerCase().includes(searchUnit);
+          return unitMatch;
+        });
       }
 
       // Sort by date then time
