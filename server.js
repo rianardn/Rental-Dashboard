@@ -647,7 +647,7 @@ app.post('/api/units/:id/start', requireAuth, (req, res) => {
             unitName: schedule.unitName,
             note: schedule.note
           },
-          message: `Unit memiliki booking aktif dari ${schedule.customer} (${bookingStartStr}-${bookingEndStr}). Aktifkan unit akan membatalkan booking ini.`,
+          message: `Unit memiliki booking aktif dari <strong>${schedule.customer}</strong> (<strong>${bookingStartStr}-${bookingEndStr}</strong>). Aktifkan unit akan membatalkan booking ini.`,
           error: `Unit memiliki booking aktif dari ${schedule.customer} pada ${schedule.scheduledDate} pukul ${schedule.scheduledTime}-${scheduleEndStr}. Aktifkan unit akan membatalkan booking ini.`
         });
       } else {
