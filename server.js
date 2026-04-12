@@ -414,9 +414,11 @@ if (db) {
 
 // ═══════════════════════════════════════════════════════════════
 // AUTO CLEANUP: Delete completed schedules at midnight
-// Handles Fly.io auto-off: cleanup runs on startup if past midnight
+// Also delete cancelled schedules from trash after 7 days
+// Handles Fly.io auto-off: cleanup runs on startup if missed
 // ═══════════════════════════════════════════════════════════════
 const CLEANUP_SETTINGS_KEY = 'lastCompletedCleanup';
+const TRASH_CLEANUP_SETTINGS_KEY = 'lastTrashCleanup';
 
 function getWIBDate(date = new Date()) {
   const wibOffset = 7 * 60 * 60 * 1000;
@@ -450,6 +452,32 @@ function cleanupCompletedSchedules() {
   }
 }
 
+function cleanupTrashSchedules() {
+  try {
+    const today = formatWIBDate(getWIBDate());
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000); // 7 days in milliseconds
+
+    // Delete cancelled schedules older than 7 days from deleted_records
+    const result = db.prepare(`
+      DELETE FROM deleted_records 
+      WHERE recordType = 'schedule' 
+      AND json_extract(recordData, '$.status') = 'cancelled'
+      AND deletedAt < ?
+    `).run(sevenDaysAgo);
+
+    // Save last trash cleanup timestamp
+    updateSetting(TRASH_CLEANUP_SETTINGS_KEY, Date.now());
+
+    if (result.changes > 0) {
+      console.log(`[Trash Cleanup] Deleted ${result.changes} cancelled schedule(s) older than 7 days at ${today} WIB`);
+    } else {
+      console.log(`[Trash Cleanup] No old cancelled schedules to delete at ${today} WIB`);
+    }
+  } catch (error) {
+    console.error('[Trash Cleanup] Error deleting old cancelled schedules:', error.message);
+  }
+}
+
 function shouldRunCleanup() {
   const settings = getSettings();
   const lastCleanup = settings[CLEANUP_SETTINGS_KEY] || 0;
@@ -470,11 +498,40 @@ function shouldRunCleanup() {
   return lastCleanup === 0 || todayMidnight > lastCleanupDay;
 }
 
+function shouldRunTrashCleanup() {
+  const settings = getSettings();
+  const lastTrashCleanup = settings[TRASH_CLEANUP_SETTINGS_KEY] || 0;
+  const now = Date.now();
+  const wibNow = getWIBDate(new Date(now));
+  const wibLast = getWIBDate(new Date(lastTrashCleanup));
+
+  // Get midnight timestamps for comparison
+  const todayMidnight = new Date(wibNow);
+  todayMidnight.setHours(0, 0, 0, 0);
+
+  const lastCleanupDay = new Date(wibLast);
+  lastCleanupDay.setHours(0, 0, 0, 0);
+
+  // Run cleanup if:
+  // 1. Never run before (lastTrashCleanup === 0)
+  // 2. Last cleanup was on a different day
+  return lastTrashCleanup === 0 || todayMidnight > lastCleanupDay;
+}
+
+function runAllCleanups() {
+  // Run both cleanup functions
+  cleanupCompletedSchedules();
+  cleanupTrashSchedules();
+}
+
 function scheduleMidnightCleanup() {
   // Check if we missed cleanup while machine was off
-  if (shouldRunCleanup()) {
+  const missedCompleted = shouldRunCleanup();
+  const missedTrash = shouldRunTrashCleanup();
+
+  if (missedCompleted || missedTrash) {
     console.log('[Cleanup] Running missed cleanup on startup...');
-    cleanupCompletedSchedules();
+    runAllCleanups();
   }
 
   const wibNow = getWIBDate();
@@ -490,9 +547,9 @@ function scheduleMidnightCleanup() {
 
   // Schedule cleanup at midnight
   setTimeout(() => {
-    cleanupCompletedSchedules();
+    runAllCleanups();
     // Then schedule daily cleanup every 24 hours
-    setInterval(cleanupCompletedSchedules, 24 * 60 * 60 * 1000);
+    setInterval(runAllCleanups, 24 * 60 * 60 * 1000);
   }, msUntilMidnight);
 }
 
