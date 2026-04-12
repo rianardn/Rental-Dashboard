@@ -7203,9 +7203,6 @@
             <button onclick="restoreIncomeFromTrash(${index})" style="flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--ps3-green-dark); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
               ♻️ Kembalikan
             </button>
-            <button onclick="deleteIncomePermanently(${index})" style="flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--ps3-red); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
-              🗑️ Hapus
-            </button>
           </div>
         </div>
         `;
@@ -7237,28 +7234,6 @@
         renderReports();
       } catch (error) {
         showToast('Gagal mengembalikan transaksi: ' + error.message, 'error');
-      }
-    }
-
-    async function deleteIncomePermanently(index) {
-      const item = deletedTransactions[index];
-      if (!item) {
-        showToast('Transaksi tidak ditemukan di tempat sampah', 'error');
-        return;
-      }
-
-      if (!confirm(`Yakin ingin menghapus permanen transaksi ini?\n\nUnit: ${item.unitName || 'Unknown'}\nPelanggan: ${item.customer || 'Unknown'}\nJumlah: ${formatMoney(item.paid)}\n\nTindakan ini tidak dapat dibatalkan!`)) {
-        return;
-      }
-
-      try {
-        // Hapus dari tempat sampah
-        deletedTransactions.splice(index, 1);
-
-        showToast('Transaksi berhasil dihapus permanen', 'success');
-        renderTrashIncomeList();
-      } catch (error) {
-        showToast('Gagal menghapus permanen: ' + error.message, 'error');
       }
     }
 
