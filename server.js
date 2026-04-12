@@ -398,6 +398,20 @@ if (db) {
   }
 }
 
+// Migration: Add phone column to transactions table if not exists
+if (db) {
+  try {
+    const txInfo = db.prepare(`PRAGMA table_info(transactions)`).all();
+    const hasPhone = txInfo.find(c => c.name === 'phone');
+    if (!hasPhone) {
+      db.prepare(`ALTER TABLE transactions ADD COLUMN phone TEXT`).run();
+      console.log('[DB] Migration: Added phone column to transactions');
+    }
+  } catch (e) {
+    console.error('[DB] Migration error for transactions phone column:', e.message);
+  }
+}
+
 // ─── HELPERS ───────────────────────────────────────────────────
 function getSettings() {
   const rows = db.prepare('SELECT key, value FROM settings').all();
@@ -894,49 +908,108 @@ app.put('/api/transactions/:id', requireAuth, (req, res) => {
   const id = req.params.id;
   const tx = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
   if (!tx) return res.status(404).json({ error: 'Transaction not found' });
-  
+
   // Support both formats: {updates: {...}, reason: ...} or direct field updates
   const inputUpdates = req.body.updates || req.body;
   const editReason = req.body.reason || req.body.editReason || '-';
   const editedBy = req.body.editedBy || 'admin';
-  
+
   // Map frontend field names to database columns
   const fieldMapping = {
     'customer': 'customer',
+    'phone': 'phone',
     'paid': 'paid',           // DB column is 'paid', not 'total'
     'duration': 'durationMin', // DB column is 'durationMin', not 'duration'
-    'payment': 'payment'
+    'payment': 'payment',
+    'note': 'note',
+    'unitId': 'unitId',
+    'unitName': 'unitName',
+    'timestamp': 'startTime',  // Maps to startTime
+    'startTime': 'startTime',
+    'endTime': 'endTime'
   };
-  
+
   // Build update fields with proper mapping + track changes for audit log
   const dbFields = [];
   const dbValues = [];
   const editLogs = [];
-  
-  for (const [field, value] of Object.entries(inputUpdates)) {
-    if (field === 'id' || typeof value === 'object') continue;
-    const dbField = fieldMapping[field] || field;
-    // Only update if value actually changed
-    if (tx[dbField] !== value) {
+
+  // Helper to track changes
+  const trackChange = (field, dbField, value) => {
+    const oldVal = tx[dbField];
+    // Convert for comparison (handle numbers vs strings)
+    const oldValStr = oldVal !== null && oldVal !== undefined ? String(oldVal) : '';
+    const newValStr = value !== null && value !== undefined ? String(value) : '';
+    if (oldValStr !== newValStr) {
       dbFields.push(`${dbField} = ?`);
       dbValues.push(value);
-      // Log the edit for audit trail
       editLogs.push({
         transactionId: id,
         fieldName: field,
-        oldValue: String(tx[dbField] || ''),
-        newValue: String(value),
+        oldValue: oldValStr,
+        newValue: newValStr,
         editReason,
         editedAt: Date.now(),
         editedBy
       });
     }
+  };
+
+  // Process each field from input
+  for (const [field, value] of Object.entries(inputUpdates)) {
+    if (field === 'id' || field === 'reason' || field === 'editReason' || field === 'editedBy' || typeof value === 'object') continue;
+
+    const dbField = fieldMapping[field];
+    if (!dbField) continue; // Skip unknown fields
+
+    // Handle special cases
+    if (field === 'timestamp' && value) {
+      const ts = parseInt(value);
+      if (!isNaN(ts)) {
+        trackChange('timestamp', 'startTime', ts);
+        trackChange('date', 'date', new Date(ts).toISOString().split('T')[0]);
+      }
+    } else if (field === 'duration' && value !== undefined) {
+      const duration = parseInt(value);
+      if (!isNaN(duration)) {
+        trackChange('duration', 'durationMin', duration);
+        // Recalculate endTime if we have startTime
+        if (inputUpdates.startTime || inputUpdates.timestamp || tx.startTime) {
+          const startTs = parseInt(inputUpdates.startTime || inputUpdates.timestamp || tx.startTime);
+          if (!isNaN(startTs)) {
+            const endTs = startTs + (duration * 60000);
+            trackChange('endTime', 'endTime', endTs);
+          }
+        }
+      }
+    } else if (field === 'unitId' && value !== undefined) {
+      const unitId = parseInt(value);
+      if (!isNaN(unitId) && unitId !== tx.unitId) {
+        trackChange('unitId', 'unitId', unitId);
+        // Lookup unit name
+        const unit = db.prepare('SELECT name FROM units WHERE id = ?').get(unitId);
+        if (unit && unit.name !== tx.unitName) {
+          trackChange('unitName', 'unitName', unit.name);
+        }
+      }
+    } else {
+      // Standard field mapping
+      trackChange(field, dbField, value);
+    }
   }
-  
+
+  // Handle endTime if explicitly provided (and not already set via duration calculation)
+  if (inputUpdates.endTime !== undefined && !dbFields.find(f => f.includes('endTime'))) {
+    const endTs = parseInt(inputUpdates.endTime);
+    if (!isNaN(endTs)) {
+      trackChange('endTime', 'endTime', endTs);
+    }
+  }
+
   if (dbFields.length > 0) {
     const setClause = dbFields.join(', ');
     db.prepare(`UPDATE transactions SET ${setClause} WHERE id = ?`).run(...dbValues, id);
-    
+
     // Insert edit logs to audit trail
     const logStmt = db.prepare(`
       INSERT INTO edit_logs (transactionId, fieldName, oldValue, newValue, editReason, editedAt, editedBy)
@@ -946,11 +1019,11 @@ app.put('/api/transactions/:id', requireAuth, (req, res) => {
       logStmt.run(log.transactionId, log.fieldName, log.oldValue, log.newValue, log.editReason, log.editedAt, log.editedBy);
     }
   }
-  
-  res.json({ 
-    ok: true, 
+
+  res.json({
+    ok: true,
     changes: editLogs.length,
-    tx: db.prepare('SELECT * FROM transactions WHERE id = ?').get(id) 
+    tx: db.prepare('SELECT * FROM transactions WHERE id = ?').get(id)
   });
 });
 
