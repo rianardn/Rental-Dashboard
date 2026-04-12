@@ -7601,11 +7601,13 @@
       }
 
       try {
-        const response = await api('PUT', `/schedules/${currentEditScheduleId}`, {
-          updates,
+        // Flatten updates to match backend expectation (fields directly in body, not nested)
+        const payload = {
+          ...updates,
           reason,
           editedBy: 'admin'
-        });
+        };
+        const response = await api('PUT', `/schedules/${currentEditScheduleId}`, payload);
 
         if (response.ok) {
           showToast(`Jadwal diperbarui (${response.changes} perubahan)`, 'success');
