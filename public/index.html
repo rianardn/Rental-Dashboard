@@ -837,6 +837,35 @@
       border-color: var(--ps3-red);
     }
 
+    /* Disabled/Readonly Inputs - Darker styling for non-editable fields */
+    .form-group input:disabled,
+    .form-group input[readonly],
+    .form-group select:disabled,
+    .form-group textarea:disabled,
+    .form-group textarea[readonly] {
+      background: rgba(0,0,0,0.4);
+      border-color: rgba(128,128,128,0.2);
+      color: rgba(192,192,192,0.6);
+      cursor: not-allowed;
+    }
+
+    .form-group input:disabled:hover,
+    .form-group input[readonly]:hover,
+    .form-group select:disabled:hover,
+    .form-group textarea:disabled:hover,
+    .form-group textarea[readonly]:hover {
+      border-color: rgba(128,128,128,0.2);
+    }
+
+    /* Label styling for disabled fields */
+    .form-group:has(input:disabled) label,
+    .form-group:has(input[readonly]) label,
+    .form-group:has(select:disabled) label,
+    .form-group:has(textarea:disabled) label,
+    .form-group:has(textarea[readonly]) label {
+      color: rgba(128,128,128,0.5);
+    }
+
     .form-group small {
       display: block;
       font-size: 0.7rem;
@@ -2332,7 +2361,7 @@
             </div>
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Jam Selesai (Auto)</label>
-              <input type="time" id="editEndTime" style="width: 100%; background: rgba(192,192,192,0.1); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" readonly>
+              <input type="time" id="editEndTime" readonly>
             </div>
           </div>
 
