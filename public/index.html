@@ -8374,7 +8374,7 @@
                 <button onclick="openCancelScheduleModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-red-danger); border: 1px solid var(--ps3-red-danger); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-red-danger)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-red-danger)'">❌ Batal</button>
               ` : ''}
               ${s.status === 'pending' || s.status === 'running' ? `<button onclick="openEditScheduleModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-yellow); border: 1px solid var(--ps3-yellow); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-yellow)';this.style.color='#000'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-yellow)'">✏️ Edit</button>` : ''}
-              ${s.editCount > 0 ? `<button onclick="openScheduleHistoryModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-silver); border: 1px solid var(--ps3-border); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-blue)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-silver)'">📜 Riwayat</button>` : ''}
+              ${s.editCount > 0 ? `<button onclick="openScheduleHistoryModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-silver); border: 1px solid var(--ps3-border); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-blue)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-silver)'">📜 Riwayat Edit</button>` : ''}
             </div>
           </div>
         `;
@@ -9403,7 +9403,7 @@
       const modalTitle = document.querySelector('#modalEditSchedule .modal-title');
       if (modalTitle) {
         const txId = schedule?.scheduleId || '';
-        modalTitle.innerHTML = `📜 Riwayat: ${schedule?.customer || 'Jadwal'} <span onclick="copyToClipboard('${txId}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem; margin-left: 8px;">${txId}</span>`;
+        modalTitle.innerHTML = `📜 Riwayat Edit: ${schedule?.customer || 'Jadwal'} <span onclick="copyToClipboard('${txId}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem; margin-left: 8px;">${txId}</span>`;
       }
 
       // Hide Step 1 and Step 2, show only Step 3
