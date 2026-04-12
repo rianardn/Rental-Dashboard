@@ -1474,6 +1474,37 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
     });
   }
   
+  // SPECIAL CASE: If status is being changed to 'cancelled', move to trash instead of updating
+  if (status === 'cancelled') {
+    const cancelReason = reason || editReason || 'Dibatalkan';
+
+    // Log cancellation to deletion_logs (trash)
+    try {
+      db.prepare(`
+        INSERT INTO deletion_logs (recordType, recordId, recordData, deleteReason, deletedAt, deletedBy)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        'schedule',
+        existing.scheduleId || scheduleId,
+        JSON.stringify(existing),
+        cancelReason,
+        Date.now(),
+        editedBy || 'admin'
+      );
+    } catch (e) {
+      console.error('[Audit] Failed to log schedule cancellation:', e.message);
+    }
+
+    // Delete from schedules table
+    db.prepare('DELETE FROM schedules WHERE id = ?').run(scheduleId);
+
+    return res.json({
+      ok: true,
+      message: 'Jadwal dibatalkan dan dipindahkan ke sampah',
+      cancelled: true
+    });
+  }
+
   // Use existing values if not provided (partial update support)
   const updateCustomer = customer !== undefined ? customer : existing.customer;
   const updatePhone = phone !== undefined ? phone : existing.phone;
@@ -1486,7 +1517,7 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
   const updateDuration = duration !== undefined ? durationMinutes : existing.duration;
   const updateNote = note !== undefined ? note : existing.note;
   const updateStatus = status !== undefined ? status : existing.status;
-  
+
   // Track changes for audit trail
   const editLogs = [];
   const trackChange = (fieldName, oldVal, newVal) => {
@@ -1499,7 +1530,7 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
       });
     }
   };
-  
+
   // Track all field changes
   trackChange('customer', existing.customer, updateCustomer);
   trackChange('phone', existing.phone, updatePhone);
@@ -1605,7 +1636,7 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
 app.get('/api/schedules/deleted', requireAuth, (req, res) => {
   try {
     const deleted = db.prepare(`
-      SELECT 
+      SELECT
         id,
         recordId as originalId,
         json_extract(recordData, '$.customer') as customer,
@@ -1614,13 +1645,16 @@ app.get('/api/schedules/deleted', requireAuth, (req, res) => {
         json_extract(recordData, '$.unitName') as unitName,
         json_extract(recordData, '$.scheduledDate') as scheduledDate,
         json_extract(recordData, '$.scheduledTime') as scheduledTime,
+        json_extract(recordData, '$.scheduledEndDate') as scheduledEndDate,
+        json_extract(recordData, '$.scheduledEndTime') as scheduledEndTime,
         json_extract(recordData, '$.duration') as duration,
         json_extract(recordData, '$.note') as note,
         json_extract(recordData, '$.status') as status,
+        json_extract(recordData, '$.scheduleId') as scheduleId,
         deleteReason,
         deletedAt,
         deletedBy
-      FROM deletion_logs 
+      FROM deletion_logs
       WHERE recordType = 'schedule'
       ORDER BY deletedAt DESC
     `).all();
