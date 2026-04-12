@@ -6530,13 +6530,13 @@
                   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <span style="font-weight: 700; color: var(--ps3-text);">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
                     ${item.originalId ? `
-                      <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
-                      <span onclick="copyToClipboard('${item.originalId}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${item.originalId}</span>
+                      <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; color: var(--ps3-muted);">TX ID:</span>
+                      <span onclick="copyToClipboard('${item.originalId}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem; color: var(--ps3-silver);">${item.originalId}</span>
                     ` : ''}
                   </div>
                   ${item.phone ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">📞 ${item.phone}</div>` : ''}
                 </div>
-                <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.badgeBg}; color: ${badge.color}; font-weight: 600; white-space: nowrap; border: 1px solid ${badge.badgeBg};">${badge.text}</span>
+                <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.badgeBg}; color: ${badge.color}; font-weight: 600; white-space: nowrap;">${badge.text}</span>
               </div>
               <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
                 ${formattedDate}
@@ -6544,7 +6544,7 @@
               <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
                 ${formattedTime}
               </div>
-              ${item.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${escapeHtml(item.unitName)}</div>` : ''}
+              ${item.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${escapeHtml(item.unitName)} ${item.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem;">● AKTIF</span>' : ''}</div>` : ''}
               ${item.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${escapeHtml(item.note)}</div>` : ''}
               <div style="font-size: 0.75rem; color: var(--ps3-red); margin-top: 6px; padding: 4px 8px; background: rgba(230, 0, 18, 0.1); border-radius: 4px; border: 1px solid rgba(230, 0, 18, 0.3);">
                 🗑️ Dihapus: ${deletedDate}
