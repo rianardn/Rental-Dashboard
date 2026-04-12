@@ -1839,6 +1839,10 @@ app.delete('/api/schedules/:id', requireAuth, (req, res) => {
     return res.status(404).json({ ok: false, error: 'Jadwal tidak ditemukan' });
   }
   
+  // Update status to 'cancelled' before logging deletion
+  // This ensures deleted schedules show correct status in trash
+  schedule.status = 'cancelled';
+  
   // Log deletion to deletion_logs
   try {
     db.prepare(`
