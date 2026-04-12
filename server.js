@@ -412,6 +412,58 @@ if (db) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// AUTO CLEANUP: Delete completed schedules at midnight
+// ═══════════════════════════════════════════════════════════════
+function cleanupCompletedSchedules() {
+  try {
+    // Get today's date in WIB (UTC+7)
+    const now = new Date();
+    const wibOffset = 7 * 60 * 60 * 1000; // 7 hours in milliseconds
+    const wibTime = new Date(now.getTime() + wibOffset);
+    const today = wibTime.toISOString().split('T')[0];
+
+    // Delete completed schedules
+    const result = db.prepare(`
+      DELETE FROM schedules 
+      WHERE status = 'completed'
+    `).run();
+
+    if (result.changes > 0) {
+      console.log(`[Cleanup] Deleted ${result.changes} completed schedule(s) at ${today} WIB`);
+    }
+  } catch (error) {
+    console.error('[Cleanup] Error deleting completed schedules:', error.message);
+  }
+}
+
+function scheduleMidnightCleanup() {
+  const now = new Date();
+  const wibOffset = 7 * 60 * 60 * 1000;
+  const wibTime = new Date(now.getTime() + wibOffset);
+
+  // Calculate time until next midnight (00:00:00) in WIB
+  const tomorrow = new Date(wibTime);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+
+  const msUntilMidnight = tomorrow - wibTime;
+
+  console.log(`[Cleanup] Scheduled cleanup in ${Math.floor(msUntilMidnight / 1000 / 60)} minutes (${tomorrow.toISOString().split('T')[0]} WIB)`);
+
+  // Schedule first cleanup at midnight
+  setTimeout(() => {
+    cleanupCompletedSchedules();
+    // Then schedule daily cleanup every 24 hours
+    setInterval(cleanupCompletedSchedules, 24 * 60 * 60 * 1000);
+  }, msUntilMidnight);
+}
+
+// Start cleanup scheduler if database is ready
+if (db) {
+  scheduleMidnightCleanup();
+}
+
 // ─── HELPERS ───────────────────────────────────────────────────
 function getSettings() {
   const rows = db.prepare('SELECT key, value FROM settings').all();
