@@ -2026,6 +2026,75 @@ app.delete('/api/capital/expenses/:id', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── ROI STATS ──────────────────────────────────────────────────
+app.get('/api/stats/roi', requireAuth, (req, res) => {
+  try {
+    // Get daily revenue data
+    const dailyRevenue = db.prepare(`
+      SELECT 
+        date(endTime) as day,
+        SUM(paid) as revenue
+      FROM transactions
+      WHERE endTime IS NOT NULL
+      GROUP BY date(endTime)
+      ORDER BY day DESC
+      LIMIT 30
+    `).all();
+
+    // Get capital data
+    const capital = db.prepare('SELECT SUM(amount) as total FROM capital').get();
+    const capitalExpenses = db.prepare('SELECT SUM(amount) as total FROM capital_expenses').get();
+    
+    const totalCapital = capital?.total || 0;
+    const totalSpent = capitalExpenses?.total || 0;
+    const remaining = totalCapital - totalSpent;
+
+    // Calculate projections
+    const revenues = dailyRevenue.map(d => d.revenue).filter(r => r > 0);
+    const avgDailyRevenue = revenues.length > 0 
+      ? revenues.reduce((a, b) => a + b, 0) / revenues.length 
+      : 0;
+    
+    // Median calculation
+    const sortedRevenues = [...revenues].sort((a, b) => a - b);
+    const medianDailyRevenue = sortedRevenues.length > 0
+      ? sortedRevenues.length % 2 === 0
+        ? (sortedRevenues[sortedRevenues.length / 2 - 1] + sortedRevenues[sortedRevenues.length / 2]) / 2
+        : sortedRevenues[Math.floor(sortedRevenues.length / 2)]
+      : 0;
+
+    // Days to break even
+    const daysToBreakEvenAvg = avgDailyRevenue > 0 
+      ? Math.ceil(totalSpent / avgDailyRevenue) 
+      : 0;
+    const daysToBreakEvenMedian = medianDailyRevenue > 0 
+      ? Math.ceil(totalSpent / medianDailyRevenue) 
+      : 0;
+
+    // Monthly projections (30 days)
+    const monthlyProfitAvg = (avgDailyRevenue * 30) - (remaining > 0 ? 0 : Math.abs(remaining) / 12);
+    const monthlyProfitMedian = (medianDailyRevenue * 30) - (remaining > 0 ? 0 : Math.abs(remaining) / 12);
+
+    res.json({
+      projections: {
+        avgDailyRevenue,
+        medianDailyRevenue,
+        daysToBreakEvenAvg,
+        daysToBreakEvenMedian,
+        monthlyProfitAvg,
+        monthlyProfitMedian,
+        totalCapital,
+        totalSpent,
+        remaining
+      },
+      dailyHistory: dailyRevenue.slice(0, 7) // Last 7 days
+    });
+  } catch (err) {
+    console.error('ROI stats error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── ERROR HANDLING MIDDLEWARE ───────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('Error:', err);
