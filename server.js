@@ -294,6 +294,17 @@ try {
       // Column might already exist, ignore error
     }
   }
+  
+  // Add scheduleId column for schedule audit trail
+  const scheduleIdCol = tableInfo.find(c => c.name === 'scheduleId');
+  if (!scheduleIdCol) {
+    try {
+      db.prepare(`ALTER TABLE edit_logs ADD COLUMN scheduleId TEXT`).run();
+      console.log('[DB] Migration: Added scheduleId column to edit_logs');
+    } catch (e) {
+      // Column might already exist, ignore error
+    }
+  }
 } catch (e) {
   console.error('[DB] Migration error:', e.message);
 }
@@ -1371,8 +1382,10 @@ app.post('/api/schedules', requireAuth, (req, res) => {
 
 app.put('/api/schedules/:id', requireAuth, (req, res) => {
   const scheduleId = req.params.id;
-  const { customer, phone, unitId, unitName, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status } = req.body;
+  const { customer, phone, unitId, unitName, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status, reason, editReason, editedBy } = req.body;
   const durationMinutes = parseInt(duration) || 0;
+  const editReasonText = reason || editReason || '-';
+  const editor = editedBy || 'admin';
   
   // Get existing schedule first for partial updates
   const existing = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
@@ -1393,8 +1406,33 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
   const updateNote = note !== undefined ? note : existing.note;
   const updateStatus = status !== undefined ? status : existing.status;
   
+  // Track changes for audit trail
+  const editLogs = [];
+  const trackChange = (fieldName, oldVal, newVal) => {
+    if (String(oldVal || '') !== String(newVal || '')) {
+      editLogs.push({
+        scheduleId: existing.scheduleId || scheduleId,
+        fieldName,
+        oldValue: String(oldVal || ''),
+        newValue: String(newVal || '')
+      });
+    }
+  };
+  
+  // Track all field changes
+  trackChange('customer', existing.customer, updateCustomer);
+  trackChange('phone', existing.phone, updatePhone);
+  trackChange('unitId', existing.unitId, updateUnitId);
+  trackChange('unitName', existing.unitName, updateUnitName);
+  trackChange('scheduledDate', existing.scheduledDate, updateScheduledDate);
+  trackChange('scheduledTime', existing.scheduledTime, updateScheduledTime);
+  trackChange('scheduledEndDate', existing.scheduledEndDate, updateScheduledEndDate);
+  trackChange('scheduledEndTime', existing.scheduledEndTime, updateScheduledEndTime);
+  trackChange('duration', existing.duration, updateDuration);
+  trackChange('note', existing.note, updateNote);
+  trackChange('status', existing.status, updateStatus);
+  
   // Conflict detection for updates: Check if unit is already booked for overlapping time (excluding current schedule)
-  // Uses datetime comparison for multi-day bookings
   if (updateUnitId && updateScheduledDate && updateScheduledTime) {
     let newStartDateTime = new Date(`${updateScheduledDate}T${updateScheduledTime}`);
     let newEndDateTime;
@@ -1406,7 +1444,6 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
     }
     
     if (newEndDateTime) {
-      // Get existing schedules for overlapping dates and unit (excluding current)
       const existingSchedules = db.prepare(
         `SELECT * FROM schedules 
          WHERE unitId = ? AND status != ? AND id != ?
@@ -1420,7 +1457,6 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
       for (const exist of existingSchedules) {
         if (!exist.scheduledTime) continue;
         
-        // Calculate existing booking datetime range
         let existStartDateTime = new Date(`${exist.scheduledDate}T${exist.scheduledTime}`);
         let existEndDateTime;
         
@@ -1432,7 +1468,6 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
           continue;
         }
         
-        // Check for overlap: (StartA < EndB) && (EndA > StartB)
         const overlap = (newStartDateTime < existEndDateTime) && (newEndDateTime > existStartDateTime);
         
         if (overlap) {
@@ -1468,12 +1503,63 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
     updateStatus || 'pending',
     scheduleId
   );
+  
+  // Insert edit logs to audit trail
+  if (editLogs.length > 0) {
+    const logStmt = db.prepare(`
+      INSERT INTO edit_logs (scheduleId, fieldName, oldValue, newValue, editReason, editedAt, editedBy)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const now = Date.now();
+    for (const log of editLogs) {
+      logStmt.run(log.scheduleId, log.fieldName, log.oldValue, log.newValue, editReasonText, now, editor);
+    }
+  }
+  
   const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
-  res.json({ ok: true, schedule });
+  res.json({ ok: true, schedule, changes: editLogs.length });
+});
+
+// GET edit history for a schedule
+app.get('/api/schedules/:id/edits', requireAuth, (req, res) => {
+  const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(req.params.id);
+  if (!schedule) {
+    return res.status(404).json({ ok: false, error: 'Jadwal tidak ditemukan' });
+  }
+  const logs = db.prepare(
+    'SELECT * FROM edit_logs WHERE scheduleId = ? ORDER BY editedAt DESC'
+  ).all(schedule.scheduleId || req.params.id);
+  res.json({ ok: true, logs });
 });
 
 app.delete('/api/schedules/:id', requireAuth, (req, res) => {
-  db.prepare('DELETE FROM schedules WHERE id = ?').run(req.params.id);
+  const scheduleId = req.params.id;
+  const { reason, deleteReason, deletedBy } = req.body || {};
+  
+  // Get schedule data before deletion for audit trail
+  const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
+  if (!schedule) {
+    return res.status(404).json({ ok: false, error: 'Jadwal tidak ditemukan' });
+  }
+  
+  // Log deletion to deletion_logs
+  try {
+    db.prepare(`
+      INSERT INTO deletion_logs (recordType, recordId, recordData, deleteReason, deletedAt, deletedBy)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      'schedule',
+      schedule.scheduleId || scheduleId,
+      JSON.stringify(schedule),
+      reason || deleteReason || '-',
+      Date.now(),
+      deletedBy || 'admin'
+    );
+  } catch (e) {
+    console.error('[Audit] Failed to log schedule deletion:', e.message);
+  }
+  
+  db.prepare('DELETE FROM schedules WHERE id = ?').run(scheduleId);
   res.json({ ok: true });
 });
 
