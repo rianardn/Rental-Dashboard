@@ -1363,7 +1363,13 @@ app.get('/api/reports/summary', requireAuth, (req, res) => {
 
 // ─── SCHEDULES ───────────────────────────────────────────────────
 app.get('/api/schedules', requireAuth, (req, res) => {
-  const schedules = db.prepare('SELECT * FROM schedules ORDER BY scheduledDate DESC, scheduledTime ASC').all();
+  const schedules = db.prepare(`
+    SELECT s.*, COUNT(el.id) as editCount 
+    FROM schedules s 
+    LEFT JOIN edit_logs el ON el.scheduleId = s.scheduleId 
+    GROUP BY s.id 
+    ORDER BY s.scheduledDate DESC, s.scheduledTime ASC
+  `).all();
   res.json({ ok: true, schedules });
 });
 
@@ -1665,6 +1671,20 @@ app.get('/api/schedules/deleted', requireAuth, (req, res) => {
     res.json({ ok: true, deleted });
   } catch (error) {
     console.error('[API] Error fetching deleted schedules:', error.message);
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
+// GET completed schedules (history)
+app.get('/api/schedules/completed', requireAuth, (req, res) => {
+  try {
+    const completed = db.prepare(`
+      SELECT * FROM schedules
+      WHERE status = 'completed'
+      ORDER BY scheduledDate DESC, scheduledTime ASC
+    `).all();
+    res.json({ ok: true, completed });
+  } catch (error) {
     res.status(400).json({ ok: false, error: error.message });
   }
 });

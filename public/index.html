@@ -1807,11 +1807,17 @@
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
           <div class="section-title" style="margin: 0;">📅 Daftar Jadwal</div>
-          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-            <button class="btn btn-red" style="width: auto; padding: 16px 28px; font-size: 0.95rem; font-weight: 600;" onclick="openAddScheduleModal()">
-              <span style="margin-right: 6px;">➕</span> Tambah
+          <!-- Baris 1: Tambah Jadwal (full width) -->
+          <button class="btn btn-red" style="width: 100%; padding: 16px 28px; font-size: 0.95rem; font-weight: 600; margin-bottom: 10px;" onclick="openAddScheduleModal()">
+            <span style="margin-right: 6px;">➕</span> Tambah Jadwal
+          </button>
+          
+          <!-- Baris 2: Riwayat (Kiri) + Sampah (Kanan) -->
+          <div style="display: flex; justify-content: space-between; gap: 10px; width: 100%;">
+            <button class="btn" style="padding: 12px 20px; font-size: 0.8rem; background: var(--ps3-green-dark); border-color: var(--ps3-green); color: #fff;" onclick="openHistoryModal()">
+              <span style="margin-right: 4px;">📜</span> Riwayat
             </button>
-            <button class="btn" style="width: auto; padding: 10px 14px; font-size: 0.75rem; background: #333; border-color: #555; color: #aaa;" onclick="openTrashModal()">
+            <button class="btn" style="padding: 12px 20px; font-size: 0.8rem; background: #333; border-color: #555; color: #aaa;" onclick="openTrashModal()">
               <span style="margin-right: 4px;">🗑️</span> Sampah
             </button>
           </div>
@@ -2468,9 +2474,11 @@
 
       <!-- Step 3: History -->
       <div id="editScheduleStep3" style="display: none; padding: 20px;">
-        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
-          <button id="btnShowScheduleEditLogs" class="btn btn-sm" onclick="showScheduleEditLogsTab()" style="flex: 1; background: var(--ps3-red);">✏️ Riwayat Edit</button>
-          <button id="btnShowScheduleDeleteLogs" class="btn btn-sm" onclick="showScheduleDeleteLogsTab()" style="flex: 1; opacity: 0.7;">🗑️ Log Hapus</button>
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ps3-red); margin-bottom: 12px;">
+            <span>✏️</span>
+            <span>Riwayat Edit</span>
+          </div>
         </div>
         <div id="editScheduleHistoryList" style="max-height: 300px; overflow-y: auto;"></div>
         <button class="btn" onclick="closeModal('modalEditSchedule')" style="margin-top: 16px; width: 100%;">Tutup</button>
@@ -3044,6 +3052,30 @@
     </div>
   </div>
 
+  <!-- Modal: Riwayat (Completed Schedules) -->
+  <div id="modalHistory" class="modal" style="z-index: 3000;">
+    <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">
+      <div class="modal-header" style="background: var(--ps3-green-dark);">
+        <div class="modal-title">📜 Riwayat Selesai</div>
+        <button class="modal-close" onclick="closeModal('modalHistory')">×</button>
+      </div>
+
+      <div style="padding: 20px;">
+        <p style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 15px;">
+          ✅ Jadwal yang telah selesai dan transaksi tercatat otomatis.
+        </p>
+
+        <div id="historyList" style="max-height: 400px; overflow-y: auto;">
+          <p style="text-align: center; color: var(--ps3-muted); padding: 30px;">
+            📜 Belum ada jadwal yang selesai
+          </p>
+        </div>
+
+        <button class="btn" onclick="closeModal('modalHistory')" style="width: 100%; margin-top: 15px;">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Pembatalan Jadwal dengan Alasan -->
   <div id="modalCancelSchedule" class="modal" style="z-index: 3500;">
     <div class="modal-content" style="max-width: 480px; max-height: 85vh; overflow-y: auto;">
@@ -3077,10 +3109,10 @@
           </div>
         </div>
 
-        <div style="display: flex; gap: 10px;">
-          <button class="btn-cancel" onclick="closeModal('modalCancelSchedule')" style="flex: 1;">Tutup</button>
-          <button class="btn-danger" onclick="confirmCancelSchedule()" style="flex: 1; background: var(--ps3-red); color: #fff;">
-            ❌ Konfirmasi Pembatalan
+        <div style="display: flex; gap: 12px;">
+          <button class="btn-cancel" onclick="closeModal('modalCancelSchedule')" style="flex: 1; border-radius: 10px; padding: 14px; font-size: 0.85rem;">Tutup</button>
+          <button class="btn-danger" onclick="confirmCancelSchedule()" style="flex: 1; background: var(--ps3-red); color: #fff; border-radius: 10px; padding: 14px; font-size: 0.85rem;">
+            ❌ Konfirmasi
           </button>
         </div>
       </div>
@@ -5807,6 +5839,87 @@
       openModal('modalTrash');
     }
 
+    // Riwayat (History) Modal Functions - Completed Schedules
+    function openHistoryModal() {
+      loadCompletedSchedules();
+      openModal('modalHistory');
+    }
+
+    async function loadCompletedSchedules() {
+      const historyList = document.getElementById('historyList');
+      historyList.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 30px;">⏳ Memuat data...</p>';
+
+      try {
+        const data = await api('GET', '/schedules/completed');
+
+        if (!data.completed || data.completed.length === 0) {
+          historyList.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 30px;">📜 Belum ada jadwal yang selesai</p>';
+          return;
+        }
+
+        const html = data.completed.map(item => {
+          const badge = getHistoryScheduleStatusBadge(item.status);
+
+          // Gunakan format yang sama dengan renderSchedules
+          const fakeSchedule = {
+            scheduledDate: item.scheduledDate,
+            scheduledTime: item.scheduledTime,
+            duration: item.duration,
+            scheduledEndDate: item.scheduledEndDate,
+            scheduledEndTime: item.scheduledEndTime
+          };
+
+          const formattedDate = formatScheduleDate(fakeSchedule);
+          const formattedTime = formatScheduleTime(fakeSchedule);
+
+          return `
+            <div style="background: ${badge.bg}; border: 2px solid ${badge.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-weight: 600; color: var(--ps3-silver);">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
+                    <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
+                    <span style="font-size: 0.75rem; color: var(--ps3-muted);">${item.id}</span>
+                  </div>
+                  ${item.phone ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">📞 ${item.phone}</div>` : ''}
+                </div>
+                <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.badgeBg}; color: ${badge.color}; font-weight: 600; white-space: nowrap; border: 1px solid ${badge.badgeBg};">${badge.text}</span>
+              </div>
+              <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
+                ${formattedDate}
+              </div>
+              <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 6px;">
+                ${formattedTime}
+              </div>
+              ${item.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${escapeHtml(item.unitName)}</div>` : ''}
+              ${item.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${escapeHtml(item.note)}</div>` : ''}
+              <div style="font-size: 0.75rem; color: var(--ps3-green-dark); margin-top: 6px; padding: 4px 8px; background: rgba(34, 197, 94, 0.1); border-radius: 4px; border: 1px solid rgba(34, 197, 94, 0.3);">
+                ✅ Diselesaikan: Transaksi tercatat otomatis
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        historyList.innerHTML = html;
+      } catch (error) {
+        console.error('Error loading completed schedules:', error);
+        historyList.innerHTML = `<p style="text-align: center; color: var(--ps3-red); padding: 30px;">❌ Error: ${escapeHtml(error.message)}</p>`;
+      }
+    }
+
+    function getHistoryScheduleStatusBadge(status) {
+      // Warna hijau untuk semua completed schedules di riwayat
+      return {
+        text: '✅ Selesai',
+        // Card highlight: hijau transparan
+        bg: 'rgba(34, 197, 94, 0.15)',
+        border: 'var(--ps3-green)',
+        // Badge: hijau tua
+        badgeBg: 'var(--ps3-green-dark)',
+        color: '#fff'
+      };
+    }
+
     async function loadDeletedSchedules() {
       const trashList = document.getElementById('trashList');
       trashList.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 30px;">⏳ Memuat data...</p>';
@@ -7659,16 +7772,19 @@
         return diffB - diffA;
       });
       
+      // Filter out completed schedules - they only appear in History modal
+      const activeSchedules = sorted.filter(s => s.status !== 'completed');
+      
       // Filter: tampilkan semua jika showAllSchedules, atau hanya hari ini jika tidak
-      const filtered = showAllSchedules ? sorted : sorted.filter(s => s.scheduledDate === today);
+      const filtered = showAllSchedules ? activeSchedules : activeSchedules.filter(s => s.scheduledDate === today);
       
       // Count other schedules (non-today)
-      const otherSchedules = sorted.filter(s => s.scheduledDate !== today);
+      const otherSchedules = activeSchedules.filter(s => s.scheduledDate !== today);
       
       let html = '';
       
-      // Card untuk hari ini
-      const todaySchedules = sorted.filter(s => s.scheduledDate === today);
+      // Card untuk hari ini (exclude completed)
+      const todaySchedules = activeSchedules.filter(s => s.scheduledDate === today);
       if (!showAllSchedules && todaySchedules.length === 0) {
         html += '<p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Tidak ada jadwal untuk hari ini</p>';
       }
@@ -7711,8 +7827,8 @@
                 <button onclick="openCancelScheduleModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-red-danger); border: 1px solid var(--ps3-red-danger); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-red-danger)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-red-danger)'">❌ Batal</button>
               ` : ''}
               ${s.status === 'pending' || s.status === 'running' ? `<button onclick="openEditScheduleModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-yellow); border: 1px solid var(--ps3-yellow); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-yellow)';this.style.color='#000'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-yellow)'">✏️ Edit</button>` : ''}
-              <button onclick="openScheduleHistoryModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-silver); border: 1px solid var(--ps3-border); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-blue)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-silver)'">📜 Riwayat</button>
-              <button onclick="deleteSchedule(${s.id})" style="background: transparent; color: var(--ps3-muted); border: 1px solid var(--ps3-border); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#fff';this.style.borderColor='var(--ps3-muted)'" onmouseout="this.style.color='var(--ps3-muted)';this.style.borderColor='var(--ps3-border)'">🗑️ Hapus</button>
+              ${s.editCount > 0 ? `<button onclick="openScheduleHistoryModal(${s.id})" style="background: var(--ps3-surface); color: var(--ps3-silver); border: 1px solid var(--ps3-border); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='var(--ps3-blue)';this.style.color='#fff'" onmouseout="this.style.background='var(--ps3-surface)';this.style.color='var(--ps3-silver)'">📜 Riwayat</button>` : ''}
+              ${s.status !== 'completed' ? `<button onclick="deleteSchedule(${s.id})" style="background: transparent; color: var(--ps3-muted); border: 1px solid var(--ps3-border); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#fff';this.style.borderColor='var(--ps3-muted)'" onmouseout="this.style.color='var(--ps3-muted)';this.style.borderColor='var(--ps3-border)'">🗑️ Hapus</button>` : ''}
             </div>
           </div>
         `;
@@ -8132,10 +8248,11 @@
         return;
       }
 
-      // Update modal title to show history
+      // Update modal title to show history with copyable TX ID
       const modalTitle = document.querySelector('#modalEditSchedule .modal-title');
       if (modalTitle) {
-        modalTitle.textContent = `📜 Riwayat: ${schedule?.customer || 'Jadwal'}`;
+        const txId = schedule?.scheduleId || '';
+        modalTitle.innerHTML = `📜 Riwayat: ${schedule?.customer || 'Jadwal'} <span onclick="copyToClipboard('${txId}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem; margin-left: 8px;">${txId}</span>`;
       }
 
       // Hide Step 1 and Step 2, show only Step 3
@@ -8412,10 +8529,6 @@
     }
 
     function showScheduleEditLogsTab() {
-      document.getElementById('btnShowScheduleEditLogs').style.background = 'var(--ps3-red)';
-      document.getElementById('btnShowScheduleEditLogs').style.opacity = '1';
-      document.getElementById('btnShowScheduleDeleteLogs').style.background = 'var(--ps3-surface)';
-      document.getElementById('btnShowScheduleDeleteLogs').style.opacity = '0.7';
       // Load edit logs
       if (currentEditScheduleId) {
         loadScheduleEditHistory(currentEditScheduleId);
