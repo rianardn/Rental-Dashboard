@@ -3459,8 +3459,12 @@
         
         if (!response.ok) {
           if (isJson) {
-            const error = await response.json();
-            throw new Error(error.error || `Error ${response.status}`);
+            const errorData = await response.json();
+            // Buat custom error yang menyimpan data lengkap dari response
+            const err = new Error(errorData.error || `Error ${response.status}`);
+            err.status = response.status;
+            err.data = errorData; // Simpan semua data termasuk requiresCancellation, schedule, dll
+            throw err;
           } else {
             const text = await response.text();
             console.error('Server returned non-JSON error:', text.substring(0, 200));
@@ -5395,16 +5399,18 @@
         showToast('Sewa dimulai!', 'success');
       } catch (error) {
         // Cek apakah error mengandung konflik booking yang bisa dibatalkan
-        if (error.requiresCancellation && error.schedule) {
+        // Error dari api() sekarang menyimpan data lengkap di error.data
+        const errorData = error.data || {};
+        if (errorData.requiresCancellation && errorData.schedule) {
           // Simpan data untuk digunakan setelah konfirmasi
           pendingActivationData = { customer, duration, note };
-          pendingConflictSchedule = error.schedule;
+          pendingConflictSchedule = errorData.schedule;
           
           // Tampilkan modal konfirmasi
-          showActivationConflictModal(error.schedule, error.message);
+          showActivationConflictModal(errorData.schedule, errorData.message || error.message);
         } else {
           // Error biasa - tampilkan toast
-          showToast(error.message || error.error || 'Terjadi kesalahan', 'error');
+          showToast(error.message || errorData.error || 'Terjadi kesalahan', 'error');
         }
       }
     }
