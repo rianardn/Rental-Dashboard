@@ -620,10 +620,43 @@ app.post('/api/units/:id/start', requireAuth, (req, res) => {
       const scheduleEndStr = schedule.scheduledEndTime ||
         String(scheduleEnd.getHours()).padStart(2, '0') + ':' +
         String(scheduleEnd.getMinutes()).padStart(2, '0');
-      return res.status(409).json({
-        ok: false,
-        error: `Tidak dapat mengaktifkan unit. Ada booking dari ${schedule.customer} pada ${schedule.scheduledDate} pukul ${schedule.scheduledTime}-${scheduleEndStr}. Silakan pilih waktu lain atau batalkan booking terlebih dahulu.`
-      });
+      
+      // Cek apakah booking sudah masuk waktunya (sekarang berada dalam rentang booking)
+      const nowTimestamp = Date.now();
+      const isCurrentTimeInBooking = (nowTimestamp >= scheduleStartUTC) && (nowTimestamp <= scheduleEndUTC);
+      
+      if (isCurrentTimeInBooking) {
+        // Booking sudah masuk waktu - user bisa membatalkan untuk walk-in customer
+        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' };
+        const bookingStartStr = new Date(scheduleStartUTC).toLocaleTimeString('id-ID', timeOptions);
+        const bookingEndStr = new Date(scheduleEndUTC).toLocaleTimeString('id-ID', timeOptions);
+        
+        return res.status(409).json({
+          ok: false,
+          requiresCancellation: true,
+          conflictType: 'active_booking',
+          schedule: {
+            id: schedule.id,
+            customer: schedule.customer,
+            phone: schedule.phone,
+            date: schedule.scheduledDate,
+            startTime: schedule.scheduledTime,
+            endTime: scheduleEndStr,
+            startTimestamp: scheduleStartUTC,
+            endTimestamp: scheduleEndUTC,
+            unitName: schedule.unitName,
+            note: schedule.note
+          },
+          message: `Unit memiliki booking aktif dari ${schedule.customer} (${bookingStartStr}-${bookingEndStr}). Aktifkan unit akan membatalkan booking ini.`,
+          error: `Unit memiliki booking aktif dari ${schedule.customer} pada ${schedule.scheduledDate} pukul ${schedule.scheduledTime}-${scheduleEndStr}. Aktifkan unit akan membatalkan booking ini.`
+        });
+      } else {
+        // Booking di masa depan - tidak bisa aktivasi
+        return res.status(409).json({
+          ok: false,
+          error: `Tidak dapat mengaktifkan unit. Ada booking dari ${schedule.customer} pada ${schedule.scheduledDate} pukul ${schedule.scheduledTime}-${scheduleEndStr}. Silakan pilih waktu lain atau batalkan booking terlebih dahulu.`
+        });
+      }
     }
   }
   

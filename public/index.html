@@ -2162,6 +2162,65 @@
     </div>
   </div>
 
+  <!-- ═════════════════ MODAL: KONFIRMASI AKTIVASI DENGAN PEMBATALAN ═════════════════ -->
+  <div id="modalConfirmActivationWithCancel" class="modal" style="z-index: 3000;">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header" style="background: linear-gradient(135deg, var(--ps3-red) 0%, #b30000 100%);">
+        <div class="modal-title">⚠️ Booking Aktif Terdeteksi</div>
+        <button class="modal-close" onclick="closeModal('modalConfirmActivationWithCancel')">×</button>
+      </div>
+      <div style="padding: 24px;">
+        <!-- Warning Box -->
+        <div style="background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <div style="color: var(--ps3-red); font-weight: 700; font-size: 1rem; margin-bottom: 8px;">
+            ⏰ Booking Sudah Masuk Waktu
+          </div>
+          <div id="activationConflictMessage" style="color: var(--ps3-text); font-size: 0.9rem; line-height: 1.5;">
+            Unit memiliki booking aktif yang sudah memasuki waktunya.
+          </div>
+        </div>
+
+        <!-- Schedule Overview Card -->
+        <div id="activationConflictCard" style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <!-- Card content akan dirender via JS -->
+        </div>
+
+        <!-- Checkbox Konfirmasi -->
+        <div style="margin-bottom: 24px;">
+          <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer;">
+            <input 
+              type="checkbox" 
+              id="confirmCancelBookingCheckbox" 
+              style="width: 20px; height: 20px; margin-top: 2px; accent-color: var(--ps3-red); cursor: pointer;"
+            >
+            <span style="color: var(--ps3-text); font-size: 0.9rem; line-height: 1.5;">
+              <strong>Saya mengerti dan ingin melanjutkan.</strong> Booking di atas akan dibatalkan dan unit akan diaktifkan untuk pelanggan walk-in.
+            </span>
+          </label>
+          <div id="confirmCancelBookingError" style="color: var(--ps3-red); font-size: 0.8rem; margin-top: 8px; margin-left: 32px; display: none;">
+            ⚠️ Centang kotak di atas untuk melanjutkan
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 12px;">
+          <button 
+            onclick="closeModal('modalConfirmActivationWithCancel')" 
+            style="flex: 1; padding: 14px; border-radius: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); cursor: pointer;"
+          >
+            Batal
+          </button>
+          <button 
+            onclick="proceedToCancelBooking()" 
+            style="flex: 1; padding: 14px; border-radius: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: var(--ps3-red); color: white; border: none; cursor: pointer;"
+          >
+            Lanjutkan →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═════════════════ MODAL: STOP SESSION ═════════════════ -->
   <div id="modalStop" class="modal">
     <div class="modal-content">
@@ -5296,6 +5355,10 @@
       openModal('modalStart');
     }
 
+    // ═════════════════ Activation Conflict Handling ═════════════════
+    let pendingActivationData = null; // Menyimpan data aktivasi yang akan dilanjutkan setelah pembatalan
+    let pendingConflictSchedule = null; // Menyimpan data schedule yang perlu dibatalkan
+
     async function confirmStartSession() {
       const customer = document.getElementById('startCustomer').value;
       const preset = document.getElementById('startDurationPreset').value;
@@ -5331,7 +5394,172 @@
         renderAll();
         showToast('Sewa dimulai!', 'success');
       } catch (error) {
+        // Cek apakah error mengandung konflik booking yang bisa dibatalkan
+        if (error.requiresCancellation && error.schedule) {
+          // Simpan data untuk digunakan setelah konfirmasi
+          pendingActivationData = { customer, duration, note };
+          pendingConflictSchedule = error.schedule;
+          
+          // Tampilkan modal konfirmasi
+          showActivationConflictModal(error.schedule, error.message);
+        } else {
+          // Error biasa - tampilkan toast
+          showToast(error.message || error.error || 'Terjadi kesalahan', 'error');
+        }
+      }
+    }
+
+    // Tampilkan modal konfirmasi konflik aktivasi
+    function showActivationConflictModal(schedule, message) {
+      // Update pesan
+      document.getElementById('activationConflictMessage').textContent = message;
+      
+      // Render card overview booking
+      const cardHtml = renderActivationConflictCard(schedule);
+      document.getElementById('activationConflictCard').innerHTML = cardHtml;
+      
+      // Reset checkbox
+      document.getElementById('confirmCancelBookingCheckbox').checked = false;
+      document.getElementById('confirmCancelBookingError').style.display = 'none';
+      
+      // Buka modal
+      closeModal('modalStart');
+      openModal('modalConfirmActivationWithCancel');
+    }
+
+    // Render card untuk booking yang konflik
+    function renderActivationConflictCard(s) {
+      const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' };
+      const startTime = new Date(s.startTimestamp).toLocaleTimeString('id-ID', timeOptions);
+      const endTime = new Date(s.endTimestamp).toLocaleTimeString('id-ID', timeOptions);
+      
+      return `
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <!-- Avatar -->
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--ps3-red) 0%, #b30000 100%); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; color: white; flex-shrink: 0;">
+            ${s.customer ? s.customer.charAt(0).toUpperCase() : '?'}
+          </div>
+          
+          <!-- Info -->
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-weight: 700; font-size: 1.1rem; color: var(--ps3-text); margin-bottom: 6px;">
+              ${escapeHtml(s.customer)}
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--ps3-muted);">
+              <div>📞 ${escapeHtml(s.phone || '-')}</div>
+              <div>📅 ${formatWIBDate(s.date)}</div>
+              <div>⏰ ${startTime} → ${endTime}</div>
+              ${s.unitName ? `<div>🎮 ${escapeHtml(s.unitName)}</div>` : ''}
+              ${s.note ? `<div style="font-style: italic; margin-top: 4px;">💬 ${escapeHtml(s.note)}</div>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Format tanggal WIB
+    function formatWIBDate(dateStr) {
+      const date = new Date(dateStr + 'T00:00:00+07:00');
+      const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' };
+      return date.toLocaleDateString('id-ID', options);
+    }
+
+    // Lanjutkan ke modal pembatalan booking
+    function proceedToCancelBooking() {
+      // Cek checkbox konfirmasi
+      const confirmed = document.getElementById('confirmCancelBookingCheckbox').checked;
+      if (!confirmed) {
+        document.getElementById('confirmCancelBookingError').style.display = 'block';
+        return;
+      }
+      
+      // Tutup modal konfirmasi
+      closeModal('modalConfirmActivationWithCancel');
+      
+      // Buka modal pembatalan dengan schedule yang akan dibatalkan
+      if (pendingConflictSchedule) {
+        openCancelScheduleModalForActivation(pendingConflictSchedule);
+      }
+    }
+
+    // Buka modal pembatalan khusus untuk aktivasi (tanpa perlu cari schedule lagi)
+    function openCancelScheduleModalForActivation(schedule) {
+      // Set current schedule ID
+      currentCancelScheduleId = schedule.id;
+      
+      // Clear input
+      document.getElementById('cancelScheduleReason').value = '';
+      document.getElementById('cancelScheduleReasonError').style.display = 'none';
+      
+      // Update info text
+      document.getElementById('cancelScheduleOverview').innerHTML = `
+        <div style="background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+          <div style="color: var(--ps3-red); font-weight: 700; font-size: 0.9rem;">
+            ⚠️ Booking akan dibatalkan untuk mengaktifkan unit
+          </div>
+        </div>
+        ${renderCancelScheduleCard(schedule)}
+      `;
+      
+      // Buka modal
+      openModal('modalCancelSchedule');
+    }
+
+    // Override fungsi confirmCancelSchedule asli untuk melanjutkan aktivasi setelah pembatalan
+    const originalConfirmCancelSchedule = confirmCancelSchedule;
+    confirmCancelSchedule = async function() {
+      if (!currentCancelScheduleId) return;
+      
+      const reason = document.getElementById('cancelScheduleReason').value.trim();
+      if (!reason) {
+        document.getElementById('cancelScheduleReasonError').style.display = 'block';
+        document.getElementById('cancelScheduleReason').focus();
+        return;
+      }
+      
+      try {
+        await api('DELETE', `/schedules/${currentCancelScheduleId}`, { reason });
+        closeModal('modalCancelSchedule');
+        showToast('Jadwal dibatalkan', 'success');
+        
+        // Cek apakah ada aktivasi pending yang harus dilanjutkan
+        if (pendingActivationData && pendingConflictSchedule && 
+            currentCancelScheduleId === pendingConflictSchedule.id) {
+          // Lanjutkan aktivasi unit
+          continueActivationAfterCancellation();
+        } else {
+          // Refresh data biasa
+          await loadSchedules();
+          await loadTrashedSchedules();
+          renderSchedules();
+          renderTrashedSchedules();
+        }
+      } catch (error) {
         showToast(error.message, 'error');
+      }
+    }
+
+    // Lanjutkan aktivasi setelah pembatalan berhasil
+    async function continueActivationAfterCancellation() {
+      if (!pendingActivationData || !currentUnitId) return;
+      
+      const { customer, duration, note } = pendingActivationData;
+      
+      try {
+        showToast('Menaktifkan unit...', 'info');
+        await api('POST', `/units/${currentUnitId}/start`, { customer, duration, note });
+        
+        // Clear pending data
+        pendingActivationData = null;
+        pendingConflictSchedule = null;
+        
+        await loadData();
+        renderAll();
+        showToast('Unit berhasil diaktifkan!', 'success');
+      } catch (error) {
+        showToast(error.message || 'Gagal mengaktifkan unit', 'error');
+        pendingActivationData = null;
+        pendingConflictSchedule = null;
       }
     }
 
