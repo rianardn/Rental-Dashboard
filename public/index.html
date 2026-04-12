@@ -2323,7 +2323,7 @@
         </div>
         <div style="background: rgba(230,0,18,0.1); border-left: 3px solid var(--ps3-red); padding: 10px 12px; border-radius: 0 6px 6px 0; margin-top: 12px;">
           <small style="color: var(--ps3-text); font-size: 0.75rem;">
-            💡 Catatan akan otomatis ditambahkan prefix <strong>[BOOKING]</strong>
+            💡 Catatan akan otomatis ditambahkan prefix <strong>[ID Jadwal]</strong>
           </small>
         </div>
       </div>
@@ -3789,14 +3789,22 @@
             ${unit.note ? `
             <div class="customer-info-row">
               <span class="customer-info-label">Catatan</span>
-              <span class="customer-info-value" style="${unit.note.includes('[BOOKING]') ? 'color: var(--ps3-green); font-weight: 500;' : ''}">${unit.note.replace('[BOOKING]', '<span style="background: var(--ps3-green); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-right: 4px;">BOOKING</span>')}</span>
+              <span class="customer-info-value">${(() => {
+              const txMatch = unit.note.match(/\[([A-Z]+\d+)\](.*)/);
+              if (txMatch) {
+                const txId = txMatch[1];
+                const actualNote = txMatch[2] ? txMatch[2].replace(/^ - /, '') : '';
+                return `<span onclick="copyToClipboard('${txId}', this)" class="tx-badge-clickable" style="background: var(--ps3-green); color: #000; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin-right: 6px; cursor: pointer; user-select: none;" title="Klik untuk copy ID">📋 ${txId}</span>${actualNote ? `<span style="color: var(--ps3-green);">${actualNote}</span>` : ''}`;
+              }
+              return unit.note;
+            })()}</span>
             </div>
             ` : ''}
           </div>
         `;
       }
       
-      const isFromBooking = unit.note && unit.note.includes('[BOOKING]');
+      const isFromBooking = unit.note && /\[[A-Z]+\d+\]/.test(unit.note);
       
       return `
         <div class="unit-card ${isActive ? 'active' : ''}">

@@ -750,8 +750,9 @@ app.post('/api/schedules/:id/start-unit', requireAuth, (req, res) => {
   if (!unit) return res.status(404).json({ error: 'Unit tidak ditemukan' });
   if (unit.active) return res.status(400).json({ error: 'Unit sudah aktif' });
   
-  // Prepare note with [BOOKING] prefix
-  const bookingNote = schedule.note ? `[BOOKING] - ${schedule.note}` : '[BOOKING]';
+  // Prepare note with [TX_ID] prefix (e.g., [PSJ00018])
+  const txId = schedule.scheduleId || scheduleId;
+  const bookingNote = schedule.note ? `[${txId}] - ${schedule.note}` : `[${txId}]`;
   const startTime = Date.now();
   
   // Start the unit with schedule data
