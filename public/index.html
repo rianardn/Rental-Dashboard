@@ -6280,7 +6280,14 @@
           return;
         }
 
-        const html = data.deleted.map(item => {
+        // Urutkan berdasarkan TX ID terbesar ke terkecil (descending)
+        const sortedDeleted = data.deleted.sort((a, b) => {
+          const idA = a.originalId || '';
+          const idB = b.originalId || '';
+          return idB.localeCompare(idA); // Descending: Z-A, 9-0
+        });
+
+        const html = sortedDeleted.map(item => {
           const deletedDate = formatDateTimeWIB(item.deletedAt);
           const badge = getDeletedScheduleStatusBadge(item.status);
 
@@ -8856,6 +8863,13 @@
           return;
         }
 
+        // Urutkan berdasarkan waktu edit terbaru (descending)
+        const sortedLogs = response.logs.sort((a, b) => {
+          const dateA = new Date(a.editedAt || 0);
+          const dateB = new Date(b.editedAt || 0);
+          return dateB - dateA; // Descending: terbaru dulu
+        });
+
         const fieldLabels = {
           'customer': 'Nama Penyewa',
           'phone': 'Nomor Telepon',
@@ -8870,7 +8884,14 @@
           'status': 'Status'
         };
 
-        container.innerHTML = response.logs.map(log => {
+        // Urutkan berdasarkan waktu edit terbaru (descending)
+        const sortedLogs = response.logs.sort((a, b) => {
+          const dateA = new Date(a.editedAt || 0);
+          const dateB = new Date(b.editedAt || 0);
+          return dateB - dateA; // Descending: terbaru dulu
+        });
+
+        container.innerHTML = sortedLogs.map(log => {
           const fieldName = fieldLabels[log.fieldName] || log.fieldName;
           const editedAtWIB = new Date(log.editedAt + (7 * 60 * 60 * 1000));
           const dateStr = editedAtWIB.toLocaleString('id-ID', {
