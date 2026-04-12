@@ -1769,8 +1769,11 @@
         <canvas id="financeChart" width="400" height="200"></canvas>
       </div>
 
-      <div class="section-title">
+      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
         <span>Riwayat Transaksi</span>
+        <button class="btn btn-red" onclick="openTrashIncomeModal()" style="font-size: 0.8rem; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
+          🗑️ Sampah
+        </button>
       </div>
       <div id="transactionsList"></div>
 
@@ -2650,6 +2653,52 @@
     </div>
   </div>
 
+  <!-- ═════════════════ MODAL: TRASH INCOME ═════════════════ -->
+  <div id="modalTrashIncome" class="modal">
+    <div class="modal-content" style="max-width: 500px; max-height: 80vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #8B0000 0%, #4a0000 100%);">
+        <div class="modal-title">🗑️ Tempat Sampah Pendapatan</div>
+        <button class="modal-close" onclick="closeModal('modalTrashIncome')">×</button>
+      </div>
+
+      <div style="padding: 20px; flex: 1; overflow-y: auto;">
+        <!-- Info Box -->
+        <div style="background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; color: var(--ps3-red); font-size: 0.85rem;">
+            <span>ℹ️</span>
+            <span>Transaksi yang dihapus akan tampil di sini. Anda dapat mengembalikan atau menghapus permanen.</span>
+          </div>
+        </div>
+
+        <!-- Trash Count -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 12px; background: var(--ps3-surface); border-radius: 10px;">
+          <span style="font-size: 0.9rem; color: var(--ps3-muted);">Total Transaksi Dihapus:</span>
+          <span id="trashIncomeCount" style="font-weight: 600; color: var(--ps3-red);">0</span>
+        </div>
+
+        <!-- Trash List -->
+        <div id="trashIncomeList" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="trashIncomeEmpty" style="display: none; text-align: center; padding: 40px 20px;">
+          <div style="font-size: 3rem; margin-bottom: 12px;">🗑️</div>
+          <div style="color: var(--ps3-muted); font-size: 0.95rem;">Tempat sampah kosong</div>
+          <div style="color: var(--ps3-chrome); font-size: 0.8rem; margin-top: 8px;">Belum ada transaksi yang dihapus</div>
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <div style="padding: 16px 20px; border-top: 1px solid var(--ps3-border); display: flex; gap: 10px;">
+        <button class="btn-cancel" onclick="closeModal('modalTrashIncome')" style="flex: 1;">Tutup</button>
+        <button id="btnEmptyTrashIncome" class="btn" onclick="confirmEmptyTrashIncome()" style="flex: 1; background: var(--ps3-red); display: none;">
+          🗑️ Kosongkan Sampah
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Edit Expense Modal -->
   <div id="modalEditExpense" class="modal">
     <div class="modal-content" style="max-width: 420px;">
@@ -3437,6 +3486,7 @@
     let units = [];
     let transactions = [];
     let expenses = [];
+    let deletedTransactions = []; // Tempat sampah transaksi pendapatan
     let pollTimer = null;
     let timerInterval = null;
 
@@ -7034,21 +7084,188 @@
       }
 
       try {
+        // Cari transaksi yang akan dihapus
+        const txIndex = transactions.findIndex(t => t.id === currentDeleteTxId);
+        if (txIndex === -1) {
+          throw new Error('Transaksi tidak ditemukan');
+        }
+
+        const deletedTx = transactions[txIndex];
+
+        // Simpan ke tempat sampah dengan metadata penghapusan
+        const trashItem = {
+          ...deletedTx,
+          deletedAt: new Date().toISOString(),
+          deleteReason: reason,
+          deletedBy: 'admin'
+        };
+
+        // Tambahkan ke awal array deletedTransactions
+        deletedTransactions.unshift(trashItem);
+
+        // Hapus dari array transactions
+        transactions.splice(txIndex, 1);
+
+        // Panggil API untuk persistensi ke server
         const res = await api('DELETE', `/transactions/${currentDeleteTxId}`, { reason, deletedBy: 'admin' });
 
         if (!res.ok) {
+          // Jika API gagal, rollback perubahan lokal
+          deletedTransactions.shift();
+          transactions.splice(txIndex, 0, deletedTx);
           throw new Error(res.error || 'Gagal menghapus transaksi');
         }
 
-        showToast('Transaksi berhasil dihapus', 'success');
+        showToast('Transaksi berhasil dipindahkan ke tempat sampah', 'success');
         closeModal('modalDeleteTransaction');
 
-        // Refresh data
-        await loadData();
+        // Refresh tampilan laporan
         renderReports();
       } catch (error) {
         showToast('Gagal menghapus: ' + error.message, 'error');
       }
+    }
+
+    // ═════════════════ Trash Income Functions ═════════════════
+    function openTrashIncomeModal() {
+      renderTrashIncomeList();
+      openModal('modalTrashIncome');
+    }
+
+    function renderTrashIncomeList() {
+      const container = document.getElementById('trashIncomeList');
+      const emptyState = document.getElementById('trashIncomeEmpty');
+      const countEl = document.getElementById('trashIncomeCount');
+      const btnEmpty = document.getElementById('btnEmptyTrashIncome');
+
+      countEl.textContent = deletedTransactions.length;
+
+      if (deletedTransactions.length === 0) {
+        container.innerHTML = '';
+        emptyState.style.display = 'block';
+        btnEmpty.style.display = 'none';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      btnEmpty.style.display = 'block';
+
+      container.innerHTML = deletedTransactions.map((t, index) => {
+        const nomor = index + 1;
+        return `
+        <div style="background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 14px; position: relative;" data-trash-index="${index}">
+          <!-- Number Badge -->
+          <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red-dark, #8B0000); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
+
+          <!-- Row 1: Date (left) + Amount (right) -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
+            <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
+              ${formatDateOnlyWIB(t.endTime)}
+            </div>
+            <div style="color: var(--ps3-red); font-size: 1.15rem; font-weight: 600;">
+              ${formatMoney(t.paid)}
+            </div>
+          </div>
+
+          <!-- Row 2: Unit + Customer -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.85rem; color: var(--ps3-text);">🎮 ${t.unitName || 'Unknown'}</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--ps3-muted);">
+              👤 ${t.customer || 'Unknown'}
+            </div>
+          </div>
+
+          <!-- Deleted Info -->
+          <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 0.75rem; color: var(--ps3-muted);">Dihapus:</span>
+              <span style="font-size: 0.75rem; color: var(--ps3-red);">${formatDateTimeWIB(t.deletedAt)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="font-size: 0.75rem; color: var(--ps3-muted);">Alasan:</span>
+              <span style="font-size: 0.75rem; color: var(--ps3-text);">${t.deleteReason || '-'}</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; gap: 8px;">
+            <button onclick="restoreIncomeFromTrash(${index})" style="flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--ps3-green-dark); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              ♻️ Kembalikan
+            </button>
+            <button onclick="deleteIncomePermanently(${index})" style="flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--ps3-red); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              🗑️ Hapus
+            </button>
+          </div>
+        </div>
+        `;
+      }).join('');
+    }
+
+    async function restoreIncomeFromTrash(index) {
+      const item = deletedTransactions[index];
+      if (!item) {
+        showToast('Transaksi tidak ditemukan di tempat sampah', 'error');
+        return;
+      }
+
+      try {
+        // Hapus properti metadata penghapusan
+        const { deletedAt, deleteReason, deletedBy, ...restoredTx } = item;
+
+        // Tambahkan kembali ke transactions
+        transactions.unshift(restoredTx);
+
+        // Hapus dari tempat sampah
+        deletedTransactions.splice(index, 1);
+
+        // TODO: Panggil API untuk restore jika ada endpointnya
+        // const res = await api('POST', '/transactions/restore', { id: item.id });
+
+        showToast('Transaksi berhasil dikembalikan', 'success');
+        renderTrashIncomeList();
+        renderReports();
+      } catch (error) {
+        showToast('Gagal mengembalikan transaksi: ' + error.message, 'error');
+      }
+    }
+
+    async function deleteIncomePermanently(index) {
+      const item = deletedTransactions[index];
+      if (!item) {
+        showToast('Transaksi tidak ditemukan di tempat sampah', 'error');
+        return;
+      }
+
+      if (!confirm(`Yakin ingin menghapus permanen transaksi ini?\n\nUnit: ${item.unitName || 'Unknown'}\nPelanggan: ${item.customer || 'Unknown'}\nJumlah: ${formatMoney(item.paid)}\n\nTindakan ini tidak dapat dibatalkan!`)) {
+        return;
+      }
+
+      try {
+        // Hapus dari tempat sampah
+        deletedTransactions.splice(index, 1);
+
+        showToast('Transaksi berhasil dihapus permanen', 'success');
+        renderTrashIncomeList();
+      } catch (error) {
+        showToast('Gagal menghapus permanen: ' + error.message, 'error');
+      }
+    }
+
+    function confirmEmptyTrashIncome() {
+      if (deletedTransactions.length === 0) {
+        showToast('Tempat sampah sudah kosong', 'info');
+        return;
+      }
+
+      if (!confirm(`Yakin ingin mengosongkan tempat sampah?\n\n${deletedTransactions.length} transaksi akan dihapus permanen.\n\nTindakan ini tidak dapat dibatalkan!`)) {
+        return;
+      }
+
+      deletedTransactions = [];
+      showToast('Tempat sampah berhasil dikosongkan', 'success');
+      renderTrashIncomeList();
     }
 
     // Tab switching functions for history modal
