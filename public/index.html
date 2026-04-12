@@ -9761,8 +9761,8 @@
     async function loadInventory() {
       try {
         const response = await api('GET', '/inventory');
-        // Ensure inventory is always an array
-        inventory = Array.isArray(response) ? response : [];
+        // API returns { ok: true, items: [...] }
+        inventory = response && response.items ? response.items : [];
       } catch (error) {
         console.error('Failed to load inventory:', error);
         inventory = [];
