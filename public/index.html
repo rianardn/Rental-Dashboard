@@ -1459,21 +1459,40 @@
 
     .modal-footer button {
       flex: 1;
-      padding: 12px;
-      border-radius: 8px;
+      padding: 14px 12px;
+      border-radius: 12px;
       border: none;
       font-family: var(--font-body);
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: 0.8rem;
+      font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.08em;
       cursor: pointer;
       transition: all 0.2s;
     }
 
     .btn-cancel {
-      background: var(--ps3-surface);
-      color: var(--ps3-muted);
-      border: 1px solid var(--ps3-border);
+      background: #1a1a1a;
+      color: #888888;
+      border: 1px solid #333333;
+    }
+
+    .btn-cancel:hover {
+      background: #222222;
+      color: #aaaaaa;
+      border-color: #444444;
+    }
+
+    .btn-confirm {
+      background: linear-gradient(135deg, #cc0010, #e60012, #cc0010);
+      color: #fff;
+      border: 1px solid #99000e;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .btn-confirm:hover {
+      box-shadow: 0 8px 24px rgba(230, 0, 18, 0.4);
+      transform: translateY(-1px);
     }
 
     /* Toast */
@@ -2040,7 +2059,7 @@
           </div>
           <div class="modal-footer">
             <button class="btn-cancel" onclick="closeModal('modalImportConfirm')">Batal</button>
-            <button class="btn btn-red" onclick="confirmImport()">Lanjutkan Import</button>
+            <button class="btn-confirm" onclick="confirmImport()">Lanjutkan Import</button>
           </div>
         </div>
       </div>
@@ -2109,7 +2128,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" onclick="closeModal('modalStart')">Batal</button>
-        <button class="btn btn-red" onclick="confirmStartSession()">Mulai Sewa</button>
+        <button class="btn-confirm" onclick="confirmStartSession()">Mulai Sewa</button>
       </div>
     </div>
   </div>
@@ -2144,7 +2163,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" onclick="closeModal('modalStop')">Batal</button>
-        <button class="btn btn-red" onclick="confirmStopSession()">Akhiri & Bayar</button>
+        <button class="btn-confirm" onclick="confirmStopSession()">Akhiri & Bayar</button>
       </div>
     </div>
   </div>
@@ -2183,7 +2202,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" onclick="closeModal('modalCompleteSchedule')">Batal</button>
-        <button class="btn btn-green" onclick="confirmCompleteSchedule()">✅ Selesai & Bayar</button>
+        <button class="btn-confirm" onclick="confirmCompleteSchedule()">✅ Selesai & Bayar</button>
       </div>
     </div>
   </div>
@@ -2222,7 +2241,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" onclick="closeModal('modalScheduleUnit')">Batal</button>
-        <button class="btn btn-green" onclick="confirmScheduleUnitSelection()">▶️ Mulai Sewa</button>
+        <button class="btn-confirm" onclick="confirmScheduleUnitSelection()">▶️ Mulai Sewa</button>
       </div>
     </div>
   </div>
@@ -2364,8 +2383,8 @@
         </div>
 
         <div style="display: flex; gap: 10px;">
-          <button class="btn-cancel" onclick="backToEditStep1()" style="flex: 1;">Kembali</button>
-          <button class="btn btn-red" onclick="saveTransactionEdit()" style="flex: 2;">Simpan Perubahan</button>
+          <button class="btn-cancel" onclick="backToEditStep1()" style="flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Kembali</button>
+          <button class="btn-confirm" onclick="saveTransactionEdit()" style="flex: 2; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Simpan Perubahan</button>
         </div>
       </div>
 
@@ -2376,7 +2395,7 @@
           <button id="btnShowDeleteLogs" class="btn btn-sm" onclick="showDeleteLogsTab()" style="flex: 1; opacity: 0.7;">🗑️ Log Hapus</button>
         </div>
         <div id="editHistoryList" style="max-height: 300px; overflow-y: auto;"></div>
-        <button class="btn" onclick="closeModal('modalEditTransaction')" style="margin-top: 16px; width: 100%;">Tutup</button>
+        <button class="btn-confirm" onclick="closeModal('modalEditTransaction')" style="margin-top: 16px; width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Tutup</button>
       </div>
     </div>
   </div>
@@ -2421,8 +2440,8 @@
         </div>
 
         <div style="display: flex; gap: 10px;">
-          <button class="btn-cancel" onclick="closeModal('modalEditSchedule')" style="flex: 1;">Batal</button>
-          <button class="btn" onclick="proceedToEditScheduleStep2()" style="flex: 2;">Lanjutkan →</button>
+          <button class="btn-cancel" onclick="closeModal('modalEditSchedule')" style="flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Batal</button>
+          <button class="btn-confirm" onclick="proceedToEditScheduleStep2()" style="flex: 2; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Lanjutkan →</button>
         </div>
       </div>
 
@@ -2520,7 +2539,7 @@
           </div>
         </div>
         <div id="editScheduleHistoryList" style="max-height: 300px; overflow-y: auto;"></div>
-        <button class="btn" onclick="closeModal('modalEditSchedule')" style="margin-top: 16px; width: 100%;">Tutup</button>
+        <button class="btn-confirm" onclick="closeModal('modalEditSchedule')" style="margin-top: 16px; width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Tutup</button>
       </div>
     </div>
   </div>
@@ -2983,7 +3002,7 @@
       </div>
 
       <div style="padding: 16px 20px; border-top: 1px solid var(--ps3-border);">
-        <button class="btn" onclick="closeModal('modalAllExpenses')" style="width: 100%;">Tutup</button>
+        <button class="btn-confirm" onclick="closeModal('modalAllExpenses')" style="width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Tutup</button>
       </div>
     </div>
   </div>
@@ -3062,7 +3081,10 @@
           </div>
         </div>
 
-        <button class="btn btn-red" onclick="addSchedule()" style="width: 100%; margin-top: 15px;">Tambah Jadwal</button>
+        <div style="display: flex; gap: 12px; margin-top: 15px;">
+          <button class="btn-cancel" onclick="closeModal('modalAddSchedule')" style="flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Batal</button>
+          <button class="btn-confirm" onclick="addSchedule()" style="flex: 2; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Tambah Jadwal</button>
+        </div>
       </div>
     </div>
   </div>
@@ -3086,7 +3108,7 @@
           </p>
         </div>
 
-        <button class="btn" onclick="closeModal('modalTrash')" style="width: 100%; margin-top: 15px;">Tutup</button>
+        <button class="btn-confirm" onclick="closeModal('modalTrash')" style="width: 100%; margin-top: 15px; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Tutup</button>
       </div>
     </div>
   </div>
@@ -3149,8 +3171,8 @@
         </div>
 
         <div style="display: flex; gap: 12px;">
-          <button class="btn-cancel" onclick="closeModal('modalCancelSchedule')" style="flex: 1; border-radius: 10px; padding: 14px; font-size: 0.85rem;">Tutup</button>
-          <button class="btn-danger" onclick="confirmCancelSchedule()" style="flex: 1; background: var(--ps3-red); color: #fff; border-radius: 10px; padding: 14px; font-size: 0.85rem;">
+          <button class="btn-cancel" onclick="closeModal('modalCancelSchedule')" style="flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Tutup</button>
+          <button class="btn-confirm" onclick="confirmCancelSchedule()" style="flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">
             ❌ Konfirmasi
           </button>
         </div>
