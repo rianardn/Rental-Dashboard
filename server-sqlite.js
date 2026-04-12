@@ -605,6 +605,19 @@ app.delete('/api/schedules/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// Get deleted schedules (trash/recycle bin) - MUST be before /:id route
+app.get('/api/schedules/deleted', (req, res) => {
+  try {
+    const deleted = db.prepare(`
+      SELECT * FROM deleted_schedules
+      ORDER BY deletedAt DESC
+    `).all();
+    res.json({ ok: true, deleted });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
 app.get('/api/schedules/:id', (req, res) => {
   try {
     const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(req.params.id);
@@ -625,19 +638,6 @@ app.get('/api/schedules/:id/edits', (req, res) => {
       ORDER BY editedAt DESC
     `).all(req.params.id, req.params.id);
     res.json({ ok: true, logs });
-  } catch (error) {
-    res.status(400).json({ ok: false, error: error.message });
-  }
-});
-
-// Get deleted schedules (trash/recycle bin)
-app.get('/api/schedules/deleted', (req, res) => {
-  try {
-    const deleted = db.prepare(`
-      SELECT * FROM deleted_schedules
-      ORDER BY deletedAt DESC
-    `).all();
-    res.json({ ok: true, deleted });
   } catch (error) {
     res.status(400).json({ ok: false, error: error.message });
   }
