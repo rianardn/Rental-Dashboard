@@ -1807,9 +1807,14 @@
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
           <div class="section-title" style="margin: 0;">📅 Daftar Jadwal</div>
-          <button class="btn btn-red" style="width: auto; padding: 10px 16px; font-size: 0.75rem;" onclick="openAddScheduleModal()">
-            <span style="margin-right: 6px;">➕</span> Tambah Jadwal
-          </button>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn" style="width: auto; padding: 8px 12px; font-size: 0.7rem; background: #333; border-color: #555; color: #aaa;" onclick="openTrashModal()">
+              <span style="margin-right: 4px;">🗑️</span> Tempat Sampah
+            </button>
+            <button class="btn btn-red" style="width: auto; padding: 10px 16px; font-size: 0.75rem;" onclick="openAddScheduleModal()">
+              <span style="margin-right: 6px;">➕</span> Tambah Jadwal
+            </button>
+          </div>
         </div>
         <p style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 15px;">Kelola booking penyewa yang akan datang</p>
         
@@ -2870,7 +2875,7 @@
         <div class="modal-title">➕ Tambah Jadwal Booking</div>
         <button class="modal-close" onclick="closeModal('modalAddSchedule')">×</button>
       </div>
-      
+
       <div style="padding: 20px;">
         <!-- KOLOM WAJIB -->
         <div class="form-group">
@@ -2923,7 +2928,7 @@
             <option value="">Pilih unit...</option>
           </select>
         </div>
-        
+
         <!-- KOLOM OPSIONAL -->
         <div style="border-top: 1px solid var(--ps3-border); padding-top: 15px; margin-top: 15px;">
           <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.1em;">Opsional</div>
@@ -2936,8 +2941,32 @@
             <input type="text" id="scheduleNote" placeholder="Catatan tambahan">
           </div>
         </div>
-        
+
         <button class="btn btn-red" onclick="addSchedule()" style="width: 100%; margin-top: 15px;">Tambah Jadwal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Tempat Sampah (Deleted Schedules) -->
+  <div id="modalTrash" class="modal" style="z-index: 3000;">
+    <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div class="modal-title">🗑️ Tempat Sampah</div>
+        <button class="modal-close" onclick="closeModal('modalTrash')">×</button>
+      </div>
+
+      <div style="padding: 20px;">
+        <p style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 15px;">
+          📋 Data jadwal yang telah dihapus tersimpan di sini sebagai log.
+        </p>
+
+        <div id="trashList" style="max-height: 400px; overflow-y: auto;">
+          <p style="text-align: center; color: var(--ps3-muted); padding: 30px;">
+            🗑️ Belum ada data yang dihapus
+          </p>
+        </div>
+
+        <button class="btn" onclick="closeModal('modalTrash')" style="width: 100%; margin-top: 15px;">Tutup</button>
       </div>
     </div>
   </div>
@@ -5646,7 +5675,7 @@
       const modal = document.getElementById(id);
       modal.classList.remove('active');
       modal.classList.remove('modal-front');
-      
+
       // Reset edit modal title when closing
       if (id === 'modalEditTransaction') {
         document.querySelector('#modalEditTransaction .modal-title').textContent = '✏️ Edit Transaksi';
@@ -5654,6 +5683,96 @@
       if (id === 'modalEditSchedule') {
         document.querySelector('#modalEditSchedule .modal-title').textContent = '✏️ Edit Jadwal';
       }
+    }
+
+    // Tempat Sampah (Trash) Modal Functions
+    function openTrashModal() {
+      loadDeletedSchedules();
+      openModal('modalTrash');
+    }
+
+    async function loadDeletedSchedules() {
+      const trashList = document.getElementById('trashList');
+      trashList.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 30px;">⏳ Memuat data...</p>';
+
+      try {
+        const response = await api('GET', '/schedules/deleted');
+        if (!response.ok) {
+          throw new Error('Failed to load deleted schedules');
+        }
+        const data = await response.json();
+
+        if (!data.deleted || data.deleted.length === 0) {
+          trashList.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 30px;">🗑️ Belum ada data yang dihapus</p>';
+          return;
+        }
+
+        const html = data.deleted.map(item => {
+          const deletedDate = formatDateTimeWIB(item.deletedAt);
+          const scheduledDate = item.scheduledDate || '-';
+          const scheduledTime = item.scheduledTime || '-';
+          const duration = item.duration ? `${item.duration} menit` : '-';
+          const unitName = item.unitName || `Unit ${item.unitId || '?'}`;
+          const status = item.status || 'unknown';
+          const statusBadge = getTrashStatusBadge(status);
+
+          return `
+            <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div style="font-weight: 600; font-size: 1rem; color: var(--ps3-silver);">${escapeHtml(item.customer || 'Tanpa Nama')}</div>
+                <div style="font-size: 0.75rem; color: var(--ps3-muted);">${deletedDate}</div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 8px;">
+                <div>📅 ${scheduledDate}</div>
+                <div>⏰ ${scheduledTime}</div>
+                <div>⏱️ ${duration}</div>
+                <div>🎮 ${escapeHtml(unitName)}</div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; ${statusBadge.style}">${statusBadge.label}</span>
+                ${item.deleteReason ? `<span style="font-size: 0.75rem; color: var(--ps3-muted); max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.deleteReason)}">💬 ${escapeHtml(item.deleteReason)}</span>` : ''}
+              </div>
+              ${item.note ? `<div style="font-size: 0.75rem; color: #888; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--ps3-border);">📝 ${escapeHtml(item.note)}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+
+        trashList.innerHTML = html;
+      } catch (error) {
+        console.error('Error loading deleted schedules:', error);
+        trashList.innerHTML = `<p style="text-align: center; color: var(--ps3-red); padding: 30px;">❌ Error: ${escapeHtml(error.message)}</p>`;
+      }
+    }
+
+    function getTrashStatusBadge(status) {
+      const styles = {
+        'pending': { label: '⏳ Pending', style: 'background: #333; color: #aaa;' },
+        'running': { label: '▶️ Running', style: 'background: #1a3d1a; color: #4caf50;' },
+        'completed': { label: '✅ Completed', style: 'background: #1a3d1a; color: #4caf50;' },
+        'cancelled': { label: '❌ Cancelled', style: 'background: #3d1a1a; color: #ff6b6b;' },
+        'deleted': { label: '🗑️ Deleted', style: 'background: #3d3d1a; color: #ffc107;' }
+      };
+      return styles[status] || { label: status, style: 'background: #333; color: #aaa;' };
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function formatDateTimeWIB(timestamp) {
+      if (!timestamp) return '-';
+      const date = new Date(parseInt(timestamp));
+      return date.toLocaleString('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) + ' WIB';
     }
 
     // ═════════════════ Transaction Edit Functions ═════════════════

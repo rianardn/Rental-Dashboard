@@ -165,6 +165,31 @@ try {
   console.error('[DB] Error creating edit_logs table:', e);
 }
 
+// Migration: Create deleted_schedules table for trash/recycle bin
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS deleted_schedules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      originalId INTEGER,
+      customer TEXT,
+      phone TEXT,
+      unitId INTEGER,
+      unitName TEXT,
+      scheduledDate TEXT,
+      scheduledTime TEXT,
+      duration INTEGER,
+      note TEXT,
+      status TEXT,
+      deletedAt INTEGER DEFAULT (strftime('%s', 'now') * 1000),
+      deletedBy TEXT,
+      deleteReason TEXT
+    )
+  `);
+  console.log('[DB] Migration: Created deleted_schedules table');
+} catch (e) {
+  console.error('[DB] Error creating deleted_schedules table:', e);
+}
+
 
 // Initialize default settings
 const initSettings = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
@@ -542,7 +567,40 @@ app.put('/api/schedules/:id', (req, res) => {
 });
 
 app.delete('/api/schedules/:id', (req, res) => {
-  db.prepare('DELETE FROM schedules WHERE id = ?').run(req.params.id);
+  const scheduleId = req.params.id;
+  const deleteReason = req.body?.deleteReason || req.query?.reason || '';
+
+  // Get schedule data before deleting
+  const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
+
+  if (schedule) {
+    // Save to deleted_schedules table
+    const insertDeleted = db.prepare(`
+      INSERT INTO deleted_schedules (
+        originalId, customer, phone, unitId, unitName,
+        scheduledDate, scheduledTime, duration, note, status,
+        deletedAt, deletedBy, deleteReason
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    insertDeleted.run(
+      schedule.id,
+      schedule.customer,
+      schedule.phone,
+      schedule.unitId,
+      schedule.unitName,
+      schedule.scheduledDate,
+      schedule.scheduledTime,
+      schedule.duration,
+      schedule.note,
+      schedule.status,
+      Date.now(),
+      'Admin',
+      deleteReason
+    );
+  }
+
+  // Delete from schedules table
+  db.prepare('DELETE FROM schedules WHERE id = ?').run(scheduleId);
   broadcast({ type: 'schedules', data: db.prepare('SELECT * FROM schedules ORDER BY scheduledDate DESC').all() });
   res.json({ ok: true });
 });
@@ -567,6 +625,19 @@ app.get('/api/schedules/:id/edits', (req, res) => {
       ORDER BY editedAt DESC
     `).all(req.params.id, req.params.id);
     res.json({ ok: true, logs });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
+// Get deleted schedules (trash/recycle bin)
+app.get('/api/schedules/deleted', (req, res) => {
+  try {
+    const deleted = db.prepare(`
+      SELECT * FROM deleted_schedules
+      ORDER BY deletedAt DESC
+    `).all();
+    res.json({ ok: true, deleted });
   } catch (error) {
     res.status(400).json({ ok: false, error: error.message });
   }
