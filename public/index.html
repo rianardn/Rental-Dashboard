@@ -8021,7 +8021,24 @@
       }
       
       // Helper: get overtime (for running schedules)
+      // Gunakan data unit yang aktual untuk perhitungan yang akurat
       function getOvertime() {
+        // Prioritaskan data unit yang sedang aktif
+        if (s.unitId && Array.isArray(units)) {
+          const unit = units.find(u => u.id == s.unitId && u.active);
+          if (unit && unit.startTime && unit.duration) {
+            const endTime = new Date(unit.startTime + (unit.duration * 60000));
+            const diffMs = now - endTime;
+            if (diffMs <= 0) return null;
+            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            if (hours > 0) {
+              return minutes > 0 ? `${hours} jam ${minutes} menit` : `${hours} jam`;
+            }
+            return `${minutes} menit`;
+          }
+        }
+        // Fallback: gunakan data jadwal
         let endTime;
         if (s.scheduledEndTime) {
           endTime = new Date(s.scheduledDate + 'T' + s.scheduledEndTime);
@@ -8057,7 +8074,24 @@
       }
       
       // Helper: get remaining time (for running schedules)
+      // Gunakan data unit yang aktual (waktu mulai sebenarnya saat user klik tombol Mulai)
       function getRemainingTime() {
+        // Cari unit yang terkait dengan schedule ini
+        if (s.unitId && Array.isArray(units)) {
+          const unit = units.find(u => u.id == s.unitId && u.active);
+          if (unit && unit.startTime && unit.duration) {
+            const endTime = new Date(unit.startTime + (unit.duration * 60000));
+            const remainingMs = endTime - now;
+            if (remainingMs <= 0) return null;
+            const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+            const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+            if (hours > 0) {
+              return minutes > 0 ? `${hours} jam ${minutes} menit` : `${hours} jam`;
+            }
+            return `${minutes} menit`;
+          }
+        }
+        // Fallback: gunakan data jadwal jika unit tidak ditemukan
         if (!s.scheduledTime || !s.duration) return null;
         const startTime = new Date(s.scheduledDate + 'T' + s.scheduledTime);
         const endTime = new Date(startTime.getTime() + parseInt(s.duration) * 60000);
