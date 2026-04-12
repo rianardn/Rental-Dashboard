@@ -4075,7 +4075,7 @@
                 🎮 ${t.unitName}
               </div>
               <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                <button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>
+                ${t.editCount > 0 ? `<button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>` : ''}
                 <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Edit transaksi">✏️</button>
                 <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Hapus transaksi">🗑️</button>
               </div>
@@ -4205,7 +4205,7 @@
                 ${catInfo.icon} ${catInfo.category}
               </div>
               <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                <button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat">📋</button>
+                ${e.editCount > 0 ? `<button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat">📋</button>` : ''}
                 <button onclick="try { openEditExpenseModal('${e.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Edit pengeluaran">✏️</button>
                 <button onclick="try { openDeleteExpenseModal('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}', ${e.amount}); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Hapus pengeluaran">🗑️</button>
               </div>
@@ -4718,7 +4718,7 @@
               🎮 ${t.unitName}
             </div>
             <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-              <button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>
+              ${t.editCount > 0 ? `<button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>` : ''}
               <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Edit transaksi">✏️</button>
               <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Hapus transaksi">🗑️</button>
             </div>
@@ -5042,7 +5042,7 @@
               ${catInfo.icon} ${catInfo.category}
             </div>
             <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-              <button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat">📋</button>
+              ${e.editCount > 0 ? `<button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat">📋</button>` : ''}
               <button onclick="try { openEditExpenseModal('${e.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Edit pengeluaran">✏️</button>
               <button onclick="try { openDeleteExpenseModal('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}', ${e.amount}); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Hapus pengeluaran">🗑️</button>
             </div>
