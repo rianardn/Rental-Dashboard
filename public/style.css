@@ -1644,3 +1644,270 @@
     input[type="file"] {
       display: none;
     }
+
+    /* ═══════════════════════════════════════════════════════════════
+       PHASE 1: Form Input Utility Classes
+       Migrasi inline styles → CSS classes
+    ═══════════════════════════════════════════════════════════════ */
+
+    /* Base form input (standard - untuk modal forms) */
+    .input-ps3 {
+      width: 100%;
+      background: var(--ps3-surface);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-border);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.95rem;
+      font-family: var(--font-body);
+    }
+    .input-ps3:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+      box-shadow: 0 0 0 2px rgba(230, 0, 18, 0.2);
+    }
+
+    /* Large form input (schedule form dll) */
+    .input-ps3-lg {
+      width: 100%;
+      background: var(--ps3-surface);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .input-ps3-lg:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+      box-shadow: 0 0 0 2px rgba(230, 0, 18, 0.2);
+    }
+
+    /* Card inputs (inventory, equipment selects) */
+    .input-card {
+      width: 100%;
+      background: var(--ps3-card);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-border);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.9rem;
+      font-family: var(--font-body);
+    }
+    .input-card:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+    }
+
+    /* Small/filter inputs */
+    .input-sm {
+      width: 100%;
+      background: var(--ps3-card);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-border);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.75rem;
+      font-family: var(--font-body);
+    }
+    .input-sm:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+    }
+
+    /* Equipment selects (konsol, tv, stik, dll) */
+    .select-equip {
+      background: var(--ps3-card);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-border);
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 0.75rem;
+      font-family: var(--font-body);
+    }
+    .select-equip:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+    }
+    .select-equip-full { width: 100%; }
+    .select-equip-flex { flex: 1; }
+
+    /* Search inputs dengan left padding untuk icon */
+    .input-search {
+      width: 100%;
+      background: var(--ps3-bg);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-border);
+      border-radius: 8px;
+      padding: 12px 12px 12px 40px;
+      font-size: 0.95rem;
+      font-family: var(--font-body);
+    }
+    .input-search:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+    }
+
+    /* Date inputs */
+    .input-date {
+      width: 100%;
+      padding: 10px;
+      background: var(--ps3-surface);
+      border: 1px solid var(--ps3-border);
+      border-radius: 6px;
+      color: var(--ps3-text);
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+    }
+    .input-date:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+    }
+
+    /* Date inputs dark (schedule export) */
+    .input-date-dark {
+      width: 100%;
+      padding: 8px;
+      background: #000;
+      border: 1px solid var(--ps3-border);
+      border-radius: 6px;
+      color: var(--ps3-text);
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+    }
+    .input-date-dark:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+    }
+
+    /* Textareas */
+    .textarea-ps3 {
+      width: 100%;
+      background: var(--ps3-surface);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-border);
+      border-radius: 10px;
+      padding: 12px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      resize: vertical;
+      min-height: 80px;
+    }
+    .textarea-ps3:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+    }
+
+    /* Textarea cards */
+    .textarea-card {
+      width: 100%;
+      background: var(--ps3-card);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-border);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.9rem;
+      resize: vertical;
+    }
+    .textarea-card:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+    }
+
+    /* Special textarea (delete reason with red border) */
+    .textarea-danger {
+      width: 100%;
+      background: var(--ps3-surface);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-red);
+      border-radius: 10px;
+      padding: 12px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      resize: vertical;
+      min-height: 80px;
+    }
+    .textarea-danger:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(230, 0, 18, 0.2);
+    }
+
+    /* Checkboxes */
+    .checkbox-ps3 {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--ps3-red);
+      cursor: pointer;
+    }
+    .checkbox-green {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--ps3-green);
+      cursor: pointer;
+    }
+    .checkbox-mt { margin-top: 2px; }
+
+    /* Larger checkboxes (20px) */
+    .checkbox-lg {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--ps3-red);
+      cursor: pointer;
+    }
+
+    /* Special inputs */
+    .input-uppercase {
+      text-transform: uppercase;
+    }
+
+    /* Input dengan font-family inherit (untuk edit forms) */
+    .input-inherit {
+      width: 100%;
+      background: var(--ps3-surface);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-border);
+      border-radius: 10px;
+      padding: 12px;
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+    .input-inherit:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+    }
+
+    /* Input red border (reason field) */
+    .input-danger {
+      width: 100%;
+      background: var(--ps3-surface);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-red);
+      border-radius: 10px;
+      padding: 12px;
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+    .input-danger:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(230, 0, 18, 0.2);
+    }
+
+    /* Select dengan margin bottom */
+    .input-ps3-mb {
+      width: 100%;
+      background: var(--ps3-surface);
+      color: var(--ps3-text);
+      border: 1px solid var(--ps3-border);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.95rem;
+      font-family: var(--font-body);
+      margin-bottom: 10px;
+    }
+    .input-ps3-mb:focus {
+      outline: none;
+      border-color: var(--ps3-red);
+    }

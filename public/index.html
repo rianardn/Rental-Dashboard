@@ -139,7 +139,7 @@
         <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group">
             <label>Tipe Biaya Pengeluaran</label>
-            <select id="expenseCategory" onchange="onExpenseCategoryChange()" style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem;">
+            <select id="expenseCategory" onchange="onExpenseCategoryChange()" class="input-ps3">
               <option value="">-- Pilih Tipe --</option>
               <option value="Listrik">⚡ Listrik</option>
               <option value="Prive">💰 Prive</option>
@@ -152,13 +152,13 @@
           </div>
           <div class="form-group" id="expenseSubCategoryGroup" style="display: none;">
             <label>Sub-Kategori</label>
-            <select id="expenseSubCategory" style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem;">
+            <select id="expenseSubCategory" class="input-ps3">
               <option value="">-- Pilih Sub --</option>
             </select>
           </div>
           <div class="form-group" id="expenseCustomGroup" style="display: none;">
             <label>Nama Pengeluaran Custom</label>
-            <input type="text" id="expenseCustomName" placeholder="Contoh: Beli CD Game" style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem;">
+            <input type="text" id="expenseCustomName" placeholder="Contoh: Beli CD Game" class="input-ps3">
           </div>
         </div>
 
@@ -166,7 +166,7 @@
         <div class="form-row" style="display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px;">
           <div class="form-group">
             <label>Jumlah (Rp)</label>
-            <input type="number" id="expenseAmount" placeholder="50000" style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem;">
+            <input type="number" id="expenseAmount" placeholder="50000" class="input-ps3">
           </div>
         </div>
         <div style="font-size: 0.8rem; color: var(--ps3-chrome); margin-top: 4px; text-align: right;">
@@ -177,7 +177,7 @@
         <div class="form-row" style="margin-top: 12px;">
           <div class="form-group">
             <label>Catatan (opsional)</label>
-            <input type="text" id="expenseNote" placeholder="Catatan tambahan..." style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem;">
+            <input type="text" id="expenseNote" placeholder="Catatan tambahan..." class="input-ps3">
           </div>
         </div>
 
@@ -294,7 +294,7 @@
         <div id="inventoryTabItems">
           <!-- Filters -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-            <select id="inventoryFilterCategory" onchange="renderInventory()" style="background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 8px; font-size: 0.75rem;">
+            <select id="inventoryFilterCategory" onchange="renderInventory()" class="input-sm">
               <option value="">Semua Kategori</option>
               <option value="konsol">🎮 Konsol</option>
               <option value="tv">📺 TV</option>
@@ -304,7 +304,7 @@
               <option value="kabel_power">🔌 Plug</option>
               <option value="lainnya">📦 Lainnya</option>
             </select>
-            <select id="inventoryFilterCondition" onchange="renderInventory()" style="background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 8px; font-size: 0.75rem;">
+            <select id="inventoryFilterCondition" onchange="renderInventory()" class="input-sm">
               <option value="">Semua Kondisi</option>
               <option value="baik">🟢 Baik</option>
               <option value="rusak">🔴 Rusak</option>
@@ -489,7 +489,7 @@
               </ul>
             </div>
             <p style="font-size: 0.8rem; margin-bottom: 8px;">Untuk melanjutkan, ketik <strong style="color: var(--ps3-red);">SAYA SETUJU</strong> di bawah:</p>
-            <input type="text" id="importConfirmText" placeholder="Ketik SAYA SETUJU disini" style="width: 100%; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; color: var(--ps3-text); font-family: var(--font-body); text-transform: uppercase;">
+            <input type="text" id="importConfirmText" placeholder="Ketik SAYA SETUJU disini" class="input-ps3 input-uppercase">
           </div>
           <div class="modal-footer">
             <button class="btn-cancel" onclick="closeModal('modalImportConfirm')">Batal</button>
@@ -515,7 +515,7 @@
           
           <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
             <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-              <input type="checkbox" id="exportIncludeIncome" checked style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+              <input type="checkbox" id="exportIncludeIncome" checked class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">📈 Transaksi Pendapatan</div>
                 <div style="font-size: 0.75rem; color: var(--ps3-muted);">Data pemasukan dari penyewaan PS</div>
@@ -523,7 +523,7 @@
             </label>
             
             <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-              <input type="checkbox" id="exportIncludeExpense" checked style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+              <input type="checkbox" id="exportIncludeExpense" checked class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">📉 Transaksi Pengeluaran</div>
                 <div style="font-size: 0.75rem; color: var(--ps3-muted);">Data pengeluaran operasional</div>
@@ -554,7 +554,7 @@
           <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
             <!-- Transaction History (Active Data) -->
             <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-              <input type="checkbox" id="exportIncludeTransactionHistory" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+              <input type="checkbox" id="exportIncludeTransactionHistory" class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">📋 Riwayat Transaksi</div>
                 <div style="font-size: 0.75rem; color: var(--ps3-muted);">Data transaksi aktif yang tersimpan di database</div>
@@ -563,7 +563,7 @@
             
             <!-- Edit History -->
             <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-              <input type="checkbox" id="exportIncludeEditHistory" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+              <input type="checkbox" id="exportIncludeEditHistory" class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">✏️ Riwayat Edit</div>
                 <div style="font-size: 0.75rem; color: var(--ps3-muted);">Catatan perubahan data transaksi</div>
@@ -572,7 +572,7 @@
             
             <!-- Delete History with Ghost Records - HIDDEN for periodic exports -->
             <label id="ghostRecordsOption" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-              <input type="checkbox" id="exportIncludeDeleteHistory" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+              <input type="checkbox" id="exportIncludeDeleteHistory" class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">🗑️ Riwayat Hapus (Ghost Records)</div>
                 <div style="font-size: 0.75rem; color: var(--ps3-muted);">TX ID transaksi yang sudah dihapus dengan keterangan "Dihapus"</div>
@@ -611,11 +611,11 @@
             <div style="display: flex; gap: 12px;">
               <div style="flex: 1;">
                 <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 6px;">Dari Tanggal</label>
-                <input type="date" id="customExportStartDate" style="width: 100%; padding: 10px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 6px; color: var(--ps3-text); font-family: var(--font-display);">
+                <input type="date" id="customExportStartDate" class="input-date">
               </div>
               <div style="flex: 1;">
                 <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 6px;">Sampai Tanggal</label>
-                <input type="date" id="customExportEndDate" style="width: 100%; padding: 10px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 6px; color: var(--ps3-text); font-family: var(--font-display);">
+                <input type="date" id="customExportEndDate" class="input-date">
               </div>
             </div>
           </div>
@@ -625,11 +625,11 @@
             <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 8px;">Format File</label>
             <div style="display: flex; gap: 12px;">
               <label style="flex: 1; display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-                <input type="checkbox" id="customExportCSV" checked style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+                <input type="checkbox" id="customExportCSV" checked class="checkbox-ps3">
                 <span style="font-weight: 600; color: var(--ps3-text);">📊 CSV</span>
               </label>
               <label style="flex: 1; display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-                <input type="checkbox" id="customExportJSON" checked style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+                <input type="checkbox" id="customExportJSON" checked class="checkbox-ps3">
                 <span style="font-weight: 600; color: var(--ps3-text);">💾 JSON</span>
               </label>
             </div>
@@ -640,13 +640,13 @@
             <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 8px;">Jenis Data</label>
             <div style="display: flex; flex-direction: column; gap: 10px;">
               <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-                <input type="checkbox" id="customExportIncome" checked style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+                <input type="checkbox" id="customExportIncome" checked class="checkbox-ps3">
                 <div>
                   <div style="font-weight: 600; color: var(--ps3-text);">📈 Transaksi Pendapatan</div>
                 </div>
               </label>
               <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-                <input type="checkbox" id="customExportExpense" checked style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+                <input type="checkbox" id="customExportExpense" checked class="checkbox-ps3">
                 <div>
                   <div style="font-weight: 600; color: var(--ps3-text);">📉 Transaksi Pengeluaran</div>
                 </div>
@@ -677,7 +677,7 @@
           <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
             <!-- Transaction History (Active Data) -->
             <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-              <input type="checkbox" id="customExportTransactionHistory" checked style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+              <input type="checkbox" id="customExportTransactionHistory" checked class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">📋 Riwayat Transaksi Aktif</div>
                 <div style="font-size: 0.75rem; color: var(--ps3-muted);">Data transaksi aktif yang tersimpan di database</div>
@@ -686,7 +686,7 @@
 
             <!-- Edit History -->
             <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-              <input type="checkbox" id="customExportEditHistory" checked style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+              <input type="checkbox" id="customExportEditHistory" checked class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">✏️ Riwayat Edit</div>
                 <div style="font-size: 0.75rem; color: var(--ps3-muted);">Catatan perubahan data transaksi</div>
@@ -695,7 +695,7 @@
 
             <!-- Delete History with Ghost Records -->
             <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-              <input type="checkbox" id="customExportDeleteHistory" checked style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+              <input type="checkbox" id="customExportDeleteHistory" checked class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">🗑️ Riwayat Hapus (Ghost Records)</div>
                 <div style="font-size: 0.75rem; color: var(--ps3-muted);">TX ID transaksi yang sudah dihapus dengan keterangan "Dihapus"</div>
@@ -755,11 +755,11 @@
               <div style="display: flex; gap: 12px;">
                 <div style="flex: 1;">
                   <label style="display: block; font-size: 0.75rem; color: var(--ps3-muted); margin-bottom: 4px;">Dari</label>
-                  <input type="date" id="schedExportStartDate" style="width: 100%; padding: 8px; background: #000; border: 1px solid var(--ps3-border); border-radius: 6px; color: var(--ps3-text); font-family: var(--font-display); font-size: 0.8rem;">
+                  <input type="date" id="schedExportStartDate" class="input-date-dark">
                 </div>
                 <div style="flex: 1;">
                   <label style="display: block; font-size: 0.75rem; color: var(--ps3-muted); margin-bottom: 4px;">Sampai</label>
-                  <input type="date" id="schedExportEndDate" style="width: 100%; padding: 8px; background: #000; border: 1px solid var(--ps3-border); border-radius: 6px; color: var(--ps3-text); font-family: var(--font-display); font-size: 0.8rem;">
+                  <input type="date" id="schedExportEndDate" class="input-date-dark">
                 </div>
               </div>
             </div>
@@ -770,25 +770,25 @@
             <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 8px;">Jenis Jadwal (minimal pilih satu)</label>
             <div style="display: flex; flex-direction: column; gap: 8px;">
               <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(0,170,0,0.1); border: 1px solid var(--ps3-green); border-radius: 8px; cursor: pointer;">
-                <input type="checkbox" id="schedTypeActive" checked style="width: 18px; height: 18px; accent-color: var(--ps3-green);">
+                <input type="checkbox" id="schedTypeActive" checked class="checkbox-green">
                 <span style="font-size: 0.85rem; color: var(--ps3-text);">
                   <strong style="color: var(--ps3-green);">▶ Jadwal Aktif</strong> — Menunggu & Berjalan
                 </span>
               </label>
               <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-                <input type="checkbox" id="schedTypeCompleted" checked style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+                <input type="checkbox" id="schedTypeCompleted" checked class="checkbox-ps3">
                 <span style="font-size: 0.85rem; color: var(--ps3-text);">
                   <strong style="color: #4CAF50;">✓ Jadwal Selesai</strong> — Yang sudah diselesaikan
                 </span>
               </label>
               <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-                <input type="checkbox" id="schedTypeEditHistory" checked style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+                <input type="checkbox" id="schedTypeEditHistory" checked class="checkbox-ps3">
                 <span style="font-size: 0.85rem; color: var(--ps3-text);">
                   <strong style="color: #FFC107;">📝 Riwayat Edit</strong> — Perubahan jadwal
                 </span>
               </label>
               <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(255,0,0,0.05); border: 1px solid rgba(255,0,0,0.3); border-radius: 8px; cursor: pointer;">
-                <input type="checkbox" id="schedTypeCancelled" checked style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+                <input type="checkbox" id="schedTypeCancelled" checked class="checkbox-ps3">
                 <span style="font-size: 0.85rem; color: var(--ps3-text);">
                   <strong style="color: #f44336;">✕ Jadwal Dibatalkan</strong> — Yang dibatalkan
                 </span>
@@ -844,7 +844,7 @@
         </div>
         <div class="form-group">
           <label>Durasi Sewa</label>
-          <select id="startDurationPreset" onchange="handleDurationChange()" style="margin-bottom: 10px; cursor: pointer;">
+          <select id="startDurationPreset" onchange="handleDurationChange()" class="input-ps3-mb">
             <option value="">Pilih durasi...</option>
             <option value="60">1 Jam</option>
             <option value="120">2 Jam</option>
@@ -1025,7 +1025,7 @@
         </div>
         <div class="form-group">
           <label>Pilih Unit Tersedia</label>
-          <select id="scheduleUnitSelect" style="width: 100%; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 6px; color: var(--ps3-text); font-size: 0.9rem;">
+          <select id="scheduleUnitSelect" class="input-ps3">
             <option value="">-- Pilih Unit --</option>
           </select>
           <small style="display: block; margin-top: 8px; color: var(--ps3-muted); font-size: 0.75rem;">
@@ -1058,35 +1058,35 @@
         <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Pilih data yang ingin diedit:</p>
         <div style="display: flex; flex-direction: column; gap: 12px;">
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
-            <input type="checkbox" id="editCheckCustomer" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <input type="checkbox" id="editCheckCustomer" class="checkbox-ps3">
             <span>👤 Nama Penyewa</span>
           </label>
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
-            <input type="checkbox" id="editCheckPhone" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <input type="checkbox" id="editCheckPhone" class="checkbox-ps3">
             <span>📞 Nomor Telepon</span>
           </label>
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
-            <input type="checkbox" id="editCheckDateTime" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <input type="checkbox" id="editCheckDateTime" class="checkbox-ps3">
             <span>📅 Tanggal & Waktu</span>
           </label>
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
-            <input type="checkbox" id="editCheckDuration" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <input type="checkbox" id="editCheckDuration" class="checkbox-ps3">
             <span>⏱️ Durasi Penyewaan</span>
           </label>
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
-            <input type="checkbox" id="editCheckUnit" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <input type="checkbox" id="editCheckUnit" class="checkbox-ps3">
             <span>🎮 Unit PS</span>
           </label>
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
-            <input type="checkbox" id="editCheckPaid" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <input type="checkbox" id="editCheckPaid" class="checkbox-ps3">
             <span>💰 Jumlah Pendapatan</span>
           </label>
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
-            <input type="checkbox" id="editCheckPayment" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <input type="checkbox" id="editCheckPayment" class="checkbox-ps3">
             <span>💳 Metode Pembayaran</span>
           </label>
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
-            <input type="checkbox" id="editCheckNote" style="width: 18px; height: 18px; accent-color: var(--ps3-red);">
+            <input type="checkbox" id="editCheckNote" class="checkbox-ps3">
             <span>💬 Catatan</span>
           </label>
         </div>
@@ -1099,12 +1099,12 @@
 
         <div id="editFieldCustomer" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Nama Penyewa</label>
-          <input type="text" id="editCustomer" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+          <input type="text" id="editCustomer" class="input-inherit">
         </div>
 
         <div id="editFieldPhone" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Nomor Telepon</label>
-          <input type="text" id="editPhone" placeholder="08xxxxxxxxxx" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+          <input type="text" id="editPhone" placeholder="08xxxxxxxxxx" class="input-inherit">
         </div>
 
         <!-- Unified Date/Time/Duration Section -->
@@ -1115,11 +1115,11 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Tanggal Mulai</label>
-              <input type="date" id="editStartDate" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editTxInitDefaultEndDate()">
+              <input type="date" id="editStartDate" class="input-inherit" style="font-size: 0.9rem;" onchange="editTxInitDefaultEndDate()">
             </div>
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Jam Mulai</label>
-              <input type="time" id="editStartTime" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editTxUpdateEndTime()">
+              <input type="time" id="editStartTime" class="input-inherit" style="font-size: 0.9rem;" onchange="editTxUpdateEndTime()">
             </div>
           </div>
 
@@ -1127,7 +1127,7 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Durasi (menit)</label>
-              <input type="number" id="editDurationTime" min="15" step="15" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editTxUpdateEndTime()" oninput="editTxUpdateEndTime()">
+              <input type="number" id="editDurationTime" min="15" step="15" class="input-inherit" style="font-size: 0.9rem;" onchange="editTxUpdateEndTime()" oninput="editTxUpdateEndTime()">
             </div>
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Jam Selesai (Auto)</label>
@@ -1147,24 +1147,24 @@
         <!-- Duration (legacy, for when only duration is selected without datetime) -->
         <div id="editFieldDuration" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Durasi (menit)</label>
-          <input type="number" id="editDuration" min="15" step="15" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+          <input type="number" id="editDuration" min="15" step="15" class="input-inherit">
         </div>
 
         <div id="editFieldUnit" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Unit PS</label>
-          <select id="editUnitId" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+          <select id="editUnitId" class="input-inherit">
             <option value="">Pilih Unit</option>
           </select>
         </div>
 
         <div id="editFieldPaid" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Jumlah Pendapatan (Rp)</label>
-          <input type="number" id="editPaid" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+          <input type="number" id="editPaid" class="input-inherit">
         </div>
 
         <div id="editFieldPayment" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Metode Pembayaran</label>
-          <select id="editPayment" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+          <select id="editPayment" class="input-inherit">
             <option value="cash">Tunai (Cash)</option>
             <option value="transfer">Transfer</option>
             <option value="qris">QRIS</option>
@@ -1173,12 +1173,12 @@
 
         <div id="editFieldNote" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Catatan</label>
-          <textarea id="editNote" rows="3" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem; resize: vertical;"></textarea>
+          <textarea id="editNote" rows="3" class="textarea-ps3"></textarea>
         </div>
 
         <div style="margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-red);">Alasan Edit *</label>
-          <input type="text" id="editReason" placeholder="Contoh: Koreksi harga, Perubahan durasi, dll." style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+          <input type="text" id="editReason" placeholder="Contoh: Koreksi harga, Perubahan durasi, dll." class="input-danger">
         </div>
 
         <div style="display: flex; gap: 10px;">
@@ -1212,27 +1212,27 @@
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
           <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
-            <input type="checkbox" id="editScheduleCheckCustomer" style="width: 20px; height: 20px; accent-color: var(--ps3-red);">
+            <input type="checkbox" id="editScheduleCheckCustomer" class="checkbox-lg">
             <span>👤 Nama Penyewa</span>
           </label>
 
           <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
-            <input type="checkbox" id="editScheduleCheckPhone" style="width: 20px; height: 20px; accent-color: var(--ps3-red);">
+            <input type="checkbox" id="editScheduleCheckPhone" class="checkbox-lg">
             <span>📞 Nomor Telepon</span>
           </label>
 
           <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
-            <input type="checkbox" id="editScheduleCheckDateTime" style="width: 20px; height: 20px; accent-color: var(--ps3-red);">
+            <input type="checkbox" id="editScheduleCheckDateTime" class="checkbox-lg">
             <span>📅 Tanggal, Waktu & Durasi</span>
           </label>
 
           <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
-            <input type="checkbox" id="editScheduleCheckUnit" style="width: 20px; height: 20px; accent-color: var(--ps3-red);">
+            <input type="checkbox" id="editScheduleCheckUnit" class="checkbox-lg">
             <span>🎮 Unit PS</span>
           </label>
 
           <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
-            <input type="checkbox" id="editScheduleCheckNote" style="width: 20px; height: 20px; accent-color: var(--ps3-red);">
+            <input type="checkbox" id="editScheduleCheckNote" class="checkbox-lg">
             <span>💬 Catatan</span>
           </label>
         </div>
@@ -1249,12 +1249,12 @@
 
         <div id="editScheduleFieldCustomer" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Nama Penyewa</label>
-          <input type="text" id="editScheduleCustomer" placeholder="Nama penyewa" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+          <input type="text" id="editScheduleCustomer" placeholder="Nama penyewa" class="input-inherit">
         </div>
 
         <div id="editScheduleFieldPhone" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Nomor Telepon</label>
-          <input type="text" id="editSchedulePhone" placeholder="08xxxxxxxxxx" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+          <input type="text" id="editSchedulePhone" placeholder="08xxxxxxxxxx" class="input-inherit">
         </div>
 
         <!-- Unified Date/Time/Duration Section (like Add Schedule form) -->
@@ -1265,11 +1265,11 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Tanggal Mulai</label>
-              <input type="date" id="editScheduleStartDate" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editScheduleInitDefaultEndDate()">
+              <input type="date" id="editScheduleStartDate" class="input-inherit" style="font-size: 0.9rem;" onchange="editScheduleInitDefaultEndDate()">
             </div>
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Jam Mulai</label>
-              <input type="time" id="editScheduleStartTime" step="60" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editScheduleUpdateEndDateTimeFromDuration()">
+              <input type="time" id="editScheduleStartTime" step="60" class="input-inherit" style="font-size: 0.9rem;" onchange="editScheduleUpdateEndDateTimeFromDuration()">
             </div>
           </div>
 
@@ -1277,11 +1277,11 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Tanggal Berakhir</label>
-              <input type="date" id="editScheduleEndDate" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editScheduleUpdateDurationFromEndDateTime()">
+              <input type="date" id="editScheduleEndDate" class="input-inherit" style="font-size: 0.9rem;" onchange="editScheduleUpdateDurationFromEndDateTime()">
             </div>
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Jam Berakhir</label>
-              <input type="time" id="editScheduleEndTime" step="60" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem;" onchange="editScheduleUpdateDurationFromEndDateTime()">
+              <input type="time" id="editScheduleEndTime" step="60" class="input-inherit" style="font-size: 0.9rem;" onchange="editScheduleUpdateDurationFromEndDateTime()">
             </div>
           </div>
 
@@ -1289,7 +1289,7 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Durasi</label>
-              <select id="editScheduleDuration" onchange="editScheduleHandleDurationChange(this)" style="width: 100%; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; color: var(--ps3-text); font-family: var(--font-body); font-size: 0.9rem; cursor: pointer;">
+              <select id="editScheduleDuration" onchange="editScheduleHandleDurationChange(this)" class="input-ps3">
                 <option value="60">1 Jam</option>
                 <option value="120" selected>2 Jam</option>
                 <option value="180">3 Jam</option>
@@ -1307,19 +1307,19 @@
 
         <div id="editScheduleFieldUnit" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Unit PS</label>
-          <select id="editScheduleUnit" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.95rem;">
+          <select id="editScheduleUnit" class="input-inherit">
             <!-- Populated by JS -->
           </select>
         </div>
 
         <div id="editScheduleFieldNote" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Catatan</label>
-          <textarea id="editScheduleNote" placeholder="Catatan tambahan..." style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem; min-height: 80px; resize: vertical;"></textarea>
+          <textarea id="editScheduleNote" placeholder="Catatan tambahan..." class="textarea-ps3"></textarea>
         </div>
 
         <div style="margin-bottom: 20px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-red);">Alasan Edit * <span style="color: var(--ps3-muted); font-size: 0.75rem;">(wajib diisi)</span></label>
-          <textarea id="editScheduleReason" placeholder="Contoh: Perubahan jadwal, kesalahan input, permintaan pelanggan, dll." style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem; min-height: 80px; resize: vertical;"></textarea>
+          <textarea id="editScheduleReason" placeholder="Contoh: Perubahan jadwal, kesalahan input, permintaan pelanggan, dll." class="textarea-ps3"></textarea>
         </div>
 
         <div style="display: flex; gap: 10px;">
@@ -1372,7 +1372,7 @@
 
         <!-- Confirmation Checkbox -->
         <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin-bottom: 16px;">
-          <input type="checkbox" id="deleteConfirmCheckbox" style="width: 20px; height: 20px; margin-top: 2px; accent-color: var(--ps3-red);">
+          <input type="checkbox" id="deleteConfirmCheckbox" class="checkbox-lg checkbox-mt">
           <span style="font-size: 0.9rem; color: var(--ps3-text);">
             Saya mengerti dan menyetujui penghapusan transaksi ini. Tindakan ini bersifat permanen.
           </span>
@@ -1383,7 +1383,7 @@
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-red);">
             Alasan Penghapusan * <span style="color: var(--ps3-muted); font-size: 0.75rem;">(wajib diisi, min. 3 karakter)</span>
           </label>
-          <textarea id="deleteReason" placeholder="Contoh: Data duplikat, Input salah, Pembatalan transaksi, dll." style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 12px; font-family: inherit; font-size: 0.9rem; min-height: 80px; resize: vertical;"></textarea>
+          <textarea id="deleteReason" placeholder="Contoh: Data duplikat, Input salah, Pembatalan transaksi, dll." class="textarea-danger"></textarea>
         </div>
 
         <!-- Action Buttons -->
@@ -1418,7 +1418,7 @@
         <div id="trashSearchPanel" style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
           <!-- Search Bar -->
           <div style="position: relative; margin-bottom: 12px;">
-            <input type="text" id="trashSearchInput" placeholder="🔍 Cari TX ID (contoh: PSM0001)..." style="width: 100%; background: var(--ps3-bg); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 12px 12px 12px 40px; font-size: 0.95rem;"
+            <input type="text" id="trashSearchInput" placeholder="🔍 Cari TX ID (contoh: PSM0001)..." class="input-search">
               oninput="debouncedSearchTrashIncome()">
             <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1rem;">🔍</span>
           </div>
@@ -1561,7 +1561,7 @@
         <div id="trashExpenseSearchPanel" style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
           <!-- Search Bar -->
           <div style="position: relative; margin-bottom: 12px;">
-            <input type="text" id="trashExpenseSearchInput" placeholder="🔍 Cari TX ID (contoh: EXP0001)..." style="width: 100%; background: var(--ps3-bg); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 12px 12px 12px 40px; font-size: 0.95rem;"
+            <input type="text" id="trashExpenseSearchInput" placeholder="🔍 Cari TX ID (contoh: EXP0001)..." class="input-search">
               oninput="debouncedSearchTrashExpense()">
             <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1rem;">🔍</span>
           </div>
@@ -1694,19 +1694,19 @@
         <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Pilih data yang ingin diedit:</p>
         <div style="display: flex; flex-direction: column; gap: 12px;">
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-            <input type="checkbox" id="editExpenseCheckCategory" style="width: 18px; height: 18px;">
+            <input type="checkbox" id="editExpenseCheckCategory" class="checkbox-ps3">
             <span>Tipe & Sub-kategori Biaya</span>
           </label>
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-            <input type="checkbox" id="editExpenseCheckAmount" style="width: 18px; height: 18px;">
+            <input type="checkbox" id="editExpenseCheckAmount" class="checkbox-ps3">
             <span>Jumlah Pengeluaran</span>
           </label>
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-            <input type="checkbox" id="editExpenseCheckDateTime" style="width: 18px; height: 18px;">
+            <input type="checkbox" id="editExpenseCheckDateTime" class="checkbox-ps3">
             <span>Tanggal & Waktu</span>
           </label>
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-            <input type="checkbox" id="editExpenseCheckNote" style="width: 18px; height: 18px;">
+            <input type="checkbox" id="editExpenseCheckNote" class="checkbox-ps3">
             <span>Catatan</span>
           </label>
         </div>
@@ -1718,7 +1718,7 @@
         <!-- Category & Sub-category -->
         <div id="editExpenseFieldCategory" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Tipe Biaya</label>
-          <select id="editExpenseCategory" onchange="onEditExpenseCategoryChange()" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+          <select id="editExpenseCategory" onchange="onEditExpenseCategoryChange()" class="input-ps3-mb">
             <option value="">-- Pilih Tipe --</option>
             <option value="Listrik">⚡ Listrik</option>
             <option value="Prive">💰 Prive</option>
@@ -1730,39 +1730,39 @@
           </select>
           <div id="editExpenseSubCategoryContainer" style="display: none;">
             <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Sub-Kategori</label>
-            <select id="editExpenseSubCategory" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+            <select id="editExpenseSubCategory" class="input-ps3-mb">
               <option value="">-- Pilih Sub --</option>
             </select>
           </div>
           <div id="editExpenseCustomContainer" style="display: none;">
             <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Nama Custom</label>
-            <input type="text" id="editExpenseCustomName" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+            <input type="text" id="editExpenseCustomName" class="input-ps3">
           </div>
         </div>
 
         <!-- Amount -->
         <div id="editExpenseFieldAmount" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Jumlah (Rp)</label>
-          <input type="number" id="editExpenseAmount" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+          <input type="number" id="editExpenseAmount" class="input-ps3">
         </div>
 
         <!-- Date & Time -->
         <div id="editExpenseFieldDateTime" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Tanggal & Waktu</label>
-          <input type="datetime-local" id="editExpenseDateTime" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+          <input type="datetime-local" id="editExpenseDateTime" class="input-ps3">
           <small style="color: var(--ps3-muted); display: block; margin-top: 4px;">Format: WIB (UTC+7)</small>
         </div>
 
         <!-- Note -->
         <div id="editExpenseFieldNote" style="display: none; margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Catatan</label>
-          <input type="text" id="editExpenseNote" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+          <input type="text" id="editExpenseNote" class="input-ps3">
         </div>
 
         <!-- Reason -->
         <div style="margin-bottom: 16px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Alasan Edit <span style="color: var(--ps3-red);">*</span></label>
-          <input type="text" id="editExpenseReason" placeholder="Mengapa data ini diedit?" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+          <input type="text" id="editExpenseReason" placeholder="Mengapa data ini diedit?" class="input-ps3">
         </div>
 
         <div style="display: flex; gap: 10px;">
@@ -1810,7 +1810,7 @@
         
         <!-- Confirmation Checkbox -->
         <label style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; cursor: pointer;">
-          <input type="checkbox" id="confirmDeleteExpenseCheckbox" style="width: 18px; height: 18px; margin-top: 2px;">
+          <input type="checkbox" id="confirmDeleteExpenseCheckbox" class="checkbox-ps3 checkbox-mt">
           <span style="font-size: 0.9rem;">Saya mengerti dan menyetujui penghapusan data ini</span>
         </label>
         
@@ -1819,7 +1819,7 @@
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">
             Alasan Penghapusan <span style="color: var(--ps3-red);">*</span>
           </label>
-          <textarea id="deleteExpenseReason" placeholder="Mengapa data ini dihapus? (minimum 3 karakter)" minlength="3" style="width: 100%; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; min-height: 80px; resize: vertical;"></textarea>
+          <textarea id="deleteExpenseReason" placeholder="Mengapa data ini dihapus? (minimum 3 karakter)" minlength="3" class="textarea-ps3"></textarea>
         </div>
         
         <!-- Action Buttons -->
@@ -1844,7 +1844,7 @@
         <div id="txSearchPanel" style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
           <!-- Search Bar -->
           <div style="position: relative; margin-bottom: 12px;">
-            <input type="text" id="txSearchInput" placeholder="🔍 Cari TX ID (contoh: PSM0001)..." style="width: 100%; background: var(--ps3-bg); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 12px 12px 12px 40px; font-size: 0.95rem;"
+            <input type="text" id="txSearchInput" placeholder="🔍 Cari TX ID (contoh: PSM0001)..." class="input-search">
               oninput="debouncedSearchTransactions()">
             <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1rem;">🔍</span>
           </div>
@@ -1964,7 +1964,7 @@
         <div id="expSearchPanel" style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
           <!-- Search Bar -->
           <div style="position: relative; margin-bottom: 12px;">
-            <input type="text" id="expSearchInput" placeholder="🔍 Cari TX ID (contoh: PSK0001)..." style="width: 100%; background: var(--ps3-bg); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 12px 12px 12px 40px; font-size: 0.95rem;"
+            <input type="text" id="expSearchInput" placeholder="🔍 Cari TX ID (contoh: PSK0001)..." class="input-search">
               oninput="debouncedSearchExpenses()">
             <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1rem;">🔍</span>
           </div>
@@ -1987,7 +1987,7 @@
               <!-- Tipe Biaya (Category) Filter - Dropdown consistent with submission form -->
               <div class="filter-field">
                 <label>🏷️ Tipe Biaya</label>
-                <select id="expFilterCategory" onchange="onFilterCategoryChange()" style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem; height: 48px;">
+                <select id="expFilterCategory" onchange="onFilterCategoryChange()" class="input-ps3">
                   <option value="">-- Semua Tipe --</option>
                   <option value="Listrik">⚡ Listrik</option>
                   <option value="Prive">💰 Prive</option>
@@ -2002,7 +2002,7 @@
               <!-- Sub-Kategori Filter - Only shows for Servis/Perawatan and Aksesoris -->
               <div class="filter-field" id="expFilterSubCategoryGroup" style="display: none;">
                 <label>📂 Sub-Kategori</label>
-                <select id="expFilterSubCategory" onchange="onFilterSubCategoryChange()" style="background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; width: 100%; font-size: 0.95rem; height: 48px;">
+                <select id="expFilterSubCategory" onchange="onFilterSubCategoryChange()" class="input-ps3">
                   <option value="">-- Semua Sub --</option>
                 </select>
               </div>
@@ -2111,7 +2111,7 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div class="form-group">
             <label>Durasi <span style="color: var(--ps3-red);">*</span></label>
-            <select id="scheduleDuration" onchange="handleScheduleDurationChange(this)" required style="width: 100%; padding: 14px 16px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; color: var(--ps3-text); font-family: var(--font-body); font-size: 1rem; cursor: pointer; transition: all 0.2s;">
+            <select id="scheduleDuration" onchange="handleScheduleDurationChange(this)" required class="input-ps3-lg">
               <option value="60">1 Jam</option>
               <option value="120" selected>2 Jam</option>
               <option value="180">3 Jam</option>
@@ -2122,7 +2122,7 @@
           </div>
           <div class="form-group">
             <label id="customDurationLabel" style="color: var(--ps3-muted);">Menit (jika Custom)</label>
-            <input type="number" id="scheduleDurationCustom" placeholder="Masukkan durasi (menit)" min="30" step="10" style="width: 100%; padding: 14px 16px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; color: var(--ps3-text); font-family: var(--font-body); font-size: 1rem;" onchange="updateEndDateTimeFromDuration()">
+            <input type="number" id="scheduleDurationCustom" placeholder="Masukkan durasi (menit)" min="30" step="10" class="input-ps3-lg" onchange="updateEndDateTimeFromDuration()">
           </div>
         </div>
         <div class="form-group">
@@ -2339,14 +2339,14 @@
         <!-- Nama Item -->
         <div style="margin-bottom: 15px;">
           <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">📛 Nama Item *</label>
-          <input type="text" id="editItemName" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+          <input type="text" id="editItemName" required class="input-card">
         </div>
 
         <!-- Kategori & Kondisi -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
           <div>
             <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">📂 Kategori *</label>
-            <select id="editItemCategory" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+            <select id="editItemCategory" required class="input-card">
               <option value="konsol">🎮 Konsol PS3</option>
               <option value="tv">📺 TV/Monitor</option>
               <option value="stik">🕹️ Stik Controller</option>
@@ -2358,7 +2358,7 @@
           </div>
           <div>
             <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">🔧 Kondisi *</label>
-            <select id="editItemCondition" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+            <select id="editItemCondition" required class="input-card">
               <option value="baik">🟢 Baik</option>
               <option value="rusak">🔴 Rusak</option>
               <option value="perbaikan">🟡 Dalam Perbaikan</option>
@@ -2370,24 +2370,24 @@
         <!-- Subkategori -->
         <div style="margin-bottom: 15px;">
           <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">🏷️ Subkategori/Model</label>
-          <input type="text" id="editItemSubcategory" placeholder="Contoh: Original, Fat, Slim, etc." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+          <input type="text" id="editItemSubcategory" placeholder="Contoh: Original, Fat, Slim, etc." class="input-card">
         </div>
 
         <!-- Lokasi -->
         <div style="margin-bottom: 15px;">
           <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">📍 Lokasi Saat Ini</label>
-          <input type="text" id="editItemLocation" placeholder="Contoh: Ruang A, Gudang, etc." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+          <input type="text" id="editItemLocation" placeholder="Contoh: Ruang A, Gudang, etc." class="input-card">
         </div>
 
         <!-- Tanggal Beli & Harga -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
           <div>
             <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">📅 Tanggal Beli</label>
-            <input type="date" id="editItemPurchaseDate" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+            <input type="date" id="editItemPurchaseDate" class="input-card">
           </div>
           <div>
             <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">💰 Harga Beli (Rp)</label>
-            <input type="number" id="editItemPurchaseCost" placeholder="0" min="0" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+            <input type="number" id="editItemPurchaseCost" placeholder="0" min="0" class="input-card">
           </div>
         </div>
 
@@ -2395,18 +2395,18 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
           <div>
             <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">🏪 Vendor/Toko</label>
-            <input type="text" id="editItemVendor" placeholder="Nama toko/penjual" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+            <input type="text" id="editItemVendor" placeholder="Nama toko/penjual" class="input-card">
           </div>
           <div>
             <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">🛡️ Info Garansi</label>
-            <input type="text" id="editItemWarranty" placeholder="Contoh: 1 tahun" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+            <input type="text" id="editItemWarranty" placeholder="Contoh: 1 tahun" class="input-card">
           </div>
         </div>
 
         <!-- Notes -->
         <div style="margin-bottom: 20px;">
           <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">📝 Catatan</label>
-          <textarea id="editItemNotes" rows="3" placeholder="Catatan tambahan tentang item..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem; resize: vertical;"></textarea>
+          <textarea id="editItemNotes" rows="3" placeholder="Catatan tambahan tentang item..." class="textarea-card"></textarea>
         </div>
 
         <!-- Buttons -->
@@ -2531,7 +2531,7 @@
             </div>
             <div id="konsolRows">
               <div class="category-row" data-category="konsol">
-                <select class="konsol-select" style="width: 100%; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+                <select class="konsol-select select-equip select-equip-full">
                   <option value="">Pilih Konsol...</option>
                 </select>
               </div>
@@ -2547,7 +2547,7 @@
             </div>
             <div id="tvRows">
               <div class="category-row" data-category="tv">
-                <select class="tv-select" style="width: 100%; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+                <select class="tv-select select-equip select-equip-full">
                   <option value="">Pilih TV...</option>
                 </select>
               </div>
@@ -2566,7 +2566,7 @@
             </div>
             <div id="stikRows">
               <div class="category-row" data-category="stik" style="display: flex; gap: 8px; margin-bottom: 6px;">
-                <select class="stik-select" style="flex: 1; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+                <select class="stik-select select-equip select-equip-flex">
                   <option value="">Pilih Stik...</option>
                 </select>
               </div>
@@ -2585,7 +2585,7 @@
             </div>
             <div id="chargerRows">
               <div class="category-row" data-category="charger" style="display: flex; gap: 8px; margin-bottom: 6px;">
-                <select class="charger-select" style="flex: 1; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+                <select class="charger-select select-equip select-equip-flex">
                   <option value="">Pilih Charger/USB...</option>
                 </select>
               </div>
@@ -2601,7 +2601,7 @@
             </div>
             <div id="hdmiRows">
               <div class="category-row" data-category="hdmi">
-                <select class="hdmi-select" style="width: 100%; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+                <select class="hdmi-select select-equip select-equip-full">
                   <option value="">Pilih HDMI...</option>
                 </select>
               </div>
@@ -2617,7 +2617,7 @@
             </div>
             <div id="plugRows">
               <div class="category-row" data-category="plug">
-                <select class="plug-select" style="width: 100%; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+                <select class="plug-select select-equip select-equip-full">
                   <option value="">Pilih Power...</option>
                 </select>
               </div>
@@ -2653,10 +2653,10 @@
             Pindahkan item ke stasiun lain dengan cepat
           </div>
           <div style="display: flex; gap: 8px;">
-            <select id="swapItemId" style="flex: 1; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+            <select id="swapItemId" class="select-equip select-equip-flex">
               <option value="">Item dari stasiun ini...</option>
             </select>
-            <select id="swapTargetStation" style="flex: 1; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+            <select id="swapTargetStation" class="select-equip select-equip-flex">
               <option value="">Ke stasiun...</option>
             </select>
           </div>
@@ -11700,7 +11700,7 @@
       const stikRows = document.getElementById('stikRows');
       stikRows.innerHTML = `
         <div class="category-row" data-category="stik" style="display: flex; gap: 8px; margin-bottom: 6px;">
-          <select class="stik-select" style="flex: 1; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+          <select class="stik-select select-equip select-equip-flex">
             <option value="">Pilih Stik...</option>
           </select>
         </div>
@@ -11710,7 +11710,7 @@
       const chargerRows = document.getElementById('chargerRows');
       chargerRows.innerHTML = `
         <div class="category-row" data-category="charger" style="display: flex; gap: 8px; margin-bottom: 6px;">
-          <select class="charger-select" style="flex: 1; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+          <select class="charger-select select-equip select-equip-flex">
             <option value="">Pilih Charger/USB...</option>
           </select>
         </div>
@@ -11756,7 +11756,7 @@
         filteredItems.map(i => `<option value="${i.id}">${i.id} - ${i.name}</option>`).join('');
 
       row.innerHTML = `
-        <select class="${selectClass}" style="flex: 1; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+        <select class="${selectClass} select-equip select-equip-flex">
           ${options}
         </select>
         <button onclick="removeCategoryRow(this)" style="background: var(--ps3-red); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">−</button>
