@@ -839,12 +839,12 @@
             <!-- Row 2: Unit Name + Action Buttons -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${t.customer ? '6px' : '10px'};">
               <div class="fs-105 lh-14 flex-1 min-w-0 pr-10 text-primary">
-                🎮 ${t.unitName}
+                🎮 ${t.unitName || t.station_name || 'Unknown'}
               </div>
               <div class="flex-center-gap-4 flex-shrink-0">
-                ${t.editCount > 0 ? `<button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-green" title="Lihat riwayat edit">📋</button>` : ''}
+                ${t.editCount > 0 ? `<button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName || t.station_name || 'Unknown'}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-green" title="Lihat riwayat edit">📋</button>` : ''}
                 <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-muted" title="Edit transaksi">✏️</button>
-                <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-red" title="Hapus transaksi">🗑️</button>
+                <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName || t.station_name || 'Unknown'}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-red" title="Hapus transaksi">🗑️</button>
               </div>
             </div>
 
@@ -1489,12 +1489,12 @@
           <!-- Row 2: Unit Name + Action Buttons -->
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${t.customer ? '6px' : '10px'};">
             <div class="fs-105 lh-14 flex-1 min-w-0 pr-10 text-primary">
-              🎮 ${t.unitName}
+              🎮 ${t.unitName || t.station_name || 'Unknown'}
             </div>
             <div class="flex-center-gap-4 flex-shrink-0">
-              ${t.editCount > 0 ? `<button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-green" title="Lihat riwayat edit">📋</button>` : ''}
+              ${t.editCount > 0 ? `<button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName || t.station_name || 'Unknown'}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-green" title="Lihat riwayat edit">📋</button>` : ''}
               <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-muted" title="Edit transaksi">✏️</button>
-              <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-red" title="Hapus transaksi">🗑️</button>
+              <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName || t.station_name || 'Unknown'}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-red" title="Hapus transaksi">🗑️</button>
             </div>
           </div>
 
@@ -5522,7 +5522,7 @@
     // Setup autocomplete data from cached trash transactions
     function setupTrashAutocomplete() {
       uniqueTrashCustomers = [...new Set(cachedTrashTransactions.map(log => log.recordData?.customer).filter(Boolean))].sort();
-      uniqueTrashUnits = [...new Set(cachedTrashTransactions.map(log => log.recordData?.unitName).filter(Boolean))].sort();
+      uniqueTrashUnits = [...new Set(cachedTrashTransactions.map(log => log.recordData?.unitName || log.recordData?.station_name).filter(Boolean))].sort();
     }
 
     // Sync UI with search state
@@ -5670,7 +5670,7 @@
         if (t.unit) {
           const unitLower = t.unit.toLowerCase();
           filtered = filtered.filter(log => {
-            const unitName = log.recordData?.unitName || '';
+            const unitName = log.recordData?.unitName || log.recordData?.station_name || '';
             return unitName.toLowerCase().includes(unitLower);
           });
         }
@@ -5739,8 +5739,8 @@
               valB = (b.recordData?.customer || '').toLowerCase();
               break;
             case 'unit':
-              valA = (a.recordData?.unitName || '').toLowerCase();
-              valB = (b.recordData?.unitName || '').toLowerCase();
+              valA = (a.recordData?.unitName || a.recordData?.station_name || '').toLowerCase();
+              valB = (b.recordData?.unitName || b.recordData?.station_name || '').toLowerCase();
               break;
             default:
               valA = new Date(a.deletedAt || 0).getTime();
@@ -5793,7 +5793,7 @@
             <!-- Row 2: Unit Name -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${t.customer ? '6px' : '10px'};">
               <div class="fs-105 lh-14 flex-1 min-w-0 pr-10 text-primary">
-                🎮 ${t.unitName || 'Unknown'}
+                🎮 ${t.unitName || t.station_name || 'Unknown'}
               </div>
             </div>
 
