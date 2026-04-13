@@ -1541,18 +1541,20 @@ app.post('/api/stations/:id/start', requireAuth, (req, res) => {
 
   // Validate station has all required items
   const stationItems = db.prepare(`
-    SELECT i.category FROM inventory_pairing_items pi
+    SELECT i.category, pi.role FROM inventory_pairing_items pi
     JOIN inventory_items i ON pi.item_id = i.id
     WHERE pi.pairing_id = ?
   `).all(id);
   
   const itemCounts = {
-    ps3: stationItems.filter(i => i.category === 'ps3').length,
+    ps3: stationItems.filter(i => i.category === 'ps3' || i.category === 'konsol').length,
     tv: stationItems.filter(i => i.category === 'tv').length,
     stik: stationItems.filter(i => i.category === 'stik').length,
-    usb: stationItems.filter(i => i.category === 'usb').length,
-    hdmi: stationItems.filter(i => i.category === 'hdmi').length,
-    plug: stationItems.filter(i => i.category === 'plug').length
+    usb: stationItems.filter(i => i.category === 'usb' || i.category === 'charger' || i.category === 'kabel_usb' ||
+                          (i.category === 'kabel_power' && i.role && i.role.startsWith('charger'))).length,
+    hdmi: stationItems.filter(i => i.category === 'hdmi' || i.category === 'kabel_hdmi').length,
+    plug: stationItems.filter(i => i.category === 'plug' || 
+                          (i.category === 'kabel_power' && (!i.role || i.role === 'power'))).length
   };
   
   const validationErrors = [];
