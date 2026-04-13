@@ -122,7 +122,7 @@
         <canvas id="financeChart" width="400" height="200"></canvas>
       </div>
 
-      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="section-title" class="flex-between-center">
         <span>Riwayat Transaksi</span>
         <button class="btn btn-red" onclick="openTrashIncomeModal()" style="font-size: 0.8rem; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
           🗑️ Sampah
@@ -136,7 +136,7 @@
       </div>
       <div class="card">
         <!-- Baris 1: Tipe Biaya & Sub-kategori -->
-        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-row" style="gap: 12px;">
           <div class="form-group">
             <label>Tipe Biaya Pengeluaran</label>
             <select id="expenseCategory" onchange="onExpenseCategoryChange()" class="input-ps3">
@@ -163,7 +163,7 @@
         </div>
 
         <!-- Baris 2: Jumlah (Tanggal otomatis real-time) -->
-        <div class="form-row" style="display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px;">
+        <div class="form-row-single">
           <div class="form-group">
             <label>Jumlah (Rp)</label>
             <input type="number" id="expenseAmount" placeholder="50000" class="input-ps3">
@@ -293,7 +293,7 @@
         <!-- Tab: Items -->
         <div id="inventoryTabItems">
           <!-- Filters -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+          <div class="form-row-8">
             <select id="inventoryFilterCategory" onchange="renderInventory()" class="input-sm">
               <option value="">Semua Kategori</option>
               <option value="konsol">🎮 Konsol</option>
@@ -514,7 +514,7 @@
           <p style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 16px;">Pilih jenis data transaksi yang ingin disertakan dalam ekspor:</p>
           
           <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
-            <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
+            <label class="label-row-12">
               <input type="checkbox" id="exportIncludeIncome" checked class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">📈 Transaksi Pendapatan</div>
@@ -522,7 +522,7 @@
               </div>
             </label>
             
-            <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
+            <label class="label-row-12">
               <input type="checkbox" id="exportIncludeExpense" checked class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">📉 Transaksi Pengeluaran</div>
@@ -553,7 +553,7 @@
           
           <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
             <!-- Transaction History (Active Data) -->
-            <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
+            <label class="label-row-12">
               <input type="checkbox" id="exportIncludeTransactionHistory" class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">📋 Riwayat Transaksi</div>
@@ -562,7 +562,7 @@
             </label>
             
             <!-- Edit History -->
-            <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
+            <label class="label-row-12">
               <input type="checkbox" id="exportIncludeEditHistory" class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">✏️ Riwayat Edit</div>
@@ -571,7 +571,7 @@
             </label>
             
             <!-- Delete History with Ghost Records - HIDDEN for periodic exports -->
-            <label id="ghostRecordsOption" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
+            <label id="ghostRecordsOption" class="label-row-12">
               <input type="checkbox" id="exportIncludeDeleteHistory" class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">🗑️ Riwayat Hapus (Ghost Records)</div>
@@ -608,7 +608,7 @@
 
           <!-- Date Range -->
           <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
-            <div style="display: flex; gap: 12px;">
+            <div class="flex gap-12">
               <div style="flex: 1;">
                 <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 6px;">Dari Tanggal</label>
                 <input type="date" id="customExportStartDate" class="input-date">
@@ -623,7 +623,7 @@
           <!-- File Format -->
           <div style="margin-bottom: 16px;">
             <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 8px;">Format File</label>
-            <div style="display: flex; gap: 12px;">
+            <div class="flex gap-12">
               <label style="flex: 1; display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
                 <input type="checkbox" id="customExportCSV" checked class="checkbox-ps3">
                 <span style="font-weight: 600; color: var(--ps3-text);">📊 CSV</span>
@@ -639,13 +639,13 @@
           <div style="margin-bottom: 16px;">
             <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 8px;">Jenis Data</label>
             <div style="display: flex; flex-direction: column; gap: 10px;">
-              <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
+              <label class="label-row-12">
                 <input type="checkbox" id="customExportIncome" checked class="checkbox-ps3">
                 <div>
                   <div style="font-weight: 600; color: var(--ps3-text);">📈 Transaksi Pendapatan</div>
                 </div>
               </label>
-              <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
+              <label class="label-row-12">
                 <input type="checkbox" id="customExportExpense" checked class="checkbox-ps3">
                 <div>
                   <div style="font-weight: 600; color: var(--ps3-text);">📉 Transaksi Pengeluaran</div>
@@ -676,7 +676,7 @@
 
           <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
             <!-- Transaction History (Active Data) -->
-            <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
+            <label class="label-row-12">
               <input type="checkbox" id="customExportTransactionHistory" checked class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">📋 Riwayat Transaksi Aktif</div>
@@ -685,7 +685,7 @@
             </label>
 
             <!-- Edit History -->
-            <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
+            <label class="label-row-12">
               <input type="checkbox" id="customExportEditHistory" checked class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">✏️ Riwayat Edit</div>
@@ -694,7 +694,7 @@
             </label>
 
             <!-- Delete History with Ghost Records -->
-            <label style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
+            <label class="label-row-12">
               <input type="checkbox" id="customExportDeleteHistory" checked class="checkbox-ps3">
               <div>
                 <div style="font-weight: 600; color: var(--ps3-text);">🗑️ Riwayat Hapus (Ghost Records)</div>
@@ -752,7 +752,7 @@
             
             <!-- Custom Date Range (hidden by default) -->
             <div id="schedCustomRange" style="display: none; margin-top: 12px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px;">
-              <div style="display: flex; gap: 12px;">
+              <div class="flex gap-12">
                 <div style="flex: 1;">
                   <label style="display: block; font-size: 0.75rem; color: var(--ps3-muted); margin-bottom: 4px;">Dari</label>
                   <input type="date" id="schedExportStartDate" class="input-date-dark">
@@ -768,7 +768,7 @@
           <!-- Schedule Types -->
           <div style="margin-bottom: 16px;">
             <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 8px;">Jenis Jadwal (minimal pilih satu)</label>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="flex-col gap-8">
               <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(0,170,0,0.1); border: 1px solid var(--ps3-green); border-radius: 8px; cursor: pointer;">
                 <input type="checkbox" id="schedTypeActive" checked class="checkbox-green">
                 <span style="font-size: 0.85rem; color: var(--ps3-text);">
@@ -914,7 +914,7 @@
         </div>
 
         <!-- Action Buttons -->
-        <div style="display: flex; gap: 12px;">
+        <div class="flex gap-12">
           <button 
             onclick="closeModal('modalConfirmActivationWithCancel')" 
             style="flex: 1; padding: 14px; border-radius: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); cursor: pointer;"
@@ -1018,7 +1018,7 @@
             <span style="color: var(--ps3-muted); font-size: 0.8rem;">Pelanggan:</span>
             <span style="font-weight: 700; color: var(--ps3-text);" id="scheduleUnitCustomer"></span>
           </div>
-          <div style="display: flex; justify-content: space-between;">
+          <div class="flex-between">
             <span style="color: var(--ps3-muted); font-size: 0.8rem;">Durasi:</span>
             <span style="font-weight: 600; color: var(--ps3-text);" id="scheduleUnitDuration"></span>
           </div>
@@ -1056,36 +1056,36 @@
       <!-- Step 1: Select fields to edit -->
       <div id="editStep1" style="padding: 20px;">
         <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Pilih data yang ingin diedit:</p>
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
+        <div class="flex-col gap-12">
+          <label class="label-row">
             <input type="checkbox" id="editCheckCustomer" class="checkbox-ps3">
             <span>👤 Nama Penyewa</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
+          <label class="label-row">
             <input type="checkbox" id="editCheckPhone" class="checkbox-ps3">
             <span>📞 Nomor Telepon</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
+          <label class="label-row">
             <input type="checkbox" id="editCheckDateTime" class="checkbox-ps3">
             <span>📅 Tanggal & Waktu</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
+          <label class="label-row">
             <input type="checkbox" id="editCheckDuration" class="checkbox-ps3">
             <span>⏱️ Durasi Penyewaan</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
+          <label class="label-row">
             <input type="checkbox" id="editCheckUnit" class="checkbox-ps3">
             <span>🎮 Unit PS</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
+          <label class="label-row">
             <input type="checkbox" id="editCheckPaid" class="checkbox-ps3">
             <span>💰 Jumlah Pendapatan</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
+          <label class="label-row">
             <input type="checkbox" id="editCheckPayment" class="checkbox-ps3">
             <span>💳 Metode Pembayaran</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px; background: var(--ps3-surface); border-radius: 8px;">
+          <label class="label-row">
             <input type="checkbox" id="editCheckNote" class="checkbox-ps3">
             <span>💬 Catatan</span>
           </label>
@@ -1112,7 +1112,7 @@
           <label style="display: block; margin-bottom: 10px; font-size: 0.85rem; color: var(--ps3-silver); font-weight: 600;">📅 Tanggal & Waktu Penyewaan</label>
 
           <!-- Row 1: Start Date & Start Time -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div class="form-row">
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Tanggal Mulai</label>
               <input type="date" id="editStartDate" class="input-inherit" style="font-size: 0.9rem;" onchange="editTxInitDefaultEndDate()">
@@ -1124,7 +1124,7 @@
           </div>
 
           <!-- Row 2: Duration & End Time -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div class="form-row">
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Durasi (menit)</label>
               <input type="number" id="editDurationTime" min="15" step="15" class="input-inherit" style="font-size: 0.9rem;" onchange="editTxUpdateEndTime()" oninput="editTxUpdateEndTime()">
@@ -1181,7 +1181,7 @@
           <input type="text" id="editReason" placeholder="Contoh: Koreksi harga, Perubahan durasi, dll." class="input-danger">
         </div>
 
-        <div style="display: flex; gap: 10px;">
+        <div class="flex gap-10">
           <button class="btn-cancel" onclick="backToEditStep1()" style="flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Kembali</button>
           <button class="btn-confirm" onclick="saveTransactionEdit()" style="flex: 2; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Simpan Perubahan</button>
         </div>
@@ -1211,33 +1211,33 @@
         <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Pilih data yang ingin diedit:</p>
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
-          <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
+          <label class="label-row-padded">
             <input type="checkbox" id="editScheduleCheckCustomer" class="checkbox-lg">
             <span>👤 Nama Penyewa</span>
           </label>
 
-          <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
+          <label class="label-row-padded">
             <input type="checkbox" id="editScheduleCheckPhone" class="checkbox-lg">
             <span>📞 Nomor Telepon</span>
           </label>
 
-          <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
+          <label class="label-row-padded">
             <input type="checkbox" id="editScheduleCheckDateTime" class="checkbox-lg">
             <span>📅 Tanggal, Waktu & Durasi</span>
           </label>
 
-          <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
+          <label class="label-row-padded">
             <input type="checkbox" id="editScheduleCheckUnit" class="checkbox-lg">
             <span>🎮 Unit PS</span>
           </label>
 
-          <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--ps3-surface); border-radius: 10px; cursor: pointer;">
+          <label class="label-row-padded">
             <input type="checkbox" id="editScheduleCheckNote" class="checkbox-lg">
             <span>💬 Catatan</span>
           </label>
         </div>
 
-        <div style="display: flex; gap: 10px;">
+        <div class="flex gap-10">
           <button class="btn-cancel" onclick="closeModal('modalEditSchedule')" style="flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Batal</button>
           <button class="btn-confirm" onclick="proceedToEditScheduleStep2()" style="flex: 2; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Lanjutkan →</button>
         </div>
@@ -1262,7 +1262,7 @@
           <label style="display: block; margin-bottom: 10px; font-size: 0.85rem; color: var(--ps3-silver); font-weight: 600;">📅 Tanggal & Waktu Penyewaan</label>
 
           <!-- Baris 1: Tanggal Mulai - Jam Mulai -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div class="form-row">
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Tanggal Mulai</label>
               <input type="date" id="editScheduleStartDate" class="input-inherit" style="font-size: 0.9rem;" onchange="editScheduleInitDefaultEndDate()">
@@ -1274,7 +1274,7 @@
           </div>
 
           <!-- Baris 2: Tanggal Berakhir - Jam Berakhir -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div class="form-row">
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Tanggal Berakhir</label>
               <input type="date" id="editScheduleEndDate" class="input-inherit" style="font-size: 0.9rem;" onchange="editScheduleUpdateDurationFromEndDateTime()">
@@ -1322,7 +1322,7 @@
           <textarea id="editScheduleReason" placeholder="Contoh: Perubahan jadwal, kesalahan input, permintaan pelanggan, dll." class="textarea-ps3"></textarea>
         </div>
 
-        <div style="display: flex; gap: 10px;">
+        <div class="flex gap-10">
           <button class="btn-cancel" onclick="backToEditScheduleStep1()" style="flex: 1;">← Kembali</button>
           <button class="btn" onclick="saveScheduleEdit()" style="flex: 2;">💾 Simpan Perubahan</button>
         </div>
@@ -1387,7 +1387,7 @@
         </div>
 
         <!-- Action Buttons -->
-        <div style="display: flex; gap: 10px;">
+        <div class="flex gap-10">
           <button class="btn-cancel" onclick="closeModal('modalDeleteTransaction')" style="flex: 1;">Batal</button>
           <button id="deleteTxBtn" class="btn" onclick="confirmDeleteTransaction()" style="flex: 2; background: var(--ps3-red); opacity: 0.5; cursor: not-allowed;" disabled>
             🗑️ Hapus Transaksi
@@ -1692,7 +1692,7 @@
       <!-- Step 1: Select fields to edit -->
       <div id="editExpenseStep1" style="padding: 20px;">
         <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Pilih data yang ingin diedit:</p>
-        <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="flex-col gap-12">
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
             <input type="checkbox" id="editExpenseCheckCategory" class="checkbox-ps3">
             <span>Tipe & Sub-kategori Biaya</span>
@@ -1765,7 +1765,7 @@
           <input type="text" id="editExpenseReason" placeholder="Mengapa data ini diedit?" class="input-ps3">
         </div>
 
-        <div style="display: flex; gap: 10px;">
+        <div class="flex gap-10">
           <button class="btn btn-secondary" onclick="backToEditExpenseStep1()" style="flex: 1;">Kembali</button>
           <button class="btn" onclick="saveExpenseEdit()" style="flex: 2;">Simpan Perubahan</button>
         </div>
@@ -1823,7 +1823,7 @@
         </div>
         
         <!-- Action Buttons -->
-        <div style="display: flex; gap: 10px;">
+        <div class="flex gap-10">
           <button class="btn btn-secondary" onclick="closeModal('modalDeleteExpense')" style="flex: 1;">Batal</button>
           <button class="btn" onclick="confirmDeleteExpense()" style="flex: 2; background: var(--ps3-red);">Hapus Pengeluaran</button>
         </div>
@@ -2343,7 +2343,7 @@
         </div>
 
         <!-- Kategori & Kondisi -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+        <div class="form-row-15">
           <div>
             <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">📂 Kategori *</label>
             <select id="editItemCategory" required class="input-card">
@@ -2380,7 +2380,7 @@
         </div>
 
         <!-- Tanggal Beli & Harga -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+        <div class="form-row-15">
           <div>
             <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">📅 Tanggal Beli</label>
             <input type="date" id="editItemPurchaseDate" class="input-card">
@@ -2392,7 +2392,7 @@
         </div>
 
         <!-- Vendor & Garansi -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+        <div class="form-row-15">
           <div>
             <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">🏪 Vendor/Toko</label>
             <input type="text" id="editItemVendor" placeholder="Nama toko/penjual" class="input-card">
@@ -2410,7 +2410,7 @@
         </div>
 
         <!-- Buttons -->
-        <div style="display: flex; gap: 10px;">
+        <div class="flex gap-10">
           <button type="button" class="btn-cancel" onclick="closeModal('modalEditItem')" style="flex: 1; padding: 12px; border-radius: 10px;">Batal</button>
           <button type="submit" class="btn-confirm" style="flex: 1; padding: 12px; border-radius: 10px; background: linear-gradient(135deg, #2ecc71, #27ae60);">💾 Simpan Perubahan</button>
         </div>
@@ -2741,7 +2741,7 @@
 
         <!-- Filter Aktif -->
         <div id="calendarActiveFilter" style="display: none; margin-bottom: 15px; padding: 10px 15px; background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 10px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="flex-between-center">
             <span style="font-size: 0.85rem; color: var(--ps3-text);">
               📅 Filter: <span id="calendarFilterText"></span>
             </span>
@@ -2825,7 +2825,7 @@
           </div>
         </div>
 
-        <div style="display: flex; gap: 12px;">
+        <div class="flex gap-12">
           <button class="btn-cancel" onclick="closeModal('modalCancelSchedule')" style="flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Tutup</button>
           <button class="btn-confirm" onclick="confirmCancelSchedule()" style="flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">
             Konfirmasi
@@ -3489,7 +3489,7 @@
             <!-- Number Badge -->
             <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-green-dark); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
             <!-- Row 1: Date (left) + Amount (right) -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
+            <div class="card-row-between">
               <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
                 ${formatDateOnlyWIB(t.endTime)}
               </div>
@@ -3522,11 +3522,11 @@
 
             <!-- Row 4: Time | TX ID (centered) | Payment -->
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-green); opacity: 0.85;">
-              <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
+              <div class="info-row-compact">
                 <span>🕐</span>
                 <span>${formatTimeOnlyWIB(t.endTime)}</span>
               </div>
-              <div style="display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1;">
+              <div class="tab-btn-group">
                 <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
                 <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${t.id || ''}</span>
               </div>
@@ -3619,7 +3619,7 @@
             <!-- Number Badge -->
             <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red-danger); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
             <!-- Row 1: Date (left) + Amount (right) -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
+            <div class="card-row-between">
               <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
                 ${formatDateOnlyWIB(e.created_at)}
               </div>
@@ -3650,11 +3650,11 @@
 
             <!-- Row 4: Time | TX ID (centered) | Note -->
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-red-badge); opacity: 0.85;">
-              <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
+              <div class="info-row-compact">
                 <span>🕐</span>
                 <span>${formatTimeOnlyWIB(e.created_at)}</span>
               </div>
-              <div style="display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1;">
+              <div class="tab-btn-group">
                 <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
                 <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${e.id || ''}</span>
               </div>
@@ -4132,7 +4132,7 @@
           <!-- Number Badge -->
           <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-green-dark); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
           <!-- Row 1: Date (left) + Amount (right) -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
+          <div class="card-row-between">
             <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
               ${formatDateOnlyWIB(t.endTime)}
             </div>
@@ -4165,11 +4165,11 @@
 
           <!-- Row 4: Time | TX ID (centered) | Payment -->
           <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-green); opacity: 0.85;">
-            <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
+            <div class="info-row-compact">
               <span>🕐</span>
               <span>${formatTimeOnlyWIB(t.endTime)}</span>
             </div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1;">
+            <div class="tab-btn-group">
               <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
               <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${t.id || ''}</span>
             </div>
@@ -4456,7 +4456,7 @@
           <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red-danger); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
 
           <!-- Row 1: Date (left) + Amount (right) -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
+          <div class="card-row-between">
             <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
               ${formatDate(new Date(e.date).getTime())}
             </div>
@@ -4487,11 +4487,11 @@
 
           <!-- Row 4: Time | TX ID (centered) | Note -->
           <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-red-badge); opacity: 0.85;">
-            <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
+            <div class="info-row-compact">
               <span>🕐</span>
               <span>${formatTimeOnlyWIB(e.date)}</span>
             </div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1;">
+            <div class="tab-btn-group">
               <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
               <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${e.id || ''}</span>
             </div>
@@ -5053,7 +5053,7 @@
         <div style="background: ${highlight.bg}; border: 2px solid ${highlight.border}; border-radius: 10px; padding: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
             <div>
-              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <div class="info-row">
                 <span style="font-weight: 700; color: var(--ps3-text);">${escapeHtml(s.customer)}</span>
                 ${s.scheduleId ? `
                   <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
@@ -6658,9 +6658,9 @@
           return `
             <div style="background: ${badge.bg}; border: 2px solid ${badge.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative;">
               <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-green-dark); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; margin-top: 4px;">
+              <div class="card-row-between-start">
                 <div>
-                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <div class="info-row">
                     <span style="font-weight: 700; color: var(--ps3-text);">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
                     ${item.scheduleId ? `
                       <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
@@ -6745,9 +6745,9 @@
           return `
             <div style="background: ${badge.bg}; border: 2px solid ${badge.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative;">
               <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red-danger); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; margin-top: 4px;">
+              <div class="card-row-between-start">
                 <div>
-                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <div class="info-row">
                     <span style="font-weight: 700; color: var(--ps3-text);">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
                     ${item.originalId ? `
                       <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; color: var(--ps3-muted);">TX ID:</span>
@@ -7269,7 +7269,7 @@
           <span style="color: var(--ps3-muted);">Jumlah:</span>
           <span style="font-weight: 600; color: var(--ps3-green);">${tx ? formatMoney(tx.paid) : '-'}</span>
         </div>
-        <div style="display: flex; justify-content: space-between;">
+        <div class="flex-between">
           <span style="color: var(--ps3-muted);">TX ID:</span>
           <span style="font-family: monospace; font-size: 0.8rem;">${txId}</span>
         </div>
@@ -7670,7 +7670,7 @@
             <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red-dark, #8B0000); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
 
             <!-- Row 1: Date (left) + Amount (right) -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
+            <div class="card-row-between">
               <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
                 ${formatDateOnlyWIB(t.endTime)}
               </div>
@@ -7698,11 +7698,11 @@
 
             <!-- Row 4: Time | TX ID (centered) | Payment -->
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-red); opacity: 0.85; margin-bottom: 12px;">
-              <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
+              <div class="info-row-compact">
                 <span>🕐</span>
                 <span>${formatTimeOnlyWIB(t.endTime)}</span>
               </div>
-              <div style="display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1;">
+              <div class="tab-btn-group">
                 <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
                 <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${t.id || ''}</span>
               </div>
@@ -7717,7 +7717,7 @@
                 <span style="font-size: 0.75rem; color: var(--ps3-muted);">Dihapus:</span>
                 <span style="font-size: 0.75rem; color: var(--ps3-red);">${formatTrashDateTime(log.deletedAt)}</span>
               </div>
-              <div style="display: flex; justify-content: space-between;">
+              <div class="flex-between">
                 <span style="font-size: 0.75rem; color: var(--ps3-muted);">Alasan:</span>
                 <span style="font-size: 0.75rem; color: var(--ps3-text);">${log.deleteReason || '-'}</span>
               </div>
@@ -8211,7 +8211,7 @@
             <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red-danger); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
 
             <!-- Row 1: Date (left) + Amount (right) -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 4px;">
+            <div class="card-row-between">
               <div style="font-size: 0.9rem; color: var(--ps3-muted); font-weight: 500;">
                 ${formatDateOnlyWIB(e.created_at || e.date)}
               </div>
@@ -8245,11 +8245,11 @@
 
             <!-- Row 5: Time | TX ID (centered) | Note -->
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-red-badge); opacity: 0.85; margin-bottom: 12px;">
-              <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 80px;">
+              <div class="info-row-compact">
                 <span>🕐</span>
                 <span>${formatTimeOnlyWIB(e.created_at || e.date)}</span>
               </div>
-              <div style="display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1;">
+              <div class="tab-btn-group">
                 <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
                 <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem;">${e.id || ''}</span>
               </div>
@@ -8264,7 +8264,7 @@
                 <span style="font-size: 0.75rem; color: var(--ps3-muted);">Dihapus:</span>
                 <span style="font-size: 0.75rem; color: var(--ps3-red);">${formatTrashDateTime(log.deletedAt)}</span>
               </div>
-              <div style="display: flex; justify-content: space-between;">
+              <div class="flex-between">
                 <span style="font-size: 0.75rem; color: var(--ps3-muted);">Alasan:</span>
                 <span style="font-size: 0.75rem; color: var(--ps3-text);">${log.deleteReason || '-'}</span>
               </div>
@@ -9658,9 +9658,9 @@
         return `
           <div style="background: ${highlight.bg}; border: 2px solid ${highlight.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative;">
             <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; margin-top: 4px;">
+            <div class="card-row-between-start">
               <div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div class="info-row">
                   <span style="font-weight: 700; color: var(--ps3-text);">${s.customer}</span>
                   ${s.scheduleId ? `
                     <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
@@ -10255,9 +10255,9 @@
           html += `
             <div style="background: ${highlight.bg}; border: 2px solid ${highlight.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative;">
               <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-red); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${globalCounter}</div>
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; margin-top: 4px;">
+              <div class="card-row-between-start">
                 <div>
-                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <div class="info-row">
                     <span style="font-weight: 700; color: var(--ps3-text);">${s.customer}</span>
                     ${s.scheduleId ? `
                       <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
@@ -10505,7 +10505,7 @@
           <!-- Header: Customer & Status -->
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
             <div>
-              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <div class="info-row">
                 <span style="font-weight: 700; font-size: 1rem; color: var(--ps3-text);">${escapeHtml(s.customer)}</span>
                 ${s.scheduleId ? `
                   <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">TX ID:</span>
@@ -11387,7 +11387,7 @@
 
       container.innerHTML = history.map(h => `
         <div style="background: var(--ps3-card); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="flex-between-center">
             <div style="font-size: 0.8rem; font-weight: 600;">${new Date(h.maintenance_date).toLocaleDateString('id-ID')}</div>
             ${h.cost ? `<div style="font-size: 0.8rem; color: var(--ps3-yellow);">Rp${h.cost.toLocaleString()}</div>` : ''}
           </div>
@@ -11558,7 +11558,7 @@
       container.innerHTML = stations.map(s => `
         <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 10px; cursor: pointer;"
              onclick="openStationDetail('${s.id}')">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="flex-between-center">
             <div>
               <div style="font-weight: 600;">🏢 ${s.name}</div>
               <div style="font-size: 0.7rem; color: var(--ps3-muted); font-family: monospace;">${s.id}</div>
@@ -11625,7 +11625,7 @@
         } else {
           itemsContainer.innerHTML = items.map(i => `
             <div style="background: var(--ps3-card); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="flex-between-center">
                 <div>
                   <div style="font-size: 0.75rem; color: var(--ps3-muted);">${i.item_id}</div>
                   <div style="font-size: 0.85rem; font-weight: 600;">${i.item_name}</div>
@@ -12120,7 +12120,7 @@
       const monthlyProfitMedian = projections.monthlyProfitMedian || 0;
       
       container.innerHTML = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+        <div class="form-row-15">
           <div style="background: rgba(0,170,0,0.1); border: 1px solid var(--ps3-green); border-radius: 8px; padding: 10px; text-align: center;">
             <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--ps3-muted); margin-bottom: 4px;">Total Modal</div>
             <div style="font-size: 1.1rem; font-weight: 600; color: var(--ps3-green);">Rp${totalCapital.toLocaleString()}</div>
@@ -12140,7 +12140,7 @@
           <div style="border-top: 1px solid var(--ps3-border); padding-top: 15px;">
             <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ps3-muted); margin-bottom: 10px; text-align: center;">📊 Proyeksi Balik Modal</div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+            <div class="form-row-15">
               <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; text-align: center;">
                 <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 4px;">Rata-rata Harian</div>
                 <div style="font-size: 1rem; font-weight: 600; color: var(--ps3-text);">Rp${Math.round(avgDaily).toLocaleString()}</div>
@@ -12151,7 +12151,7 @@
               </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+            <div class="form-row-15">
               <div style="background: rgba(0,170,0,0.05); border: 1px solid var(--ps3-green); border-radius: 8px; padding: 10px; text-align: center;">
                 <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 4px;">Est. BEP (Rata-rata)</div>
                 <div style="font-size: 1rem; font-weight: 600; color: var(--ps3-green);">${daysToBreakEvenAvg} hari</div>
@@ -12193,7 +12193,7 @@
         if (item.type === 'capital') {
           return `
             <div style="background: rgba(0,170,0,0.1); border-left: 3px solid var(--ps3-green); padding: 10px; margin-bottom: 8px; border-radius: 0 8px 8px 0;">
-              <div style="display: flex; justify-content: space-between;">
+              <div class="flex-between">
                 <span style="font-weight: 600; color: var(--ps3-green);">+ Rp${item.amount.toLocaleString()}</span>
                 <span style="font-size: 0.75rem; color: var(--ps3-muted);">${formatDate(item.date)}</span>
               </div>
@@ -12203,7 +12203,7 @@
         } else {
           return `
             <div style="background: rgba(230,0,18,0.1); border-left: 3px solid var(--ps3-red); padding: 10px; margin-bottom: 8px; border-radius: 0 8px 8px 0;">
-              <div style="display: flex; justify-content: space-between;">
+              <div class="flex-between">
                 <span style="font-weight: 600; color: var(--ps3-red);">- Rp${item.amount.toLocaleString()}</span>
                 <span style="font-size: 0.75rem; color: var(--ps3-muted);">${formatDate(item.date)}</span>
               </div>
