@@ -122,7 +122,7 @@
         <canvas id="financeChart" width="400" height="200"></canvas>
       </div>
 
-      <div class="section-title" class="flex-between-center">
+      <div class="section-title flex-between-center">
         <span>Riwayat Transaksi</span>
         <button class="btn btn-red" onclick="openTrashIncomeModal()" style="font-size: 0.8rem; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
           🗑️ Sampah
@@ -131,7 +131,7 @@
       <div id="transactionsList"></div>
 
       <!-- Expense Management Section -->
-      <div class="section-title" class="mt-24">
+      <div class="section-title mt-24">
         <span>💸 Catat Pengeluaran</span>
       </div>
       <div class="card">
@@ -174,14 +174,14 @@
         </div>
 
         <!-- Baris 3: Catatan -->
-        <div class="form-row" class="mt-12">
+        <div class="form-row mt-12">
           <div class="form-group">
             <label>Catatan (opsional)</label>
             <input type="text" id="expenseNote" placeholder="Catatan tambahan..." class="input-ps3">
           </div>
         </div>
 
-        <button class="btn btn-red" onclick="addExpense()" class="mt-16">
+        <button class="btn btn-red mt-16" onclick="addExpense()">
           Tambah Pengeluaran
         </button>
       </div>
@@ -196,7 +196,7 @@
       <div id="expensesList"></div>
 
       <!-- Export Section - Moved to bottom after expense history -->
-      <div class="section-title" class="mt-24">
+      <div class="section-title mt-24">
         <span>Export Laporan</span>
       </div>
       <div class="export-grid">
@@ -224,7 +224,7 @@
           <span class="icon">⚙️</span>
           <span>Kustom</span>
         </button>
-        <button class="export-btn" onclick="exportFullBackup()" class="grid-full">
+        <button class="export-btn grid-full" onclick="exportFullBackup()">
           <span class="icon">💾</span>
           <span>Backup JSON</span>
         </button>
@@ -273,7 +273,7 @@
       <!-- ═══════════════════════════════════════════════════════════════
            INVENTORY MANAGEMENT SYSTEM - Full Featured
       ═══════════════════════════════════════════════════════════════ -->
-      <div class="card" class="mt-20">
+      <div class="card mt-20">
         <div class="section-title">📦 Sistem Manajemen Inventori</div>
         <p class="text-8 text-muted mb-15">Kelola aset, stasiun, dan tracking perawatan</p>
 
@@ -334,7 +334,7 @@
             <p class="empty-state-p20">Belum ada item inventori</p>
           </div>
 
-          <button class="btn" onclick="openModal('modalAddInventory')" class="w-full">➕ Tambah Item Inventori</button>
+          <button class="btn w-full" onclick="openModal('modalAddInventory')">➕ Tambah Item Inventori</button>
         </div>
 
         <!-- Tab: Stations -->
@@ -342,7 +342,7 @@
           <div id="stationsList" style="max-height: 350px; overflow-y: auto; margin-bottom: 15px;">
             <p class="empty-state-p20">Belum ada stasiun</p>
           </div>
-          <button class="btn" onclick="openModal('modalAddStation')" class="w-full">➕ Buat Stasiun Baru</button>
+          <button class="btn w-full" onclick="openModal('modalAddStation')">➕ Buat Stasiun Baru</button>
         </div>
 
         <!-- Tab: Analytics -->
@@ -354,13 +354,13 @@
       </div>
 
       <!-- Initial Capital Section -->
-      <div class="card" class="mt-20">
+      <div class="card mt-20">
         <div class="section-title">💰 Modal Awal & Investasi</div>
         <p class="text-8 text-muted mb-15">Catat modal awal dan proyeksi balik modal</p>
         
         <!-- Capital Input -->
         <div style="background: rgba(0,170,0,0.1); border: 1px solid var(--ps3-green); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-          <div class="section-title" class="text-green">➕ Tambah Modal</div>
+          <div class="section-title text-green">➕ Tambah Modal</div>
           <div class="form-group">
             <label>Jumlah Modal (Rp)</label>
             <input type="number" id="capitalAmount" placeholder="5000000" min="0">
@@ -423,7 +423,7 @@
       </div>
 
       <!-- Unit Management Section (Moved from Dashboard/Settings) -->
-      <div class="card" class="mt-20">
+      <div class="card mt-20">
         <div class="section-title">🎮 Manajemen Unit</div>
         <p class="text-8 text-muted mb-15">Tambah, hapus, atau ubah nama unit PS</p>
         
@@ -460,7 +460,7 @@
         <button class="btn" onclick="saveSettings()">Simpan Pengaturan</button>
       </div>
 
-      <div class="card" class="mt-20">
+      <div class="card mt-20">
         <div class="section-title">Manajemen Data</div>
         <button class="btn" onclick="exportFullBackup()">
           💾 Export Backup (JSON)
@@ -498,7 +498,7 @@
         </div>
       </div>
 
-      <div class="card" class="mt-20">
+      <div class="card mt-20">
         <div class="section-title">Akun</div>
         <button class="btn btn-red" onclick="logout()">Logout</button>
       </div>
@@ -604,7 +604,7 @@
           <h3>⚙️ Ekspor Kustom</h3>
         </div>
         <div class="modal-body">
-          <p class="label-xs-muted" class="mb-16">Atur range tanggal dan format ekspor data:</p>
+          <p class="label-xs-muted mb-16">Atur range tanggal dan format ekspor data:</p>
 
           <!-- Date Range -->
           <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
@@ -672,7 +672,7 @@
           <h3>📜 Pilih Data untuk Diekspor (Kustom)</h3>
         </div>
         <div class="modal-body">
-          <p class="label-xs-muted" class="mb-16">Pilih detail data yang ingin disertakan dalam ekspor (minimal pilih satu):</p>
+          <p class="label-xs-muted mb-16">Pilih detail data yang ingin disertakan dalam ekspor (minimal pilih satu):</p>
 
           <div class="flex-col-gap-12-mb20">
             <!-- Transaction History (Active Data) -->
@@ -727,7 +727,7 @@
           <h3>📤 Ekspor Data Jadwal</h3>
         </div>
         <div class="modal-body">
-          <p class="label-xs-muted" class="mb-16">Pilih range waktu dan jenis jadwal yang ingin diekspor:</p>
+          <p class="label-xs-muted mb-16">Pilih range waktu dan jenis jadwal yang ingin diekspor:</p>
           
           <!-- Range Selection -->
           <div class="mb-16">
@@ -1182,8 +1182,8 @@
         </div>
 
         <div class="flex gap-10">
-          <button class="btn-cancel" onclick="backToEditStep1()" class="flex-p14">Kembali</button>
-          <button class="btn-confirm" onclick="saveTransactionEdit()" class="flex-2-p14">Simpan Perubahan</button>
+          <button class="btn-cancel flex-p14" onclick="backToEditStep1()">Kembali</button>
+          <button class="btn-confirm flex-2-p14" onclick="saveTransactionEdit()">Simpan Perubahan</button>
         </div>
       </div>
 
@@ -1238,8 +1238,8 @@
         </div>
 
         <div class="flex gap-10">
-          <button class="btn-cancel" onclick="closeModal('modalEditSchedule')" class="flex-p14">Batal</button>
-          <button class="btn-confirm" onclick="proceedToEditScheduleStep2()" class="flex-2-p14">Lanjutkan →</button>
+          <button class="btn-cancel flex-p14" onclick="closeModal('modalEditSchedule')">Batal</button>
+          <button class="btn-confirm flex-2-p14" onclick="proceedToEditScheduleStep2()">Lanjutkan →</button>
         </div>
       </div>
 
@@ -1323,7 +1323,7 @@
         </div>
 
         <div class="flex gap-10">
-          <button class="btn-cancel" onclick="backToEditScheduleStep1()" class="flex-1">← Kembali</button>
+          <button class="btn-cancel flex-1" onclick="backToEditScheduleStep1()">← Kembali</button>
           <button class="btn" onclick="saveScheduleEdit()" style="flex: 2;">💾 Simpan Perubahan</button>
         </div>
       </div>
@@ -1337,7 +1337,7 @@
           </div>
         </div>
         <div id="editScheduleHistoryList" class="max-h-300 scroll-y"></div>
-        <button class="btn-confirm" onclick="closeModal('modalEditSchedule')" class="mt16-w100-p14 br12-upper">Tutup</button>
+        <button class="btn-confirm mt16-w100-p14 br12-upper" onclick="closeModal('modalEditSchedule')">Tutup</button>
       </div>
     </div>
   </div>
@@ -1388,7 +1388,7 @@
 
         <!-- Action Buttons -->
         <div class="flex gap-10">
-          <button class="btn-cancel" onclick="closeModal('modalDeleteTransaction')" class="flex-1">Batal</button>
+          <button class="btn-cancel flex-1" onclick="closeModal('modalDeleteTransaction')">Batal</button>
           <button id="deleteTxBtn" class="btn" onclick="confirmDeleteTransaction()" style="flex: 2; background: var(--ps3-red); opacity: 0.5; cursor: not-allowed;" disabled>
             🗑️ Hapus Transaksi
           </button>
@@ -1399,7 +1399,7 @@
 
   <!-- ═════════════════ MODAL: TRASH INCOME ═════════════════ -->
   <div id="modalTrashIncome" class="modal">
-    <div class="modal-content" class="max-w-700 max-h-90vh flex flex-col">
+    <div class="modal-content max-w-700 max-h-90vh flex flex-col">
       <div class="modal-header" style="background: linear-gradient(135deg, #8B0000 0%, #4a0000 100%);">
         <div class="modal-title">🗑️ Tempat Sampah Pendapatan</div>
         <button class="modal-close" onclick="closeModal('modalTrashIncome')">×</button>
@@ -1488,7 +1488,7 @@
               </div>
 
               <!-- Note Filter -->
-              <div class="filter-field" class="grid-full">
+              <div class="filter-field grid-full">
                 <label>📝 Catatan</label>
                 <input type="text" id="trashFilterNote" placeholder="Cari dalam catatan..." oninput="debouncedSearchTrashIncome()">
               </div>
@@ -1535,14 +1535,14 @@
 
       <!-- Footer Actions -->
       <div class="pt16-pb20-border-top">
-        <button class="btn-cancel" onclick="closeModal('modalTrashIncome')" class="w-full">Tutup</button>
+        <button class="btn-cancel w-full" onclick="closeModal('modalTrashIncome')">Tutup</button>
       </div>
     </div>
   </div>
 
   <!-- ═════════════════ MODAL: TRASH EXPENSE ═════════════════ -->
   <div id="modalTrashExpense" class="modal">
-    <div class="modal-content" class="max-w-700 max-h-90vh flex flex-col">
+    <div class="modal-content max-w-700 max-h-90vh flex flex-col">
       <div class="modal-header" style="background: linear-gradient(135deg, #8B0000 0%, #4a0000 100%);">
         <div class="modal-title">🗑️ Tempat Sampah Pengeluaran</div>
         <button class="modal-close" onclick="closeModal('modalTrashExpense')">×</button>
@@ -1629,7 +1629,7 @@
               </div>
 
               <!-- Note Filter -->
-              <div class="filter-field" class="grid-full">
+              <div class="filter-field grid-full">
                 <label>📝 Catatan</label>
                 <input type="text" id="trashExpenseFilterNote" placeholder="Cari dalam catatan..." oninput="debouncedSearchTrashExpense()">
               </div>
@@ -1676,7 +1676,7 @@
 
       <!-- Footer Actions -->
       <div class="pt16-pb20-border-top">
-        <button class="btn-cancel" onclick="closeModal('modalTrashExpense')" class="w-full">Tutup</button>
+        <button class="btn-cancel w-full" onclick="closeModal('modalTrashExpense')">Tutup</button>
       </div>
     </div>
   </div>
@@ -1766,7 +1766,7 @@
         </div>
 
         <div class="flex gap-10">
-          <button class="btn btn-secondary" onclick="backToEditExpenseStep1()" class="flex-1">Kembali</button>
+          <button class="btn btn-secondary flex-1" onclick="backToEditExpenseStep1()">Kembali</button>
           <button class="btn" onclick="saveExpenseEdit()" style="flex: 2;">Simpan Perubahan</button>
         </div>
       </div>
@@ -1777,7 +1777,7 @@
           <button id="btnShowExpenseEditLogs" class="btn btn-sm" style="flex: 1; background: var(--ps3-red);">✏️ Riwayat Edit</button>
         </div>
         <div id="editExpenseHistoryList" class="max-h-300 scroll-y"></div>
-        <button class="btn-confirm" onclick="closeModal('modalEditExpense')" class="mt16-w100-p14 br12-upper">Tutup</button>
+        <button class="btn-confirm mt16-w100-p14 br12-upper" onclick="closeModal('modalEditExpense')">Tutup</button>
       </div>
     </div>
   </div>
@@ -1824,7 +1824,7 @@
         
         <!-- Action Buttons -->
         <div class="flex gap-10">
-          <button class="btn btn-secondary" onclick="closeModal('modalDeleteExpense')" class="flex-1">Batal</button>
+          <button class="btn btn-secondary flex-1" onclick="closeModal('modalDeleteExpense')">Batal</button>
           <button class="btn" onclick="confirmDeleteExpense()" style="flex: 2; background: var(--ps3-red);">Hapus Pengeluaran</button>
         </div>
       </div>
@@ -1833,7 +1833,7 @@
 
   <!-- ═════════════════ All Transactions Modal ═════════════════ -->
   <div id="modalAllTransactions" class="modal">
-    <div class="modal-content" class="max-w-700 max-h-90vh flex flex-col">
+    <div class="modal-content max-w-700 max-h-90vh flex flex-col">
       <div class="modal-header">
         <div class="modal-title">📋 Semua Transaksi Pendapatan</div>
         <button class="modal-close" onclick="closeModal('modalAllTransactions')">×</button>
@@ -1946,14 +1946,14 @@
       </div>
 
       <div class="pt16-pb20-border-top">
-        <button class="btn" onclick="closeModal('modalAllTransactions')" class="w-full">Tutup</button>
+        <button class="btn w-full" onclick="closeModal('modalAllTransactions')">Tutup</button>
       </div>
     </div>
   </div>
 
   <!-- ═════════════════ All Expenses Modal ═════════════════ -->
   <div id="modalAllExpenses" class="modal">
-    <div class="modal-content" class="max-w-700 max-h-90vh flex flex-col">
+    <div class="modal-content max-w-700 max-h-90vh flex flex-col">
       <div class="modal-header">
         <div class="modal-title">📋 Semua Transaksi Pengeluaran</div>
         <button class="modal-close" onclick="closeModal('modalAllExpenses')">×</button>
@@ -2028,7 +2028,7 @@
               </div>
 
               <!-- Note Filter -->
-              <div class="filter-field" class="grid-full">
+              <div class="filter-field grid-full">
                 <label>📝 Catatan</label>
                 <input type="text" id="expFilterNote" placeholder="Cari dalam catatan..." oninput="debouncedSearchExpenses()">
               </div>
@@ -2146,8 +2146,8 @@
         </div>
 
         <div class="flex-gap-12-mt15">
-          <button class="btn-cancel" onclick="closeModal('modalAddSchedule')" class="flex-p14">Batal</button>
-          <button class="btn-confirm" onclick="addSchedule()" class="flex-2-p14">Tambah Jadwal</button>
+          <button class="btn-cancel flex-p14" onclick="closeModal('modalAddSchedule')">Batal</button>
+          <button class="btn-confirm flex-2-p14" onclick="addSchedule()">Tambah Jadwal</button>
         </div>
       </div>
     </div>
@@ -2162,7 +2162,7 @@
       </div>
 
       <div class="p-20">
-        <p class="label-xs-muted" class="mb-15">
+        <p class="label-xs-muted mb-15">
           📋 Data jadwal yang telah dihapus tersimpan di sini sebagai log.
         </p>
 
@@ -2186,7 +2186,7 @@
       </div>
 
       <div class="p-20">
-        <p class="label-xs-muted" class="mb-15">
+        <p class="label-xs-muted mb-15">
           ✅ Jadwal yang telah selesai dan transaksi tercatat otomatis.
         </p>
 
@@ -2259,8 +2259,8 @@
         </div>
 
         <div class="flex-gap-12-mt15">
-          <button class="btn-cancel" onclick="closeModal('modalAddInventory')" class="flex-p14">Batal</button>
-          <button class="btn-confirm" onclick="addInventory()" class="flex-2-p14">Tambah Inventori</button>
+          <button class="btn-cancel flex-p14" onclick="closeModal('modalAddInventory')">Batal</button>
+          <button class="btn-confirm flex-2-p14" onclick="addInventory()">Tambah Inventori</button>
         </div>
       </div>
     </div>
@@ -2270,7 +2270,7 @@
        MODAL: Detail Item Inventori (Full Info + Maintenance + Usage)
   ═══════════════════════════════════════════════════════════════ -->
   <div id="modalItemDetail" class="modal z-3000">
-    <div class="modal-content" class="max-w-500 max-h-90vh scroll-y">
+    <div class="modal-content max-w-500 max-h-90vh scroll-y">
       <div class="modal-header">
         <div class="modal-title" id="itemDetailTitle">📦 Detail Item</div>
         <button class="modal-close" onclick="closeModal('modalItemDetail')">×</button>
@@ -2316,7 +2316,7 @@
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button class="btn-cancel" onclick="closeModal('modalItemDetail')" class="flex-p12">Tutup</button>
+          <button class="btn-cancel flex-p12" onclick="closeModal('modalItemDetail')">Tutup</button>
           <button class="btn-confirm" onclick="openEditItemModal()" style="flex: 1; padding: 12px; border-radius: 10px; background: linear-gradient(135deg, #f5a623, #ff8c00);">✏️ Edit</button>
         </div>
       </div>
@@ -2327,7 +2327,7 @@
        MODAL: Edit Item Inventori
   ═══════════════════════════════════════════════════════════════ -->
   <div id="modalEditItem" class="modal" style="z-index: 3100;">
-    <div class="modal-content" class="max-w-500 max-h-90vh scroll-y">
+    <div class="modal-content max-w-500 max-h-90vh scroll-y">
       <div class="modal-header">
         <div class="modal-title">✏️ Edit Item</div>
         <button class="modal-close" onclick="closeModal('modalEditItem')">×</button>
@@ -2452,7 +2452,7 @@
         </div>
 
         <div class="flex-gap-12-mt15">
-          <button class="btn-cancel" onclick="closeModal('modalAddMaintenance')" class="flex-p12">Batal</button>
+          <button class="btn-cancel flex-p12" onclick="closeModal('modalAddMaintenance')">Batal</button>
           <button class="btn-confirm" onclick="addMaintenanceRecord()" style="flex: 2; padding: 12px; border-radius: 10px;">Simpan Catatan</button>
         </div>
       </div>
@@ -2487,7 +2487,7 @@
         </div>
 
         <div class="flex-gap-12-mt15">
-          <button class="btn-cancel" onclick="closeModal('modalAddStation')" class="flex-p12">Batal</button>
+          <button class="btn-cancel flex-p12" onclick="closeModal('modalAddStation')">Batal</button>
           <button class="btn-confirm" onclick="addStation()" style="flex: 2; padding: 12px; border-radius: 10px;">Buat Stasiun</button>
         </div>
       </div>
@@ -2498,7 +2498,7 @@
        MODAL: Detail Stasiun (Manage Items, Swap)
   ═══════════════════════════════════════════════════════════════ -->
   <div id="modalStationDetail" class="modal z-3000">
-    <div class="modal-content" class="max-w-500 max-h-90vh scroll-y">
+    <div class="modal-content max-w-500 max-h-90vh scroll-y">
       <div class="modal-header">
         <div class="modal-title" id="stationDetailTitle">🏢 Detail Stasiun</div>
         <button class="modal-close" onclick="closeModal('modalStationDetail')">×</button>
@@ -2565,7 +2565,7 @@
               <button onclick="addCategoryRow('stik')" style="background: var(--ps3-green); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">+ Tambah</button>
             </div>
             <div id="stikRows">
-              <div class="category-row" data-category="stik" class="flex-gap-8-mb6">
+              <div class="category-row flex-gap-8-mb6" data-category="stik">
                 <select class="stik-select select-equip select-equip-flex">
                   <option value="">Pilih Stik...</option>
                 </select>
@@ -2584,7 +2584,7 @@
               <button onclick="addCategoryRow('charger')" style="background: var(--ps3-green); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">+ Tambah</button>
             </div>
             <div id="chargerRows">
-              <div class="category-row" data-category="charger" class="flex-gap-8-mb6">
+              <div class="category-row flex-gap-8-mb6" data-category="charger">
                 <select class="charger-select select-equip select-equip-flex">
                   <option value="">Pilih Charger/USB...</option>
                 </select>
@@ -2664,7 +2664,7 @@
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button class="btn-cancel" onclick="closeModal('modalStationDetail')" class="flex-p12">Tutup</button>
+          <button class="btn-cancel flex-p12" onclick="closeModal('modalStationDetail')">Tutup</button>
           <button class="btn-confirm" onclick="deleteStation()" style="flex: 1; padding: 12px; border-radius: 10px; background: linear-gradient(135deg, #dc2626, #b91c1c);">🗑️ Hapus</button>
         </div>
       </div>
@@ -2801,7 +2801,7 @@
       </div>
 
       <div class="p-20">
-        <p class="label-xs-muted" class="mb-15">
+        <p class="label-xs-muted mb-15">
           ⚠️ Jadwal yang dibatalkan akan dipindahkan ke sampah dan unit akan tersedia kembali.
         </p>
 
@@ -2826,8 +2826,8 @@
         </div>
 
         <div class="flex gap-12">
-          <button class="btn-cancel" onclick="closeModal('modalCancelSchedule')" class="flex-p14">Tutup</button>
-          <button class="btn-confirm" onclick="confirmCancelSchedule()" class="flex-p14">
+          <button class="btn-cancel flex-p14" onclick="closeModal('modalCancelSchedule')">Tutup</button>
+          <button class="btn-confirm flex-p14" onclick="confirmCancelSchedule()">
             Konfirmasi
           </button>
         </div>
