@@ -1704,8 +1704,8 @@ app.post('/api/stations/:id/stop', requireAuth, (req, res) => {
 
   const tx = {
     id: generateRevenueId(),
-    station_id: id,
-    station_name: station.name,
+    unitId: id,
+    unitName: station.name,
     customer: station.current_customer,
     startTime: station.start_time,
     endTime: Date.now(),
@@ -1716,11 +1716,11 @@ app.post('/api/stations/:id/stop', requireAuth, (req, res) => {
     date: dateKey
   };
 
-  // Insert transaction with station_id/station_name + unitId/unitName for backward compatibility
+  // Insert transaction - using unitId/unitName consistently for station data
   db.prepare(`INSERT INTO transactions 
-    (id, station_id, station_name, unitId, unitName, customer, startTime, endTime, durationMin, paid, payment, note, date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(tx.id, tx.station_id, tx.station_name, tx.station_id, tx.station_name, tx.customer, tx.startTime, tx.endTime, tx.durationMin, tx.paid, tx.payment, tx.note, tx.date);
+    (id, unitId, unitName, customer, startTime, endTime, durationMin, paid, payment, note, date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(tx.id, tx.unitId, tx.unitName, tx.customer, tx.startTime, tx.endTime, tx.durationMin, tx.paid, tx.payment, tx.note, tx.date);
 
   // If linked to a schedule, update schedule status to 'completed'
   if (station.linked_schedule_id) {
