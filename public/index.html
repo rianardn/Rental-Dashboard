@@ -315,15 +315,15 @@
 
           <!-- Stats Summary -->
           <div id="inventoryStats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;">
-            <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; text-align: center;">
+            <div class="card-surface">
               <div id="statTotalItems" style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-silver);">0</div>
               <div style="font-size: 0.65rem; color: var(--ps3-muted);">Total Items</div>
             </div>
-            <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; text-align: center;">
+            <div class="card-surface">
               <div id="statTotalValue" style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-green);">Rp0</div>
               <div style="font-size: 0.65rem; color: var(--ps3-muted);">Nilai Aset</div>
             </div>
-            <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; text-align: center;">
+            <div class="card-surface">
               <div id="statNeedMaintenance" style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-yellow);">0</div>
               <div style="font-size: 0.65rem; color: var(--ps3-muted);">Butuh Perawatan</div>
             </div>
@@ -334,7 +334,7 @@
             <p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada item inventori</p>
           </div>
 
-          <button class="btn" onclick="openModal('modalAddInventory')" style="width: 100%;">➕ Tambah Item Inventori</button>
+          <button class="btn" onclick="openModal('modalAddInventory')" class="w-full">➕ Tambah Item Inventori</button>
         </div>
 
         <!-- Tab: Stations -->
@@ -342,7 +342,7 @@
           <div id="stationsList" style="max-height: 350px; overflow-y: auto; margin-bottom: 15px;">
             <p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada stasiun</p>
           </div>
-          <button class="btn" onclick="openModal('modalAddStation')" style="width: 100%;">➕ Buat Stasiun Baru</button>
+          <button class="btn" onclick="openModal('modalAddStation')" class="w-full">➕ Buat Stasiun Baru</button>
         </div>
 
         <!-- Tab: Analytics -->
@@ -506,7 +506,7 @@
 
     <!-- ═════════════════ MODAL: EXPORT DATA TYPE SELECTION (Modal 1) ═════════════════ -->
     <div id="modalExportDataType" class="modal">
-      <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-content modal-sm">
         <div class="modal-header">
           <h3>📦 Pilih Data untuk Diekspor</h3>
         </div>
@@ -599,7 +599,7 @@
 
     <!-- ═════════════════ MODAL: CUSTOM EXPORT RANGE (Modal 1 - Custom) ═════════════════ -->
     <div id="modalCustomExportRange" class="modal">
-      <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-content modal-sm">
         <div class="modal-header">
           <h3>⚙️ Ekspor Kustom</h3>
         </div>
@@ -874,7 +874,7 @@
   </div>
 
   <!-- ═════════════════ MODAL: KONFIRMASI AKTIVASI DENGAN PEMBATALAN ═════════════════ -->
-  <div id="modalConfirmActivationWithCancel" class="modal" style="z-index: 3000;">
+  <div id="modalConfirmActivationWithCancel" class="modal z-3000">
     <div class="modal-content" style="max-width: 520px;">
       <div class="modal-header" style="background: linear-gradient(135deg, var(--ps3-red) 0%, #b30000 100%);">
         <div class="modal-title">⚠️ Booking Aktif Terdeteksi</div>
@@ -902,7 +902,7 @@
             <input 
               type="checkbox" 
               id="confirmCancelBookingCheckbox" 
-              style="width: 20px; height: 20px; margin-top: 2px; accent-color: var(--ps3-red); cursor: pointer;"
+              class="checkbox-ps3-sm"
             >
             <span style="color: var(--ps3-text); font-size: 0.9rem; line-height: 1.5;">
               <strong>Saya mengerti dan ingin melanjutkan.</strong> Booking di atas akan dibatalkan dan unit akan diaktifkan untuk pelanggan walk-in.
@@ -1047,7 +1047,7 @@
 
   <!-- Edit Transaction Modal -->
   <div id="modalEditTransaction" class="modal">
-    <div class="modal-content" style="max-width: 420px;">
+    <div class="modal-content modal-sm">
       <div class="modal-header">
         <div class="modal-title">✏️ Edit Transaksi</div>
         <button class="modal-close" onclick="closeModal('modalEditTransaction')">×</button>
@@ -1200,7 +1200,7 @@
 
   <!-- Edit Schedule Modal -->
   <div id="modalEditSchedule" class="modal" style="z-index: 3500;">
-    <div class="modal-content" style="max-width: 420px;">
+    <div class="modal-content modal-sm">
       <div class="modal-header">
         <div class="modal-title">✏️ Edit Jadwal</div>
         <button class="modal-close" onclick="closeModal('modalEditSchedule')">×</button>
@@ -1344,7 +1344,7 @@
 
   <!-- Delete Transaction Modal -->
   <div id="modalDeleteTransaction" class="modal">
-    <div class="modal-content" style="max-width: 420px;">
+    <div class="modal-content modal-sm">
       <div class="modal-header" style="background: var(--ps3-red);">
         <div class="modal-title">🗑️ Hapus Transaksi</div>
         <button class="modal-close" onclick="closeModal('modalDeleteTransaction')">×</button>
@@ -1535,7 +1535,7 @@
 
       <!-- Footer Actions -->
       <div style="padding: 16px 20px; border-top: 1px solid var(--ps3-border);">
-        <button class="btn-cancel" onclick="closeModal('modalTrashIncome')" style="width: 100%;">Tutup</button>
+        <button class="btn-cancel" onclick="closeModal('modalTrashIncome')" class="w-full">Tutup</button>
       </div>
     </div>
   </div>
@@ -1676,14 +1676,14 @@
 
       <!-- Footer Actions -->
       <div style="padding: 16px 20px; border-top: 1px solid var(--ps3-border);">
-        <button class="btn-cancel" onclick="closeModal('modalTrashExpense')" style="width: 100%;">Tutup</button>
+        <button class="btn-cancel" onclick="closeModal('modalTrashExpense')" class="w-full">Tutup</button>
       </div>
     </div>
   </div>
 
   <!-- Edit Expense Modal -->
   <div id="modalEditExpense" class="modal">
-    <div class="modal-content" style="max-width: 420px;">
+    <div class="modal-content modal-sm">
       <div class="modal-header">
         <div class="modal-title">✏️ Edit Pengeluaran</div>
         <button class="modal-close" onclick="closeModal('modalEditExpense')">×</button>
@@ -1784,7 +1784,7 @@
 
   <!-- ═════════════════ Delete Expense Modal ═════════════════ -->
   <div id="modalDeleteExpense" class="modal">
-    <div class="modal-content" style="max-width: 420px;">
+    <div class="modal-content modal-sm">
       <div class="modal-header">
         <div class="modal-title">🗑️ Hapus Pengeluaran</div>
         <button class="modal-close" onclick="closeModal('modalDeleteExpense')">×</button>
@@ -1946,7 +1946,7 @@
       </div>
 
       <div style="padding: 16px 20px; border-top: 1px solid var(--ps3-border);">
-        <button class="btn" onclick="closeModal('modalAllTransactions')" style="width: 100%;">Tutup</button>
+        <button class="btn" onclick="closeModal('modalAllTransactions')" class="w-full">Tutup</button>
       </div>
     </div>
   </div>
@@ -2072,7 +2072,7 @@
   </div>
 
   <!-- Modal: Tambah Jadwal Booking -->
-  <div id="modalAddSchedule" class="modal" style="z-index: 3000;">
+  <div id="modalAddSchedule" class="modal z-3000">
     <div class="modal-content" style="max-width: 420px; max-height: 90vh; overflow-y: auto;">
       <div class="modal-header">
         <div class="modal-title">➕ Tambah Jadwal Booking</div>
@@ -2154,7 +2154,7 @@
   </div>
 
   <!-- Modal: Tempat Sampah (Deleted Schedules) -->
-  <div id="modalTrash" class="modal" style="z-index: 3000;">
+  <div id="modalTrash" class="modal z-3000">
     <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">
       <div class="modal-header">
         <div class="modal-title">🗑️ Tempat Sampah</div>
@@ -2178,7 +2178,7 @@
   </div>
 
   <!-- Modal: Riwayat (Completed Schedules) -->
-  <div id="modalHistory" class="modal" style="z-index: 3000;">
+  <div id="modalHistory" class="modal z-3000">
     <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">
       <div class="modal-header" style="background: var(--ps3-green-dark);">
         <div class="modal-title">Riwayat Selesai</div>
@@ -2202,7 +2202,7 @@
   </div>
 
   <!-- Modal: Tambah Inventori -->
-  <div id="modalAddInventory" class="modal" style="z-index: 3000;">
+  <div id="modalAddInventory" class="modal z-3000">
     <div class="modal-content" style="max-width: 420px; max-height: 90vh; overflow-y: auto;">
       <div class="modal-header">
         <div class="modal-title">➕ Tambah Inventori</div>
@@ -2269,7 +2269,7 @@
   <!-- ═══════════════════════════════════════════════════════════════
        MODAL: Detail Item Inventori (Full Info + Maintenance + Usage)
   ═══════════════════════════════════════════════════════════════ -->
-  <div id="modalItemDetail" class="modal" style="z-index: 3000;">
+  <div id="modalItemDetail" class="modal z-3000">
     <div class="modal-content" style="max-width: 500px; max-height: 90vh; overflow-y: auto;">
       <div class="modal-header">
         <div class="modal-title" id="itemDetailTitle">📦 Detail Item</div>
@@ -2422,7 +2422,7 @@
        MODAL: Tambah Perawatan
   ═══════════════════════════════════════════════════════════════ -->
   <div id="modalAddMaintenance" class="modal" style="z-index: 3100;">
-    <div class="modal-content" style="max-width: 420px;">
+    <div class="modal-content modal-sm">
       <div class="modal-header">
         <div class="modal-title">🔧 Tambah Catatan Perawatan</div>
         <button class="modal-close" onclick="closeModal('modalAddMaintenance')">×</button>
@@ -2462,8 +2462,8 @@
   <!-- ═══════════════════════════════════════════════════════════════
        MODAL: Tambah Stasiun
   ═══════════════════════════════════════════════════════════════ -->
-  <div id="modalAddStation" class="modal" style="z-index: 3000;">
-    <div class="modal-content" style="max-width: 420px;">
+  <div id="modalAddStation" class="modal z-3000">
+    <div class="modal-content modal-sm">
       <div class="modal-header">
         <div class="modal-title">🏢 Buat Stasiun Baru</div>
         <button class="modal-close" onclick="closeModal('modalAddStation')">×</button>
@@ -2497,7 +2497,7 @@
   <!-- ═══════════════════════════════════════════════════════════════
        MODAL: Detail Stasiun (Manage Items, Swap)
   ═══════════════════════════════════════════════════════════════ -->
-  <div id="modalStationDetail" class="modal" style="z-index: 3000;">
+  <div id="modalStationDetail" class="modal z-3000">
     <div class="modal-content" style="max-width: 500px; max-height: 90vh; overflow-y: auto;">
       <div class="modal-header">
         <div class="modal-title" id="stationDetailTitle">🏢 Detail Stasiun</div>
@@ -2672,7 +2672,7 @@
   </div>
 
   <!-- Modal: Kalender Jadwal (Schedule Calendar Filter) -->
-  <div id="modalScheduleCalendar" class="modal" style="z-index: 3000;">
+  <div id="modalScheduleCalendar" class="modal z-3000">
     <div class="modal-content" style="max-width: 600px; max-height: 85vh; overflow-y: auto;">
       <div class="modal-header" style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
         <div class="modal-title">📅 Kalender Jadwal</div>
@@ -3504,9 +3504,9 @@
                 🎮 ${t.unitName}
               </div>
               <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                ${t.editCount > 0 ? `<button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>` : ''}
-                <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Edit transaksi">✏️</button>
-                <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Hapus transaksi">🗑️</button>
+                ${t.editCount > 0 ? `<button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-green" title="Lihat riwayat edit">📋</button>` : ''}
+                <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-muted" title="Edit transaksi">✏️</button>
+                <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-red" title="Hapus transaksi">🗑️</button>
               </div>
             </div>
 
@@ -3634,9 +3634,9 @@
                 ${catInfo.icon} ${catInfo.category}
               </div>
               <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                ${e.editCount > 0 ? `<button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat">📋</button>` : ''}
-                <button onclick="try { openEditExpenseModal('${e.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Edit pengeluaran">✏️</button>
-                <button onclick="try { openDeleteExpenseModal('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}', ${e.amount}); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Hapus pengeluaran">🗑️</button>
+                ${e.editCount > 0 ? `<button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-green" title="Lihat riwayat">📋</button>` : ''}
+                <button onclick="try { openEditExpenseModal('${e.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-muted" title="Edit pengeluaran">✏️</button>
+                <button onclick="try { openDeleteExpenseModal('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}', ${e.amount}); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-red" title="Hapus pengeluaran">🗑️</button>
               </div>
             </div>
 
@@ -4147,9 +4147,9 @@
               🎮 ${t.unitName}
             </div>
             <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-              ${t.editCount > 0 ? `<button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat edit">📋</button>` : ''}
-              <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Edit transaksi">✏️</button>
-              <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Hapus transaksi">🗑️</button>
+              ${t.editCount > 0 ? `<button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-green" title="Lihat riwayat edit">📋</button>` : ''}
+              <button onclick="try { openEditModal('${t.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-muted" title="Edit transaksi">✏️</button>
+              <button onclick="try { openDeleteTransactionModal('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-red" title="Hapus transaksi">🗑️</button>
             </div>
           </div>
 
@@ -4471,9 +4471,9 @@
               ${catInfo.icon} ${catInfo.category}
             </div>
             <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-              ${e.editCount > 0 ? `<button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-green); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Lihat riwayat">📋</button>` : ''}
-              <button onclick="try { openEditExpenseModal('${e.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-muted); font-size: 1.1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Edit pengeluaran">✏️</button>
-              <button onclick="try { openDeleteExpenseModal('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}', ${e.amount}); } catch(e) { alert('Error: ' + e.message); }" style="background: transparent; border: none; color: var(--ps3-red); font-size: 1rem; cursor: pointer; padding: 6px; min-width: 36px; min-height: 36px; touch-action: manipulation;" title="Hapus pengeluaran">🗑️</button>
+              ${e.editCount > 0 ? `<button onclick="try { viewExpenseEditHistory('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-green" title="Lihat riwayat">📋</button>` : ''}
+              <button onclick="try { openEditExpenseModal('${e.id || ''}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-muted" title="Edit pengeluaran">✏️</button>
+              <button onclick="try { openDeleteExpenseModal('${e.id || ''}', '${(e.item || 'No item').replace(/'/g, "\\'")}', ${e.amount}); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-red" title="Hapus pengeluaran">🗑️</button>
             </div>
           </div>
 
@@ -12141,11 +12141,11 @@
             <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ps3-muted); margin-bottom: 10px; text-align: center;">📊 Proyeksi Balik Modal</div>
             
             <div class="form-row-15">
-              <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; text-align: center;">
+              <div class="card-surface">
                 <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 4px;">Rata-rata Harian</div>
                 <div style="font-size: 1rem; font-weight: 600; color: var(--ps3-text);">Rp${Math.round(avgDaily).toLocaleString()}</div>
               </div>
-              <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; text-align: center;">
+              <div class="card-surface">
                 <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 4px;">Median Harian</div>
                 <div style="font-size: 1rem; font-weight: 600; color: var(--ps3-text);">Rp${Math.round(medianDaily).toLocaleString()}</div>
               </div>

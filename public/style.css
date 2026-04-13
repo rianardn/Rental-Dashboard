@@ -2345,3 +2345,182 @@
 .hidden-mb16 { display: none; margin-bottom: 16px; }
 
 .p-20 { padding: 20px; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   BATCH 7: BACKGROUND & BORDER PATTERNS
+═══════════════════════════════════════════════════════════════ */
+
+/* Surface Card Patterns */
+.card-surface {
+  background: var(--ps3-surface);
+  border: 1px solid var(--ps3-border);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+}
+.card-surface-12 {
+  background: var(--ps3-surface);
+  border: 1px solid var(--ps3-border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.card-surface-10 {
+  background: var(--ps3-surface);
+  border: 1px solid var(--ps3-border);
+  border-radius: 10px;
+  padding: 15px;
+  text-align: center;
+}
+
+/* Danger/Button Patterns */
+.btn-danger-sm {
+  background: var(--ps3-surface);
+  color: var(--ps3-red-danger);
+  border: 1px solid var(--ps3-red-danger);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.btn-neutral-sm {
+  background: var(--ps3-surface);
+  border: 1px solid var(--ps3-border);
+  color: var(--ps3-text);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Badge Pattern */
+.badge-red {
+  background: var(--ps3-red);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+}
+
+/* Tab Button Patterns */
+.tab-btn-muted {
+  background: var(--ps3-bg);
+  border: 1px solid var(--ps3-border);
+  color: var(--ps3-muted);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+/* Icon Button Patterns */
+.icon-btn-red,
+.icon-btn-muted,
+.icon-btn-green {
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 6px;
+  min-width: 36px;
+  min-height: 36px;
+  touch-action: manipulation;
+}
+.icon-btn-red { color: var(--ps3-red); }
+.icon-btn-muted { color: var(--ps3-muted); font-size: 1.1rem; }
+.icon-btn-green { color: var(--ps3-green); }
+
+/* Action Button Small */
+.btn-action-green {
+  background: var(--ps3-green);
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+.btn-action-yellow {
+  background: var(--ps3-surface);
+  color: var(--ps3-yellow);
+  border: 1px solid var(--ps3-yellow);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.btn-action-silver {
+  background: var(--ps3-surface);
+  color: var(--ps3-silver);
+  border: 1px solid var(--ps3-border);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+/* Large Action Button */
+.btn-action-lg {
+  background: var(--ps3-surface);
+  border: 1px solid var(--ps3-border);
+  color: var(--ps3-text);
+  padding: 12px 24px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Flex variants for tab buttons */
+.tab-btn-flex {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   BATCH 8: WIDTH & HEIGHT UTILITIES
+═══════════════════════════════════════════════════════════════ */
+
+/* Width */
+.w-full { width: 100%; }
+.w-20 { width: 20px; }
+.w-36 { width: 36px; }
+.w-40 { width: 40px; }
+.w-80 { width: 80px; }
+.w-120 { width: 120px; }
+
+/* Height */
+.h-20 { height: 20px; }
+.h-36 { height: 36px; }
+.h-40 { height: 40px; }
+
+/* Max Width */
+.max-w-420 { max-width: 420px; }
+.max-w-700 { max-width: 700px; }
+.max-w-full { max-width: 100%; }
+
+/* Min Width/Height */
+.min-w-36 { min-width: 36px; }
+.min-h-36 { min-height: 36px; }
+
+.checkbox-ps3-sm {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--ps3-red);
+  cursor: pointer;
+}
+
+.modal-sm { max-width: 420px; }
+
+.z-3000 { z-index: 3000; }
