@@ -5062,7 +5062,7 @@
           const option = document.createElement('option');
           option.value = station.id;
           option.textContent = station.name;
-          if (station.id == transaction.station_id) {
+          if (station.id == transaction.unitId) {
             option.selected = true;
           }
           stationSelect.appendChild(option);
@@ -5192,7 +5192,7 @@
       if (document.getElementById('editCheckUnit').checked) {
         const stationId = document.getElementById('editUnitId').value;
         if (stationId) {
-          updates.station_id = stationId;
+          updates.unitId = stationId;
         }
       }
       if (document.getElementById('editCheckPaid').checked) {
@@ -7406,8 +7406,8 @@
         await api('POST', '/schedules', {
           customer,
           phone,
-          station_id: stationId || null,
-          station_name: stationName,
+          unitId: stationId || null,
+          unitName: stationName,
           scheduledDate: date,
           scheduledTime: time,
           scheduledEndDate: endDate,
@@ -8750,14 +8750,14 @@
         }
 
         // Check if schedule has a station assigned
-        if (!schedule.station_id) {
+        if (!schedule.unitId) {
           // Show modal to select station
           openScheduleUnitModal(schedule);
           return;
         }
         
         // Start the session with schedule data and station
-        await api('POST', `/schedules/${id}/start-unit`, { station_id: schedule.station_id });
+        await api('POST', `/schedules/${id}/start-unit`, { unitId: schedule.unitId });
         await loadData();
         await loadSchedules();
         renderAll();
@@ -8809,7 +8809,7 @@
       }
       
       try {
-        await api('POST', `/schedules/${currentScheduleForUnit.id}/start-unit`, { station_id: stationId });
+        await api('POST', `/schedules/${currentScheduleForUnit.id}/start-unit`, { unitId: stationId });
         closeModal('modalScheduleUnit');
         currentScheduleForUnit = null;
         await loadData();
@@ -8899,7 +8899,7 @@
       }
       
       stations.forEach(s => {
-        const selected = s.id == schedule.station_id ? 'selected' : '';
+        const selected = s.id == schedule.unitId ? 'selected' : '';
         stationSelect.innerHTML += `<option value="${s.id}" ${selected}>${s.name}</option>`;
       });
 
@@ -9089,7 +9089,7 @@
         }
       }
       if (document.getElementById('editScheduleCheckUnit').checked) {
-        updates.station_id = document.getElementById('editScheduleUnit').value;
+        updates.unitId = document.getElementById('editScheduleUnit').value;
       }
       if (document.getElementById('editScheduleCheckNote').checked) {
         updates.note = document.getElementById('editScheduleNote').value.trim();

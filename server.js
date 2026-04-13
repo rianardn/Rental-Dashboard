@@ -559,91 +559,7 @@ if (db) {
   }
 }
 
-// Migration: Add station_id and station_name columns to schedules table
-if (db) {
-  try {
-    const schedulesInfo = db.prepare(`PRAGMA table_info(schedules)`).all();
-    
-    // Add station_id column if not exists
-    const hasStationId = schedulesInfo.find(c => c.name === 'station_id');
-    if (!hasStationId) {
-      db.prepare(`ALTER TABLE schedules ADD COLUMN station_id TEXT`).run();
-      console.log('[DB] Migration: Added station_id column to schedules');
-    }
-    
-    // Add station_name column if not exists
-    const hasStationName = schedulesInfo.find(c => c.name === 'station_name');
-    if (!hasStationName) {
-      db.prepare(`ALTER TABLE schedules ADD COLUMN station_name TEXT`).run();
-      console.log('[DB] Migration: Added station_name column to schedules');
-    }
-    
-    // Migrate data from unitId/unitName to station_id/station_name
-    if (hasStationId || hasStationName) {
-      const schedulesToMigrate = db.prepare(`
-        SELECT id, unitId, unitName FROM schedules 
-        WHERE station_id IS NULL AND unitId IS NOT NULL
-      `).all();
-      
-      if (schedulesToMigrate.length > 0) {
-        console.log(`[DB] Migration: Migrating ${schedulesToMigrate.length} schedules from unit to station`);
-        for (const schedule of schedulesToMigrate) {
-          // Map unitId to station_id format (e.g., "PS-1" or numeric)
-          const stationId = schedule.unitId ? `HOME-${String(schedule.unitId).padStart(2, '0')}` : null;
-          db.prepare(`UPDATE schedules SET station_id = ?, station_name = ? WHERE id = ?`).run(
-            stationId, schedule.unitName, schedule.id
-          );
-        }
-        console.log('[DB] Migration: Migrated unit data to station data in schedules');
-      }
-    }
-  } catch (e) {
-    console.error('[DB] Migration error for station columns in schedules:', e.message);
-  }
-}
-
-// Migration: Add station_id and station_name columns to transactions table
-if (db) {
-  try {
-    const txInfo = db.prepare(`PRAGMA table_info(transactions)`).all();
-    
-    // Add station_id column if not exists
-    const hasStationId = txInfo.find(c => c.name === 'station_id');
-    if (!hasStationId) {
-      db.prepare(`ALTER TABLE transactions ADD COLUMN station_id TEXT`).run();
-      console.log('[DB] Migration: Added station_id column to transactions');
-    }
-    
-    // Add station_name column if not exists
-    const hasStationName = txInfo.find(c => c.name === 'station_name');
-    if (!hasStationName) {
-      db.prepare(`ALTER TABLE transactions ADD COLUMN station_name TEXT`).run();
-      console.log('[DB] Migration: Added station_name column to transactions');
-    }
-    
-    // Migrate data from unitId/unitName to station_id/station_name
-    if (hasStationId || hasStationName) {
-      const txsToMigrate = db.prepare(`
-        SELECT id, unitId, unitName FROM transactions 
-        WHERE station_id IS NULL AND unitId IS NOT NULL
-      `).all();
-      
-      if (txsToMigrate.length > 0) {
-        console.log(`[DB] Migration: Migrating ${txsToMigrate.length} transactions from unit to station`);
-        for (const tx of txsToMigrate) {
-          // Map unitId to station_id format
-          const stationId = tx.unitId ? `HOME-${String(tx.unitId).padStart(2, '0')}` : null;
-          db.prepare(`UPDATE transactions SET station_id = ?, station_name = ? WHERE id = ?`).run(
-            stationId, tx.unitName, tx.id
-          );
-        }
-        console.log('[DB] Migration: Migrated unit data to station data in transactions');
-      }
-    }
-  } catch (e) {
-    console.error('[DB] Migration error for station columns in transactions:', e.message);
-  }
-}
+// NOTE: Removed station_id/station_name migration - using camelCase unitId/unitName consistently
 
 // Migration: Add phone column to transactions table if not exists
 if (db) {
@@ -1589,7 +1505,7 @@ app.post('/api/stations/:id/start', requireAuth, (req, res) => {
   // Find pending schedules for this station that would overlap
   const pendingSchedules = db.prepare(
     `SELECT * FROM schedules
-     WHERE station_id = ? AND status = 'pending'
+     WHERE unitId = ? AND status = 'pending'
      AND scheduledDate >= ?`
   ).all(id, today);
 
@@ -1647,7 +1563,8 @@ app.post('/api/stations/:id/start', requireAuth, (req, res) => {
             endTime: scheduleEndStr,
             startTimestamp: scheduleStartUTC,
             endTimestamp: scheduleEndUTC,
-            station_name: schedule.station_name,
+            unitId: schedule.unitId,
+            unitName: schedule.unitName,
             note: schedule.note,
             status: schedule.status || 'pending',
             duration: schedule.duration
@@ -1674,7 +1591,7 @@ app.post('/api/stations/:id/start', requireAuth, (req, res) => {
   // If linked to a schedule, update schedule status to 'running'
   if (linkedScheduleId) {
     try {
-      db.prepare('UPDATE schedules SET status = ?, station_id = ?, station_name = ? WHERE id = ?')
+      db.prepare('UPDATE schedules SET status = ?, unitId = ?, unitName = ? WHERE id = ?')
         .run('running', id, station.name, linkedScheduleId);
       console.log(`[Schedule] Linked schedule ${linkedScheduleId} started on station ${id}`);
     } catch (e) {
@@ -1785,13 +1702,13 @@ app.post('/api/schedules/:id/start-unit', requireAuth, (req, res) => {
   if (schedule.status === 'completed') return res.status(400).json({ error: 'Jadwal sudah selesai' });
   if (schedule.status === 'cancelled') return res.status(400).json({ error: 'Jadwal sudah dibatalkan' });
   
-  // Use provided station_id or schedule's station_id
-  const { station_id = schedule.station_id } = req.body;
-  if (!station_id) return res.status(400).json({ error: 'Pilih stasiun terlebih dahulu' });
+  // Use provided unitId or schedule's unitId
+  const { unitId = schedule.unitId } = req.body;
+  if (!unitId) return res.status(400).json({ error: 'Pilih stasiun terlebih dahulu' });
   
   // Get station name
-  const station = db.prepare('SELECT * FROM inventory_pairings WHERE id = ?').get(station_id);
-  const stationName = station ? station.name : schedule.station_name || station_id;
+  const station = db.prepare('SELECT * FROM inventory_pairings WHERE id = ?').get(unitId);
+  const unitName = station ? station.name : schedule.unitName || unitId;
   
   // Prepare note with [TX_ID] prefix (e.g., [PSJ00018])
   const txId = schedule.scheduleId || scheduleId;
@@ -1804,8 +1721,8 @@ app.post('/api/schedules/:id/start-unit', requireAuth, (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const txResult = txStmt.run(
-    station_id,  // Use station_id as unitId for now (migration compatibility)
-    stationName,
+    unitId,
+    unitName,
     schedule.customer,
     startTime,
     schedule.duration || 0,
@@ -1815,14 +1732,14 @@ app.post('/api/schedules/:id/start-unit', requireAuth, (req, res) => {
     new Date().toISOString().split('T')[0]
   );
   
-  // Update schedule status to running with station info
-  db.prepare('UPDATE schedules SET status = ?, station_id = ?, station_name = ? WHERE id = ?')
-    .run('running', station_id, stationName, scheduleId);
+  // Update schedule status to running with unit info
+  db.prepare('UPDATE schedules SET status = ?, unitId = ?, unitName = ? WHERE id = ?')
+    .run('running', unitId, unitName, scheduleId);
   
   res.json({ 
     ok: true, 
     message: 'Sesi dimulai dari jadwal',
-    station: { id: station_id, name: stationName },
+    station: { id: unitId, name: unitName },
     schedule: db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId)
   });
 });
@@ -2165,8 +2082,6 @@ app.put('/api/transactions/:id', requireAuth, (req, res) => {
     'note': 'note',
     'unitId': 'unitId',
     'unitName': 'unitName',
-    'station_id': 'station_id',
-    'station_name': 'station_name',
     'timestamp': 'startTime',  // Maps to startTime
     'startTime': 'startTime',
     'endTime': 'endTime'
@@ -2226,24 +2141,14 @@ app.put('/api/transactions/:id', requireAuth, (req, res) => {
         }
       }
     } else if (field === 'unitId' && value !== undefined) {
-      const unitId = parseInt(value);
-      if (!isNaN(unitId) && unitId !== tx.unitId) {
-        trackChange('unitId', 'unitId', unitId);
-        // Lookup unit name
-        const unit = db.prepare('SELECT name FROM units WHERE id = ?').get(unitId);
-        if (unit && unit.name !== tx.unitName) {
-          trackChange('unitName', 'unitName', unit.name);
-        }
-      }
-    } else if (field === 'station_id' && value !== undefined) {
-      const stationId = value; // station_id is TEXT, not INTEGER
-      if (stationId !== tx.station_id) {
-        trackChange('station_id', 'station_id', stationId);
-        // Lookup station name from inventory_pairings
-        const station = db.prepare('SELECT name FROM inventory_pairings WHERE id = ?').get(stationId);
-        const stationName = station ? station.name : (inputUpdates.station_name || tx.station_name || stationId);
-        if (stationName !== tx.station_name) {
-          trackChange('station_name', 'station_name', stationName);
+      const newUnitId = value; // unitId can be TEXT (station ID like "HOME-01")
+      if (newUnitId !== tx.unitId) {
+        trackChange('unitId', 'unitId', newUnitId);
+        // Lookup unit name from inventory_pairings (for stations)
+        const station = db.prepare('SELECT name FROM inventory_pairings WHERE id = ?').get(newUnitId);
+        const newUnitName = station ? station.name : (inputUpdates.unitName || tx.unitName || newUnitId);
+        if (newUnitName !== tx.unitName) {
+          trackChange('unitName', 'unitName', newUnitName);
         }
       }
     } else {
@@ -2628,12 +2533,12 @@ app.get('/api/schedules', requireAuth, (req, res) => {
 });
 
 app.post('/api/schedules', requireAuth, (req, res) => {
-  const { customer, phone, station_id, station_name, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status } = req.body;
+  const { customer, phone, unitId, unitName, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status } = req.body;
   const durationMinutes = parseInt(duration) || 0;
   
   // Conflict detection: Check if station is already booked for overlapping time
   // Uses scheduledEndDate and scheduledEndTime if available, otherwise fall back to calculation
-  if (station_id && scheduledDate && scheduledTime) {
+  if (unitId && scheduledDate && scheduledTime) {
     let newStartDateTime, newEndDateTime;
 
     // Parse new booking dates/times with explicit timezone handling
@@ -2656,13 +2561,13 @@ app.post('/api/schedules', requireAuth, (req, res) => {
     // ===== CHECK 1: Conflict with existing pending/running schedules =====
     const existingSchedules = db.prepare(
       `SELECT * FROM schedules
-       WHERE station_id = ? AND status NOT IN ('cancelled', 'completed')
+       WHERE unitId = ? AND status NOT IN ('cancelled', 'completed')
        AND (
          (scheduledDate <= ? AND (scheduledEndDate >= ? OR scheduledDate = ?))
          OR
          (scheduledEndDate IS NULL AND scheduledDate >= ? AND scheduledDate <= ?)
        )`
-    ).all(station_id, scheduledEndDate || scheduledDate, scheduledDate, scheduledDate, scheduledDate, scheduledEndDate || scheduledDate);
+    ).all(unitId, scheduledEndDate || scheduledDate, scheduledDate, scheduledDate, scheduledDate, scheduledEndDate || scheduledDate);
 
     for (const existing of existingSchedules) {
       if (!existing.scheduledTime) continue;
@@ -2698,15 +2603,15 @@ app.post('/api/schedules', requireAuth, (req, res) => {
   const scheduleId = generateScheduleId();
 
   const stmt = db.prepare(`
-    INSERT INTO schedules (scheduleId, customer, phone, station_id, station_name, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status)
+    INSERT INTO schedules (scheduleId, customer, phone, unitId, unitName, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
     scheduleId,
     customer,
     phone || '',
-    station_id || null,
-    station_name || '',
+    unitId || null,
+    unitName || '',
     scheduledDate,
     scheduledTime || '',
     scheduledEndDate || scheduledDate,
@@ -2721,7 +2626,7 @@ app.post('/api/schedules', requireAuth, (req, res) => {
 
 app.put('/api/schedules/:id', requireAuth, (req, res) => {
   const scheduleId = req.params.id;
-  const { customer, phone, station_id, station_name, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status, reason, editReason, editedBy } = req.body;
+  const { customer, phone, unitId, unitName, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status, reason, editReason, editedBy } = req.body;
   const durationMinutes = parseInt(duration) || 0;
   const editReasonText = reason || editReason || '-';
   const editor = editedBy || 'admin';
@@ -2778,8 +2683,8 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
   // Use existing values if not provided (partial update support)
   const updateCustomer = customer !== undefined ? customer : existing.customer;
   const updatePhone = phone !== undefined ? phone : existing.phone;
-  const updateStationId = station_id !== undefined ? (station_id || null) : existing.station_id;
-  const updateStationName = station_name !== undefined ? station_name : existing.station_name;
+  const updateUnitId = unitId !== undefined ? (unitId || null) : existing.unitId;
+  const updateUnitName = unitName !== undefined ? unitName : existing.unitName;
   const updateScheduledDate = scheduledDate !== undefined ? scheduledDate : existing.scheduledDate;
   const updateScheduledTime = scheduledTime !== undefined ? scheduledTime : existing.scheduledTime;
   const updateScheduledEndDate = scheduledEndDate !== undefined ? scheduledEndDate : existing.scheduledEndDate;
@@ -2804,8 +2709,8 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
   // Track all field changes
   trackChange('customer', existing.customer, updateCustomer);
   trackChange('phone', existing.phone, updatePhone);
-  trackChange('station_id', existing.station_id, updateStationId);
-  trackChange('station_name', existing.station_name, updateStationName);
+  trackChange('unitId', existing.unitId, updateUnitId);
+  trackChange('unitName', existing.unitName, updateUnitName);
   trackChange('scheduledDate', existing.scheduledDate, updateScheduledDate);
   trackChange('scheduledTime', existing.scheduledTime, updateScheduledTime);
   trackChange('scheduledEndDate', existing.scheduledEndDate, updateScheduledEndDate);
@@ -2815,7 +2720,7 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
   trackChange('status', existing.status, updateStatus);
   
   // Conflict detection for updates: Check if station is already booked for overlapping time (excluding current schedule)
-  if (updateStationId && updateScheduledDate && updateScheduledTime) {
+  if (updateUnitId && updateScheduledDate && updateScheduledTime) {
     let newStartDateTime = new Date(`${updateScheduledDate}T${updateScheduledTime}`);
     let newEndDateTime;
     
@@ -2828,13 +2733,13 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
     if (newEndDateTime) {
       const existingSchedules = db.prepare(
         `SELECT * FROM schedules 
-         WHERE station_id = ? AND status NOT IN ('cancelled', 'completed') AND id != ?
+         WHERE unitId = ? AND status NOT IN ('cancelled', 'completed') AND id != ?
          AND (
            (scheduledDate <= ? AND (scheduledEndDate >= ? OR scheduledDate = ?))
            OR 
            (scheduledEndDate IS NULL AND scheduledDate >= ? AND scheduledDate <= ?)
          )`
-      ).all(updateStationId, scheduleId, updateScheduledEndDate || updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledEndDate || updateScheduledDate);
+      ).all(updateUnitId, scheduleId, updateScheduledEndDate || updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledEndDate || updateScheduledDate);
       
       for (const exist of existingSchedules) {
         if (!exist.scheduledTime) continue;
@@ -2853,8 +2758,8 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
         const overlap = (newStartDateTime < existEndDateTime) && (newEndDateTime > existStartDateTime);
         
         if (overlap) {
-          const existEndTimeStr = exist.scheduledEndTime || 
-            String(existEndDateTime.getHours()).padStart(2, '0') + ':' + 
+          const existEndTimeStr = exist.scheduledEndTime ||
+            String(existEndDateTime.getHours()).padStart(2, '0') + ':' +
             String(existEndDateTime.getMinutes()).padStart(2, '0');
           return res.status(409).json({
             ok: false,
@@ -2865,25 +2770,15 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
     }
   }
   
-  const stmt = db.prepare(`
-    UPDATE schedules SET
-      customer = ?, phone = ?, station_id = ?, station_name = ?, scheduledDate = ?, scheduledTime = ?,
-      scheduledEndDate = ?, scheduledEndTime = ?, duration = ?, note = ?, status = ?
+  // Execute update with all fields
+  db.prepare(`
+    UPDATE schedules 
+    SET customer = ?, phone = ?, unitId = ?, unitName = ?, scheduledDate = ?, scheduledTime = ?,
+        scheduledEndDate = ?, scheduledEndTime = ?, duration = ?, note = ?, status = ?
     WHERE id = ?
-  `);
-  stmt.run(
-    updateCustomer,
-    updatePhone || '',
-    updateStationId,
-    updateStationName || '',
-    updateScheduledDate,
-    updateScheduledTime || '',
-    updateScheduledEndDate || updateScheduledDate,
-    updateScheduledEndTime || '',
-    updateDuration,
-    updateNote || '',
-    updateStatus || 'pending',
-    scheduleId
+  `).run(
+    updateCustomer, updatePhone, updateUnitId, updateUnitName, updateScheduledDate, updateScheduledTime,
+    updateScheduledEndDate, updateScheduledEndTime, updateDuration, updateNote, updateStatus, scheduleId
   );
   
   // Insert edit logs to audit trail
@@ -2913,8 +2808,6 @@ app.get('/api/schedules/deleted', requireAuth, (req, res) => {
         json_extract(recordData, '$.phone') as phone,
         json_extract(recordData, '$.unitId') as unitId,
         json_extract(recordData, '$.unitName') as unitName,
-        json_extract(recordData, '$.station_id') as station_id,
-        json_extract(recordData, '$.station_name') as station_name,
         json_extract(recordData, '$.scheduledDate') as scheduledDate,
         json_extract(recordData, '$.scheduledTime') as scheduledTime,
         json_extract(recordData, '$.scheduledEndDate') as scheduledEndDate,
