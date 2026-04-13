@@ -3438,7 +3438,7 @@ app.get('/api/pairings', requireAuth, (req, res) => {
       ps3: items.filter(i => i.category === 'ps3' || i.category === 'konsol').length,
       tv: items.filter(i => i.category === 'tv').length,
       stik: items.filter(i => i.category === 'stik').length,
-      usb: items.filter(i => i.category === 'usb' || i.category === 'charger' || 
+      usb: items.filter(i => i.category === 'usb' || i.category === 'charger' || i.category === 'kabel_usb' ||
                           (i.category === 'kabel_power' && i.role && i.role.startsWith('charger'))).length,
       hdmi: items.filter(i => i.category === 'hdmi' || i.category === 'kabel_hdmi').length,
       plug: items.filter(i => i.category === 'plug' || 
@@ -3529,7 +3529,7 @@ app.get('/api/pairings/:id', requireAuth, (req, res) => {
       ps3: items.filter(i => i.category === 'ps3' || i.category === 'konsol').length,
       tv: items.filter(i => i.category === 'tv').length,
       stik: items.filter(i => i.category === 'stik').length,
-      usb: items.filter(i => i.category === 'usb' || i.category === 'charger' || 
+      usb: items.filter(i => i.category === 'usb' || i.category === 'charger' || i.category === 'kabel_usb' ||
                           (i.category === 'kabel_power' && i.role && i.role.startsWith('charger'))).length,
       hdmi: items.filter(i => i.category === 'hdmi' || i.category === 'kabel_hdmi').length,
       plug: items.filter(i => i.category === 'plug' || 
@@ -3569,8 +3569,7 @@ app.get('/api/pairings/:id', requireAuth, (req, res) => {
   }
   
   // Get all items with their roles
-  console.log(`[DEBUG] Fetching items for pairing_id: ${req.params.id}`);
-  const itemsQuery = db.prepare(`
+  const items = db.prepare(`
     SELECT pi.*, i.name, i.category, i.condition, i.purchase_cost,
            (SELECT COALESCE(SUM(hours_used), 0) FROM inventory_usage WHERE item_id = i.id AND date >= date('now', '-30 days')) as usage_30d,
            (SELECT COALESCE(SUM(cost), 0) FROM inventory_maintenance WHERE item_id = i.id) as total_maintenance
@@ -3578,13 +3577,7 @@ app.get('/api/pairings/:id', requireAuth, (req, res) => {
     JOIN inventory_items i ON pi.item_id = i.id
     WHERE pi.pairing_id = ?
     ORDER BY pi.role
-  `);
-  const items = itemsQuery.all(req.params.id);
-  console.log(`[DEBUG] Found ${items.length} items for pairing ${req.params.id}:`, items.map(i => ({ item_id: i.item_id, name: i.name })));
-  
-  // Also check raw pairing items without join
-  const rawItems = db.prepare('SELECT * FROM inventory_pairing_items WHERE pairing_id = ?').all(req.params.id);
-  console.log(`[DEBUG] Raw pairing items (no join): ${rawItems.length}`, rawItems.map(i => i.item_id));
+  `).all(req.params.id);
   
   // Calculate total usage for pairing (from konsol usage)
   const konsolItem = items.find(i => i.role === 'konsol');
