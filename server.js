@@ -3738,6 +3738,47 @@ app.post('/api/pairings/swap', requireAuth, (req, res) => {
   res.json({ ok: true, message: 'Item swapped successfully' });
 });
 
+// Cleanup orphaned pairing items (items that reference non-existent inventory items)
+app.post('/api/pairings/cleanup-orphans', requireAuth, (req, res) => {
+  try {
+    // Find all orphaned records (pairing items where item_id doesn't exist in inventory_items)
+    const orphaned = db.prepare(`
+      SELECT pi.id, pi.pairing_id, pi.item_id, p.name as pairing_name
+      FROM inventory_pairing_items pi
+      JOIN inventory_pairings p ON pi.pairing_id = p.id
+      LEFT JOIN inventory_items i ON pi.item_id = i.id
+      WHERE i.id IS NULL
+    `).all();
+    
+    if (orphaned.length === 0) {
+      return res.json({ ok: true, message: 'No orphaned records found', deleted: 0 });
+    }
+    
+    // Delete orphaned records
+    const deleteStmt = db.prepare('DELETE FROM inventory_pairing_items WHERE id = ?');
+    let deletedCount = 0;
+    
+    for (const record of orphaned) {
+      deleteStmt.run(record.id);
+      deletedCount++;
+      
+      // Log the cleanup
+      db.prepare('INSERT INTO inventory_pairing_history (item_id, old_pairing_id, change_date, reason) VALUES (?, ?, ?, ?)')
+        .run(record.item_id, record.pairing_id, Date.now(), 'Cleanup: Removed orphaned item reference (item does not exist)');
+    }
+    
+    res.json({ 
+      ok: true, 
+      message: `Cleaned up ${deletedCount} orphaned record(s)`, 
+      deleted: deletedCount,
+      details: orphaned.map(o => ({ pairing: o.pairing_name, item_id: o.item_id }))
+    });
+  } catch (error) {
+    console.error('[Cleanup Orphans] Error:', error);
+    res.status(500).json({ error: 'Failed to cleanup orphaned records' });
+  }
+});
+
 // ════════════════════════════════════════════════════════════════
 // INVENTORY ANALYTICS API
 // ════════════════════════════════════════════════════════════════
