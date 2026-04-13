@@ -378,7 +378,7 @@
         
         <!-- Capital Expenses -->
         <div style="background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-          <div class="section-title" style="color: var(--ps3-red);">➖ Pengeluaran Investasi</div>
+          <div class="section-title text-red">➖ Pengeluaran Investasi</div>
           <div class="form-group">
             <label>Nama Item/Investasi</label>
             <input type="text" id="capitalExpenseItem" placeholder="Contoh: Beli PS3 bekas">
@@ -551,7 +551,7 @@
         <div class="modal-body">
           <p id="modalExportHistoryDesc" class="label-xs-muted" style="margin-bottom: 16px;">Pilih data yang ingin disertakan dalam ekspor (minimal pilih satu):</p>
           
-          <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+          <div class="flex-col-gap-12-mb20">
             <!-- Transaction History (Active Data) -->
             <label class="label-row-12">
               <input type="checkbox" id="exportIncludeTransactionHistory" class="checkbox-ps3">
@@ -638,7 +638,7 @@
           <!-- Data Type -->
           <div style="margin-bottom: 16px;">
             <label class="form-group-label-8mb8">Jenis Data</label>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="flex-col-gap-10">
               <label class="label-row-12">
                 <input type="checkbox" id="customExportIncome" checked class="checkbox-ps3">
                 <div>
@@ -674,7 +674,7 @@
         <div class="modal-body">
           <p class="label-xs-muted" style="margin-bottom: 16px;">Pilih detail data yang ingin disertakan dalam ekspor (minimal pilih satu):</p>
 
-          <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+          <div class="flex-col-gap-12-mb20">
             <!-- Transaction History (Active Data) -->
             <label class="label-row-12">
               <input type="checkbox" id="customExportTransactionHistory" checked class="checkbox-ps3">
@@ -732,7 +732,7 @@
           <!-- Range Selection -->
           <div style="margin-bottom: 16px;">
             <label class="form-group-label-8mb8">Range Waktu</label>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <div class="grid-3-gap-8">
               <button type="button" id="schedRangeToday" class="btn-range-toggle active" onclick="selectScheduleRange('today')" style="padding: 10px; font-size: 0.75rem; background: var(--ps3-red); border: 1px solid var(--ps3-red); color: #fff; border-radius: 6px; cursor: pointer;">
                 📅 Hari Ini
               </button>
@@ -1054,7 +1054,7 @@
       </div>
 
       <!-- Step 1: Select fields to edit -->
-      <div id="editStep1" style="padding: 20px;">
+      <div id="editStep1" class="p-20">
         <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Pilih data yang ingin diedit:</p>
         <div class="flex-col gap-12">
           <label class="label-row">
@@ -1097,18 +1097,18 @@
       <div id="editStep2" style="padding: 20px; display: none;">
         <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Masukkan nilai baru:</p>
 
-        <div id="editFieldCustomer" style="display: none; margin-bottom: 16px;">
+        <div id="editFieldCustomer" class="hidden-mb16">
           <label class="form-group-label">Nama Penyewa</label>
           <input type="text" id="editCustomer" class="input-inherit">
         </div>
 
-        <div id="editFieldPhone" style="display: none; margin-bottom: 16px;">
+        <div id="editFieldPhone" class="hidden-mb16">
           <label class="form-group-label">Nomor Telepon</label>
           <input type="text" id="editPhone" placeholder="08xxxxxxxxxx" class="input-inherit">
         </div>
 
         <!-- Unified Date/Time/Duration Section -->
-        <div id="editFieldDateTime" style="display: none; margin-bottom: 16px;">
+        <div id="editFieldDateTime" class="hidden-mb16">
           <label class="heading-section" style="display: block; margin-bottom: 10px;">📅 Tanggal & Waktu Penyewaan</label>
 
           <!-- Row 1: Start Date & Start Time -->
@@ -1145,24 +1145,24 @@
         </div>
 
         <!-- Duration (legacy, for when only duration is selected without datetime) -->
-        <div id="editFieldDuration" style="display: none; margin-bottom: 16px;">
+        <div id="editFieldDuration" class="hidden-mb16">
           <label class="form-group-label">Durasi (menit)</label>
           <input type="number" id="editDuration" min="15" step="15" class="input-inherit">
         </div>
 
-        <div id="editFieldUnit" style="display: none; margin-bottom: 16px;">
+        <div id="editFieldUnit" class="hidden-mb16">
           <label class="form-group-label">Unit PS</label>
           <select id="editUnitId" class="input-inherit">
             <option value="">Pilih Unit</option>
           </select>
         </div>
 
-        <div id="editFieldPaid" style="display: none; margin-bottom: 16px;">
+        <div id="editFieldPaid" class="hidden-mb16">
           <label class="form-group-label">Jumlah Pendapatan (Rp)</label>
           <input type="number" id="editPaid" class="input-inherit">
         </div>
 
-        <div id="editFieldPayment" style="display: none; margin-bottom: 16px;">
+        <div id="editFieldPayment" class="hidden-mb16">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Metode Pembayaran</label>
           <select id="editPayment" class="input-inherit">
             <option value="cash">Tunai (Cash)</option>
@@ -1171,13 +1171,13 @@
           </select>
         </div>
 
-        <div id="editFieldNote" style="display: none; margin-bottom: 16px;">
+        <div id="editFieldNote" class="hidden-mb16">
           <label class="form-group-label">Catatan</label>
           <textarea id="editNote" rows="3" class="textarea-ps3"></textarea>
         </div>
 
         <div style="margin-bottom: 16px;">
-          <label class="form-group-label" style="color: var(--ps3-red);">Alasan Edit *</label>
+          <label class="form-group-label text-red">Alasan Edit *</label>
           <input type="text" id="editReason" placeholder="Contoh: Koreksi harga, Perubahan durasi, dll." class="input-danger">
         </div>
 
@@ -1207,10 +1207,10 @@
       </div>
 
       <!-- Step 1: Select fields to edit -->
-      <div id="editScheduleStep1" style="padding: 20px;">
+      <div id="editScheduleStep1" class="p-20">
         <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Pilih data yang ingin diedit:</p>
 
-        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+        <div class="flex-col-gap-12-mb20">
           <label class="label-row-padded">
             <input type="checkbox" id="editScheduleCheckCustomer" class="checkbox-lg">
             <span>👤 Nama Penyewa</span>
@@ -1247,18 +1247,18 @@
       <div id="editScheduleStep2" style="display: none; padding: 20px;">
         <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Masukkan nilai baru:</p>
 
-        <div id="editScheduleFieldCustomer" style="display: none; margin-bottom: 16px;">
+        <div id="editScheduleFieldCustomer" class="hidden-mb16">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Nama Penyewa</label>
           <input type="text" id="editScheduleCustomer" placeholder="Nama penyewa" class="input-inherit">
         </div>
 
-        <div id="editScheduleFieldPhone" style="display: none; margin-bottom: 16px;">
+        <div id="editScheduleFieldPhone" class="hidden-mb16">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Nomor Telepon</label>
           <input type="text" id="editSchedulePhone" placeholder="08xxxxxxxxxx" class="input-inherit">
         </div>
 
         <!-- Unified Date/Time/Duration Section (like Add Schedule form) -->
-        <div id="editScheduleFieldDateTime" style="display: none; margin-bottom: 16px;">
+        <div id="editScheduleFieldDateTime" class="hidden-mb16">
           <label style="display: block; margin-bottom: 10px; font-size: 0.85rem; color: var(--ps3-silver); font-weight: 600;">📅 Tanggal & Waktu Penyewaan</label>
 
           <!-- Baris 1: Tanggal Mulai - Jam Mulai -->
@@ -1286,7 +1286,7 @@
           </div>
 
           <!-- Baris 3: Durasi - Custom menit -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="grid-2-gap-10">
             <div>
               <label style="display: block; margin-bottom: 4px; font-size: 0.75rem; color: var(--ps3-muted);">Durasi</label>
               <select id="editScheduleDuration" onchange="editScheduleHandleDurationChange(this)" class="input-ps3">
@@ -1305,14 +1305,14 @@
           </div>
         </div>
 
-        <div id="editScheduleFieldUnit" style="display: none; margin-bottom: 16px;">
+        <div id="editScheduleFieldUnit" class="hidden-mb16">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Unit PS</label>
           <select id="editScheduleUnit" class="input-inherit">
             <!-- Populated by JS -->
           </select>
         </div>
 
-        <div id="editScheduleFieldNote" style="display: none; margin-bottom: 16px;">
+        <div id="editScheduleFieldNote" class="hidden-mb16">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Catatan</label>
           <textarea id="editScheduleNote" placeholder="Catatan tambahan..." class="textarea-ps3"></textarea>
         </div>
@@ -1350,7 +1350,7 @@
         <button class="modal-close" onclick="closeModal('modalDeleteTransaction')">×</button>
       </div>
 
-      <div style="padding: 20px;">
+      <div class="p-20">
         <!-- Warning Box -->
         <div style="background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: var(--ps3-red); font-weight: 600;">
@@ -1690,7 +1690,7 @@
       </div>
 
       <!-- Step 1: Select fields to edit -->
-      <div id="editExpenseStep1" style="padding: 20px;">
+      <div id="editExpenseStep1" class="p-20">
         <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Pilih data yang ingin diedit:</p>
         <div class="flex-col gap-12">
           <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
@@ -1716,7 +1716,7 @@
       <!-- Step 2: Edit fields -->
       <div id="editExpenseStep2" style="padding: 20px; display: none;">
         <!-- Category & Sub-category -->
-        <div id="editExpenseFieldCategory" style="display: none; margin-bottom: 16px;">
+        <div id="editExpenseFieldCategory" class="hidden-mb16">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Tipe Biaya</label>
           <select id="editExpenseCategory" onchange="onEditExpenseCategoryChange()" class="input-ps3-mb">
             <option value="">-- Pilih Tipe --</option>
@@ -1741,27 +1741,27 @@
         </div>
 
         <!-- Amount -->
-        <div id="editExpenseFieldAmount" style="display: none; margin-bottom: 16px;">
+        <div id="editExpenseFieldAmount" class="hidden-mb16">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Jumlah (Rp)</label>
           <input type="number" id="editExpenseAmount" class="input-ps3">
         </div>
 
         <!-- Date & Time -->
-        <div id="editExpenseFieldDateTime" style="display: none; margin-bottom: 16px;">
+        <div id="editExpenseFieldDateTime" class="hidden-mb16">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Tanggal & Waktu</label>
           <input type="datetime-local" id="editExpenseDateTime" class="input-ps3">
           <small style="color: var(--ps3-muted); display: block; margin-top: 4px;">Format: WIB (UTC+7)</small>
         </div>
 
         <!-- Note -->
-        <div id="editExpenseFieldNote" style="display: none; margin-bottom: 16px;">
+        <div id="editExpenseFieldNote" class="hidden-mb16">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Catatan</label>
           <input type="text" id="editExpenseNote" class="input-ps3">
         </div>
 
         <!-- Reason -->
         <div style="margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Alasan Edit <span style="color: var(--ps3-red);">*</span></label>
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">Alasan Edit <span class="text-red">*</span></label>
           <input type="text" id="editExpenseReason" placeholder="Mengapa data ini diedit?" class="input-ps3">
         </div>
 
@@ -1790,7 +1790,7 @@
         <button class="modal-close" onclick="closeModal('modalDeleteExpense')">×</button>
       </div>
       
-      <div style="padding: 20px;">
+      <div class="p-20">
         <!-- Warning Box -->
         <div style="background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
           <div style="color: var(--ps3-red); font-weight: 600; margin-bottom: 8px;">⚠️ Peringatan</div>
@@ -1817,7 +1817,7 @@
         <!-- Reason Input -->
         <div style="margin-bottom: 20px;">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">
-            Alasan Penghapusan <span style="color: var(--ps3-red);">*</span>
+            Alasan Penghapusan <span class="text-red">*</span>
           </label>
           <textarea id="deleteExpenseReason" placeholder="Mengapa data ini dihapus? (minimum 3 karakter)" minlength="3" class="textarea-ps3"></textarea>
         </div>
@@ -2079,38 +2079,38 @@
         <button class="modal-close" onclick="closeModal('modalAddSchedule')">×</button>
       </div>
 
-      <div style="padding: 20px;">
+      <div class="p-20">
         <!-- KOLOM WAJIB -->
         <div class="form-group">
-          <label>Nama Pelanggan <span style="color: var(--ps3-red);">*</span></label>
+          <label>Nama Pelanggan <span class="text-red">*</span></label>
           <input type="text" id="scheduleCustomer" placeholder="Nama penyewa" required>
         </div>
         <!-- Baris 1: Tanggal Mulai - Jam Mulai -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="grid-2-gap-10">
           <div class="form-group">
-            <label>Tanggal Mulai <span style="color: var(--ps3-red);">*</span></label>
+            <label>Tanggal Mulai <span class="text-red">*</span></label>
             <input type="date" id="scheduleDate" required onchange="initDefaultEndDate()">
           </div>
           <div class="form-group">
-            <label>Jam Mulai <span style="color: var(--ps3-red);">*</span></label>
+            <label>Jam Mulai <span class="text-red">*</span></label>
             <input type="time" id="scheduleTime" step="60" required onchange="updateEndDateTimeFromDuration()">
           </div>
         </div>
         <!-- Baris 2: Tanggal Berakhir - Jam Berakhir -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="grid-2-gap-10">
           <div class="form-group">
-            <label>Tanggal Berakhir <span style="color: var(--ps3-red);">*</span></label>
+            <label>Tanggal Berakhir <span class="text-red">*</span></label>
             <input type="date" id="scheduleEndDate" required onchange="updateDurationFromEndDateTime()">
           </div>
           <div class="form-group">
-            <label>Jam Berakhir <span style="color: var(--ps3-red);">*</span></label>
+            <label>Jam Berakhir <span class="text-red">*</span></label>
             <input type="time" id="scheduleEndTime" step="60" required onchange="updateDurationFromEndDateTime()">
           </div>
         </div>
         <!-- Baris 3: Durasi - Custom menit -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="grid-2-gap-10">
           <div class="form-group">
-            <label>Durasi <span style="color: var(--ps3-red);">*</span></label>
+            <label>Durasi <span class="text-red">*</span></label>
             <select id="scheduleDuration" onchange="handleScheduleDurationChange(this)" required class="input-ps3-lg">
               <option value="60">1 Jam</option>
               <option value="120" selected>2 Jam</option>
@@ -2126,7 +2126,7 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Unit <span style="color: var(--ps3-red);">*</span></label>
+          <label>Unit <span class="text-red">*</span></label>
           <select id="scheduleUnit" required>
             <option value="">Pilih unit...</option>
           </select>
@@ -2161,7 +2161,7 @@
         <button class="modal-close" onclick="closeModal('modalTrash')">×</button>
       </div>
 
-      <div style="padding: 20px;">
+      <div class="p-20">
         <p class="label-xs-muted" style="margin-bottom: 15px;">
           📋 Data jadwal yang telah dihapus tersimpan di sini sebagai log.
         </p>
@@ -2185,7 +2185,7 @@
         <button class="modal-close" onclick="closeModal('modalHistory')">×</button>
       </div>
 
-      <div style="padding: 20px;">
+      <div class="p-20">
         <p class="label-xs-muted" style="margin-bottom: 15px;">
           ✅ Jadwal yang telah selesai dan transaksi tercatat otomatis.
         </p>
@@ -2209,12 +2209,12 @@
         <button class="modal-close" onclick="closeModal('modalAddInventory')">×</button>
       </div>
 
-      <div style="padding: 20px;">
+      <div class="p-20">
         <div class="form-group">
-          <label>Nama Item <span style="color: var(--ps3-red);">*</span></label>
+          <label>Nama Item <span class="text-red">*</span></label>
           <input type="text" id="inventoryName" placeholder="Contoh: Stik PS3 Original">
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="grid-2-gap-10">
           <div class="form-group">
             <label>Kategori</label>
             <select id="inventoryCategory">
@@ -2243,7 +2243,7 @@
           <label>Lokasi Penyimpanan</label>
           <input type="text" id="inventoryLocation" placeholder="Contoh: Rak A, Lemari B">
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="grid-2-gap-10">
           <div class="form-group">
             <label>Tanggal Beli</label>
             <input type="date" id="inventoryPurchaseDate">
@@ -2276,7 +2276,7 @@
         <button class="modal-close" onclick="closeModal('modalItemDetail')">×</button>
       </div>
 
-      <div style="padding: 20px;">
+      <div class="p-20">
         <!-- Item Info Card -->
         <div id="itemDetailInfo" style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 12px; padding: 15px; margin-bottom: 15px;">
           <!-- Filled by JS -->
@@ -2333,7 +2333,7 @@
         <button class="modal-close" onclick="closeModal('modalEditItem')">×</button>
       </div>
 
-      <form id="editItemForm" onsubmit="event.preventDefault(); saveEditItem();" style="padding: 20px;">
+      <form id="editItemForm" onsubmit="event.preventDefault(); saveEditItem();" class="p-20">
         <input type="hidden" id="editItemId">
 
         <!-- Nama Item -->
@@ -2428,7 +2428,7 @@
         <button class="modal-close" onclick="closeModal('modalAddMaintenance')">×</button>
       </div>
 
-      <div style="padding: 20px;">
+      <div class="p-20">
         <input type="hidden" id="maintenanceItemId">
         <div class="form-group">
           <label>Tanggal Perawatan</label>
@@ -2469,9 +2469,9 @@
         <button class="modal-close" onclick="closeModal('modalAddStation')">×</button>
       </div>
 
-      <div style="padding: 20px;">
+      <div class="p-20">
         <div class="form-group">
-          <label>Nama Stasiun <span style="color: var(--ps3-red);">*</span></label>
+          <label>Nama Stasiun <span class="text-red">*</span></label>
           <input type="text" id="stationName" placeholder="Contoh: Station Home 1">
         </div>
         <div class="form-group">
@@ -2504,7 +2504,7 @@
         <button class="modal-close" onclick="closeModal('modalStationDetail')">×</button>
       </div>
 
-      <div style="padding: 20px;">
+      <div class="p-20">
         <input type="hidden" id="stationDetailId">
 
         <!-- Station Info -->
@@ -2652,7 +2652,7 @@
           <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 10px;">
             Pindahkan item ke stasiun lain dengan cepat
           </div>
-          <div style="display: flex; gap: 8px;">
+          <div class="flex-gap-8">
             <select id="swapItemId" class="select-equip select-equip-flex">
               <option value="">Item dari stasiun ini...</option>
             </select>
@@ -2679,7 +2679,7 @@
         <button class="modal-close" onclick="closeModal('modalScheduleCalendar')">×</button>
       </div>
 
-      <div style="padding: 20px;">
+      <div class="p-20">
         <!-- Search & Filter Section -->
         <div style="margin-bottom: 15px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px;">
           <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 10px; color: var(--ps3-silver);">🔍 Pencarian & Filter</div>
@@ -2696,7 +2696,7 @@
           </div>
 
           <!-- Filter Customer (Autocomplete Text Input) & Unit -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="grid-2-gap-10">
             <!-- Customer Filter with Autocomplete -->
             <div style="position: relative;">
               <input
@@ -2755,21 +2755,21 @@
         <div id="calendarContainer">
           <!-- Tahun -->
           <div style="margin-bottom: 12px;">
-            <div id="calendarYears" style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <div id="calendarYears" class="flex-wrap-gap-8">
               <!-- Years will be rendered here -->
             </div>
           </div>
 
           <!-- Bulan -->
           <div style="margin-bottom: 12px;">
-            <div id="calendarMonths" style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <div id="calendarMonths" class="flex-wrap-gap-8">
               <!-- Months will be rendered here -->
             </div>
           </div>
 
           <!-- Tanggal -->
           <div style="margin-bottom: 12px;">
-            <div id="calendarDates" style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <div id="calendarDates" class="flex-wrap-gap-8">
               <!-- Dates will be rendered here -->
             </div>
           </div>
@@ -2800,7 +2800,7 @@
         <button class="modal-close" onclick="closeModal('modalCancelSchedule')">×</button>
       </div>
 
-      <div style="padding: 20px;">
+      <div class="p-20">
         <p class="label-xs-muted" style="margin-bottom: 15px;">
           ⚠️ Jadwal yang dibatalkan akan dipindahkan ke sampah dan unit akan tersedia kembali.
         </p>
@@ -2813,7 +2813,7 @@
         <!-- Alasan Pembatalan -->
         <div style="margin-bottom: 15px;">
           <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--ps3-text); margin-bottom: 8px;">
-            Alasan Pembatalan <span style="color: var(--ps3-red);">*</span>
+            Alasan Pembatalan <span class="text-red">*</span>
           </label>
           <textarea
             id="cancelScheduleReason"
@@ -7257,15 +7257,15 @@
 
       // Populate transaction info
       document.getElementById('deleteTxInfo').innerHTML = `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <div class="flex-between-mb8">
           <span style="color: var(--ps3-muted);">Unit:</span>
           <span style="font-weight: 600;">${unitName || 'Unknown'}</span>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <div class="flex-between-mb8">
           <span style="color: var(--ps3-muted);">Penyewa:</span>
           <span style="font-weight: 600;">${customerName || 'Unknown'}</span>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <div class="flex-between-mb8">
           <span style="color: var(--ps3-muted);">Jumlah:</span>
           <span style="font-weight: 600; color: var(--ps3-green);">${tx ? formatMoney(tx.paid) : '-'}</span>
         </div>
@@ -7724,7 +7724,7 @@
             </div>
 
             <!-- Action Button: Kembalikan -->
-            <div style="display: flex; gap: 8px;">
+            <div class="flex-gap-8">
               <button onclick="restoreIncomeFromTrash(${log.id})" style="flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--ps3-green-dark); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
                 ♻️ Kembalikan
               </button>
@@ -8271,7 +8271,7 @@
             </div>
 
             <!-- Action Button: Kembalikan -->
-            <div style="display: flex; gap: 8px;">
+            <div class="flex-gap-8">
               <button onclick="restoreExpenseFromTrash(${log.id})" style="flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--ps3-green-dark); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
                 ♻️ Kembalikan
               </button>
@@ -12240,7 +12240,7 @@
       }
       
       container.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+        <div class="grid-auto-200">
           ${units.map(unit => `
             <div style="background: ${unit.active ? 'rgba(0,170,0,0.1)' : 'var(--ps3-surface)'}; 
                         border: 1px solid ${unit.active ? 'var(--ps3-green)' : 'var(--ps3-border)'}; 
