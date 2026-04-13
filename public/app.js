@@ -3777,6 +3777,471 @@
       }
     }
 
+    // ═════════════════ Schedule History & Trash Search/Filter State ═════════════════
+    let historySearchState = {
+      search: '',
+      customer: '',
+      unit: '',
+      startDateFrom: '',
+      startDateTo: '',
+      endDateFrom: '',
+      endDateTo: '',
+      startTimeFrom: '',
+      startTimeTo: '',
+      durationMin: '',
+      durationMax: '',
+      note: ''
+    };
+    let historySearchDebounceTimer = null;
+    let cachedHistoryData = [];
+
+    let trashScheduleSearchState = {
+      search: '',
+      customer: '',
+      unit: '',
+      startDateFrom: '',
+      startDateTo: '',
+      endDateFrom: '',
+      endDateTo: '',
+      startTimeFrom: '',
+      startTimeTo: '',
+      durationMin: '',
+      durationMax: '',
+      note: ''
+    };
+    let trashScheduleSearchDebounceTimer = null;
+    let cachedTrashScheduleData = [];
+
+    // ─── History (Completed Schedules) Filter Functions ───
+    function toggleHistoryFilters() {
+      const panel = document.getElementById('historyFilterPanel');
+      const isVisible = panel.style.display === 'block';
+      panel.style.display = isVisible ? 'none' : 'block';
+    }
+
+    function debouncedSearchHistory() {
+      if (historySearchDebounceTimer) {
+        clearTimeout(historySearchDebounceTimer);
+      }
+      historySearchDebounceTimer = setTimeout(() => {
+        searchHistory();
+      }, 300);
+    }
+
+    function updateHistorySearchStateFromUI() {
+      historySearchState.search = document.getElementById('historySearchInput').value.trim();
+      historySearchState.customer = document.getElementById('historyFilterCustomer').value.trim();
+      historySearchState.unit = document.getElementById('historyFilterUnit').value.trim();
+      historySearchState.startDateFrom = document.getElementById('historyFilterStartDateFrom').value;
+      historySearchState.startDateTo = document.getElementById('historyFilterStartDateTo').value;
+      historySearchState.endDateFrom = document.getElementById('historyFilterEndDateFrom').value;
+      historySearchState.endDateTo = document.getElementById('historyFilterEndDateTo').value;
+      historySearchState.startTimeFrom = document.getElementById('historyFilterStartTimeFrom').value;
+      historySearchState.startTimeTo = document.getElementById('historyFilterStartTimeTo').value;
+      historySearchState.durationMin = document.getElementById('historyFilterDurationMin').value;
+      historySearchState.durationMax = document.getElementById('historyFilterDurationMax').value;
+      historySearchState.note = document.getElementById('historyFilterNote').value.trim();
+    }
+
+    function countActiveHistoryFilters() {
+      let count = 0;
+      if (historySearchState.customer) count++;
+      if (historySearchState.unit) count++;
+      if (historySearchState.startDateFrom || historySearchState.startDateTo) count++;
+      if (historySearchState.endDateFrom || historySearchState.endDateTo) count++;
+      if (historySearchState.startTimeFrom || historySearchState.startTimeTo) count++;
+      if (historySearchState.durationMin || historySearchState.durationMax) count++;
+      if (historySearchState.note) count++;
+      return count;
+    }
+
+    function updateHistoryFilterBadge() {
+      const count = countActiveHistoryFilters();
+      const badge = document.getElementById('historyActiveFilterCount');
+      if (badge) {
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'inline-block' : 'none';
+      }
+    }
+
+    function clearAllHistoryFilters() {
+      historySearchState = {
+        search: '',
+        customer: '',
+        unit: '',
+        startDateFrom: '',
+        startDateTo: '',
+        endDateFrom: '',
+        endDateTo: '',
+        startTimeFrom: '',
+        startTimeTo: '',
+        durationMin: '',
+        durationMax: '',
+        note: ''
+      };
+      // Clear UI
+      document.getElementById('historySearchInput').value = '';
+      document.getElementById('historyFilterCustomer').value = '';
+      document.getElementById('historyFilterUnit').value = '';
+      document.getElementById('historyFilterStartDateFrom').value = '';
+      document.getElementById('historyFilterStartDateTo').value = '';
+      document.getElementById('historyFilterEndDateFrom').value = '';
+      document.getElementById('historyFilterEndDateTo').value = '';
+      document.getElementById('historyFilterStartTimeFrom').value = '';
+      document.getElementById('historyFilterStartTimeTo').value = '';
+      document.getElementById('historyFilterDurationMin').value = '';
+      document.getElementById('historyFilterDurationMax').value = '';
+      document.getElementById('historyFilterNote').value = '';
+      document.getElementById('historyFilterPanel').style.display = 'none';
+      updateHistoryFilterBadge();
+      searchHistory();
+    }
+
+    function filterHistoryData(data) {
+      return data.filter(item => {
+        // Search by TX ID
+        if (historySearchState.search) {
+          const searchLower = historySearchState.search.toLowerCase();
+          const idMatch = (item.scheduleId || '').toLowerCase().includes(searchLower);
+          if (!idMatch) return false;
+        }
+
+        // Customer filter
+        if (historySearchState.customer) {
+          const customerLower = historySearchState.customer.toLowerCase();
+          if (!(item.customer || '').toLowerCase().includes(customerLower)) return false;
+        }
+
+        // Unit filter
+        if (historySearchState.unit) {
+          const unitLower = historySearchState.unit.toLowerCase();
+          const unitName = (item.unitName || '').toLowerCase();
+          if (!unitName.includes(unitLower)) return false;
+        }
+
+        // Start Date range
+        if (historySearchState.startDateFrom && item.scheduledDate < historySearchState.startDateFrom) return false;
+        if (historySearchState.startDateTo && item.scheduledDate > historySearchState.startDateTo) return false;
+
+        // End Date range
+        if (historySearchState.endDateFrom && item.scheduledEndDate && item.scheduledEndDate < historySearchState.endDateFrom) return false;
+        if (historySearchState.endDateTo && item.scheduledEndDate && item.scheduledEndDate > historySearchState.endDateTo) return false;
+
+        // Start Time range
+        if (historySearchState.startTimeFrom && item.scheduledTime < historySearchState.startTimeFrom) return false;
+        if (historySearchState.startTimeTo && item.scheduledTime > historySearchState.startTimeTo) return false;
+
+        // Duration range
+        const duration = parseInt(item.duration) || 0;
+        if (historySearchState.durationMin && duration < parseInt(historySearchState.durationMin)) return false;
+        if (historySearchState.durationMax && duration > parseInt(historySearchState.durationMax)) return false;
+
+        // Note filter
+        if (historySearchState.note) {
+          const noteLower = historySearchState.note.toLowerCase();
+          if (!(item.note || '').toLowerCase().includes(noteLower)) return false;
+        }
+
+        return true;
+      });
+    }
+
+    function searchHistory() {
+      updateHistorySearchStateFromUI();
+      updateHistoryFilterBadge();
+
+      const filtered = filterHistoryData(cachedHistoryData);
+
+      // Sort by TX ID descending
+      filtered.sort((a, b) => {
+        const idA = a.scheduleId || '';
+        const idB = b.scheduleId || '';
+        return idB.localeCompare(idA);
+      });
+
+      renderHistoryList(filtered);
+
+      // Update results text
+      const resultsText = document.getElementById('historySearchResults');
+      if (resultsText) {
+        if (historySearchState.search || countActiveHistoryFilters() > 0) {
+          resultsText.textContent = `${filtered.length} hasil`;
+        } else {
+          resultsText.textContent = `${filtered.length} jadwal`;
+        }
+      }
+    }
+
+    function renderHistoryList(data) {
+      const historyList = document.getElementById('historyList');
+
+      if (!data || data.length === 0) {
+        historyList.innerHTML = '<p class="empty-state-p30">📜 Tidak ada jadwal yang cocok dengan filter</p>';
+        return;
+      }
+
+      const html = data.map((item, index) => {
+        const badge = getHistoryScheduleStatusBadge(item.status);
+        const nomor = index + 1;
+
+        const fakeSchedule = {
+          scheduledDate: item.scheduledDate,
+          scheduledTime: item.scheduledTime,
+          duration: item.duration,
+          scheduledEndDate: item.scheduledEndDate,
+          scheduledEndTime: item.scheduledEndTime
+        };
+
+        const formattedDate = formatScheduleDate(fakeSchedule);
+        const formattedTime = formatScheduleTime(fakeSchedule);
+
+        return `
+          <div style="background: ${badge.bg}; border: 2px solid ${badge.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative;">
+            <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-green-dark); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
+            <div class="card-row-between-start">
+              <div>
+                <div class="info-row">
+                  <span class="fw-700 text-primary">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
+                  ${item.scheduleId ? `
+                    <span class="tx-id-label">TX ID:</span>
+                    <span onclick="copyToClipboard('${item.scheduleId}')" class="tx-id-badge" title="Klik untuk copy ID" class="fs-75">${item.scheduleId}</span>
+                  ` : ''}
+                </div>
+                ${item.phone ? `<div class="fs-8 text-muted mt-2">📞 ${item.phone}</div>` : ''}
+              </div>
+              <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.badgeBg}; color: ${badge.color}; font-weight: 600; white-space: nowrap; border: 1px solid ${badge.badgeBg};">${badge.text}</span>
+            </div>
+            <div class="text-85 text-muted mb-2px">
+              ${formattedDate}
+            </div>
+            <div class="fs-85 text-primary fw-600 mb-6">
+              ${formattedTime}
+            </div>
+            ${item.unitName ? `<div class="label-xs-muted" class="mb-4">🎮 ${escapeHtml(item.unitName)}</div>` : ''}
+            ${item.note ? `<div class="fs-8 text-muted italic mt-4">💬 ${escapeHtml(item.note)}</div>` : ''}
+            <div style="font-size: 0.75rem; color: var(--ps3-green-dark); margin-top: 6px; padding: 4px 8px; background: rgba(34, 197, 94, 0.1); border-radius: 4px; border: 1px solid rgba(34, 197, 94, 0.3);">
+              ✅ Diselesaikan: Transaksi tercatat otomatis
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      historyList.innerHTML = html;
+    }
+
+    // ─── Trash Schedule Filter Functions ───
+    function toggleTrashScheduleFilters() {
+      const panel = document.getElementById('trashScheduleFilterPanel');
+      const isVisible = panel.style.display === 'block';
+      panel.style.display = isVisible ? 'none' : 'block';
+    }
+
+    function debouncedSearchTrashSchedule() {
+      if (trashScheduleSearchDebounceTimer) {
+        clearTimeout(trashScheduleSearchDebounceTimer);
+      }
+      trashScheduleSearchDebounceTimer = setTimeout(() => {
+        searchTrashSchedule();
+      }, 300);
+    }
+
+    function updateTrashScheduleSearchStateFromUI() {
+      trashScheduleSearchState.search = document.getElementById('trashScheduleSearchInput').value.trim();
+      trashScheduleSearchState.customer = document.getElementById('trashScheduleFilterCustomer').value.trim();
+      trashScheduleSearchState.unit = document.getElementById('trashScheduleFilterUnit').value.trim();
+      trashScheduleSearchState.startDateFrom = document.getElementById('trashScheduleFilterStartDateFrom').value;
+      trashScheduleSearchState.startDateTo = document.getElementById('trashScheduleFilterStartDateTo').value;
+      trashScheduleSearchState.endDateFrom = document.getElementById('trashScheduleFilterEndDateFrom').value;
+      trashScheduleSearchState.endDateTo = document.getElementById('trashScheduleFilterEndDateTo').value;
+      trashScheduleSearchState.startTimeFrom = document.getElementById('trashScheduleFilterStartTimeFrom').value;
+      trashScheduleSearchState.startTimeTo = document.getElementById('trashScheduleFilterStartTimeTo').value;
+      trashScheduleSearchState.durationMin = document.getElementById('trashScheduleFilterDurationMin').value;
+      trashScheduleSearchState.durationMax = document.getElementById('trashScheduleFilterDurationMax').value;
+      trashScheduleSearchState.note = document.getElementById('trashScheduleFilterNote').value.trim();
+    }
+
+    function countActiveTrashScheduleFilters() {
+      let count = 0;
+      if (trashScheduleSearchState.customer) count++;
+      if (trashScheduleSearchState.unit) count++;
+      if (trashScheduleSearchState.startDateFrom || trashScheduleSearchState.startDateTo) count++;
+      if (trashScheduleSearchState.endDateFrom || trashScheduleSearchState.endDateTo) count++;
+      if (trashScheduleSearchState.startTimeFrom || trashScheduleSearchState.startTimeTo) count++;
+      if (trashScheduleSearchState.durationMin || trashScheduleSearchState.durationMax) count++;
+      if (trashScheduleSearchState.note) count++;
+      return count;
+    }
+
+    function updateTrashScheduleFilterBadge() {
+      const count = countActiveTrashScheduleFilters();
+      const badge = document.getElementById('trashScheduleActiveFilterCount');
+      if (badge) {
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'inline-block' : 'none';
+      }
+    }
+
+    function clearAllTrashScheduleFilters() {
+      trashScheduleSearchState = {
+        search: '',
+        customer: '',
+        unit: '',
+        startDateFrom: '',
+        startDateTo: '',
+        endDateFrom: '',
+        endDateTo: '',
+        startTimeFrom: '',
+        startTimeTo: '',
+        durationMin: '',
+        durationMax: '',
+        note: ''
+      };
+      // Clear UI
+      document.getElementById('trashScheduleSearchInput').value = '';
+      document.getElementById('trashScheduleFilterCustomer').value = '';
+      document.getElementById('trashScheduleFilterUnit').value = '';
+      document.getElementById('trashScheduleFilterStartDateFrom').value = '';
+      document.getElementById('trashScheduleFilterStartDateTo').value = '';
+      document.getElementById('trashScheduleFilterEndDateFrom').value = '';
+      document.getElementById('trashScheduleFilterEndDateTo').value = '';
+      document.getElementById('trashScheduleFilterStartTimeFrom').value = '';
+      document.getElementById('trashScheduleFilterStartTimeTo').value = '';
+      document.getElementById('trashScheduleFilterDurationMin').value = '';
+      document.getElementById('trashScheduleFilterDurationMax').value = '';
+      document.getElementById('trashScheduleFilterNote').value = '';
+      document.getElementById('trashScheduleFilterPanel').style.display = 'none';
+      updateTrashScheduleFilterBadge();
+      searchTrashSchedule();
+    }
+
+    function filterTrashScheduleData(data) {
+      return data.filter(item => {
+        // Search by TX ID
+        if (trashScheduleSearchState.search) {
+          const searchLower = trashScheduleSearchState.search.toLowerCase();
+          const idMatch = (item.scheduleId || '').toLowerCase().includes(searchLower);
+          if (!idMatch) return false;
+        }
+
+        // Customer filter
+        if (trashScheduleSearchState.customer) {
+          const customerLower = trashScheduleSearchState.customer.toLowerCase();
+          if (!(item.customer || '').toLowerCase().includes(customerLower)) return false;
+        }
+
+        // Unit filter
+        if (trashScheduleSearchState.unit) {
+          const unitLower = trashScheduleSearchState.unit.toLowerCase();
+          const unitName = (item.unitName || '').toLowerCase();
+          if (!unitName.includes(unitLower)) return false;
+        }
+
+        // Start Date range
+        if (trashScheduleSearchState.startDateFrom && item.scheduledDate < trashScheduleSearchState.startDateFrom) return false;
+        if (trashScheduleSearchState.startDateTo && item.scheduledDate > trashScheduleSearchState.startDateTo) return false;
+
+        // End Date range
+        if (trashScheduleSearchState.endDateFrom && item.scheduledEndDate && item.scheduledEndDate < trashScheduleSearchState.endDateFrom) return false;
+        if (trashScheduleSearchState.endDateTo && item.scheduledEndDate && item.scheduledEndDate > trashScheduleSearchState.endDateTo) return false;
+
+        // Start Time range
+        if (trashScheduleSearchState.startTimeFrom && item.scheduledTime < trashScheduleSearchState.startTimeFrom) return false;
+        if (trashScheduleSearchState.startTimeTo && item.scheduledTime > trashScheduleSearchState.startTimeTo) return false;
+
+        // Duration range
+        const duration = parseInt(item.duration) || 0;
+        if (trashScheduleSearchState.durationMin && duration < parseInt(trashScheduleSearchState.durationMin)) return false;
+        if (trashScheduleSearchState.durationMax && duration > parseInt(trashScheduleSearchState.durationMax)) return false;
+
+        // Note filter
+        if (trashScheduleSearchState.note) {
+          const noteLower = trashScheduleSearchState.note.toLowerCase();
+          if (!(item.note || '').toLowerCase().includes(noteLower)) return false;
+        }
+
+        return true;
+      });
+    }
+
+    function searchTrashSchedule() {
+      updateTrashScheduleSearchStateFromUI();
+      updateTrashScheduleFilterBadge();
+
+      const filtered = filterTrashScheduleData(cachedTrashScheduleData);
+
+      // Sort by deletedAt descending
+      filtered.sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
+
+      renderTrashScheduleList(filtered);
+
+      // Update results text
+      const resultsText = document.getElementById('trashScheduleSearchResults');
+      if (resultsText) {
+        if (trashScheduleSearchState.search || countActiveTrashScheduleFilters() > 0) {
+          resultsText.textContent = `${filtered.length} hasil`;
+        } else {
+          resultsText.textContent = `${filtered.length} jadwal`;
+        }
+      }
+    }
+
+    function renderTrashScheduleList(data) {
+      const trashList = document.getElementById('trashList');
+
+      if (!data || data.length === 0) {
+        trashList.innerHTML = '<p class="empty-state-p30">🗑️ Tidak ada jadwal yang cocok dengan filter</p>';
+        return;
+      }
+
+      const html = data.map((item, index) => {
+        const nomor = index + 1;
+        const deletedDate = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString('id-ID') : '-';
+
+        const fakeSchedule = {
+          scheduledDate: item.scheduledDate,
+          scheduledTime: item.scheduledTime,
+          duration: item.duration,
+          scheduledEndDate: item.scheduledEndDate,
+          scheduledEndTime: item.scheduledEndTime
+        };
+
+        const formattedDate = formatScheduleDate(fakeSchedule);
+        const formattedTime = formatScheduleTime(fakeSchedule);
+
+        return `
+          <div style="background: rgba(139, 0, 0, 0.1); border: 2px solid #8B0000; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative;">
+            <div style="position: absolute; top: -8px; left: 10px; background: #8B0000; color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
+            <div class="card-row-between-start">
+              <div>
+                <div class="info-row">
+                  <span class="fw-700 text-primary">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
+                  ${item.scheduleId ? `
+                    <span class="tx-id-label">TX ID:</span>
+                    <span onclick="copyToClipboard('${item.scheduleId}')" class="tx-id-badge" title="Klik untuk copy ID" class="fs-75">${item.scheduleId}</span>
+                  ` : ''}
+                </div>
+                ${item.phone ? `<div class="fs-8 text-muted mt-2">📞 ${item.phone}</div>` : ''}
+              </div>
+              <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: #8B0000; color: #fff; font-weight: 600; white-space: nowrap;">🗑️ Dihapus</span>
+            </div>
+            <div class="text-85 text-muted mb-2px">
+              ${formattedDate}
+            </div>
+            <div class="fs-85 text-primary fw-600 mb-6">
+              ${formattedTime}
+            </div>
+            ${item.unitName ? `<div class="label-xs-muted" class="mb-4">🎮 ${escapeHtml(item.unitName)}</div>` : ''}
+            ${item.note ? `<div class="fs-8 text-muted italic mt-4">💬 ${escapeHtml(item.note)}</div>` : ''}
+            <div style="font-size: 0.75rem; color: var(--ps3-red); margin-top: 6px; padding: 4px 8px; background: rgba(230, 0, 18, 0.1); border-radius: 4px; border: 1px solid rgba(230, 0, 18, 0.3);">
+              🗑️ Dihapus: ${deletedDate}${item.deleteReason ? ` - ${escapeHtml(item.deleteReason)}` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      trashList.innerHTML = html;
+    }
+
     // Tempat Sampah (Trash) Modal Functions
     function openTrashModal() {
       loadDeletedSchedules();
@@ -3797,65 +4262,14 @@
         const data = await api('GET', '/schedules/completed');
 
         if (!data.completed || data.completed.length === 0) {
+          cachedHistoryData = [];
           historyList.innerHTML = '<p class="empty-state-p30">📜 Belum ada jadwal yang selesai</p>';
           return;
         }
 
-        // Urutkan berdasarkan TX ID terbesar ke terkecil (descending)
-        const sortedCompleted = data.completed.sort((a, b) => {
-          const idA = a.scheduleId || '';
-          const idB = b.scheduleId || '';
-          return idB.localeCompare(idA); // Descending: Z-A, 9-0
-        });
-
-        const html = sortedCompleted.map((item, index) => {
-          const badge = getHistoryScheduleStatusBadge(item.status);
-          const nomor = index + 1;
-
-          // Gunakan format yang sama dengan renderSchedules
-          const fakeSchedule = {
-            scheduledDate: item.scheduledDate,
-            scheduledTime: item.scheduledTime,
-            duration: item.duration,
-            scheduledEndDate: item.scheduledEndDate,
-            scheduledEndTime: item.scheduledEndTime
-          };
-
-          const formattedDate = formatScheduleDate(fakeSchedule);
-          const formattedTime = formatScheduleTime(fakeSchedule);
-
-          return `
-            <div style="background: ${badge.bg}; border: 2px solid ${badge.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative;">
-              <div style="position: absolute; top: -8px; left: 10px; background: var(--ps3-green-dark); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; z-index: 1;">${nomor}</div>
-              <div class="card-row-between-start">
-                <div>
-                  <div class="info-row">
-                    <span class="fw-700 text-primary">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
-                    ${item.scheduleId ? `
-                      <span class="tx-id-label">TX ID:</span>
-                      <span onclick="copyToClipboard('${item.scheduleId}')" class="tx-id-badge" title="Klik untuk copy ID" class="fs-75">${item.scheduleId}</span>
-                    ` : ''}
-                  </div>
-                  ${item.phone ? `<div class="fs-8 text-muted mt-2">📞 ${item.phone}</div>` : ''}
-                </div>
-                <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.badgeBg}; color: ${badge.color}; font-weight: 600; white-space: nowrap; border: 1px solid ${badge.badgeBg};">${badge.text}</span>
-              </div>
-              <div class="text-85 text-muted mb-2px">
-                ${formattedDate}
-              </div>
-              <div class="fs-85 text-primary fw-600 mb-6">
-                ${formattedTime}
-              </div>
-              ${item.unitName ? `<div class="label-xs-muted" class="mb-4">🎮 ${escapeHtml(item.unitName)}</div>` : ''}
-              ${item.note ? `<div class="fs-8 text-muted italic mt-4">💬 ${escapeHtml(item.note)}</div>` : ''}
-              <div style="font-size: 0.75rem; color: var(--ps3-green-dark); margin-top: 6px; padding: 4px 8px; background: rgba(34, 197, 94, 0.1); border-radius: 4px; border: 1px solid rgba(34, 197, 94, 0.3);">
-                ✅ Diselesaikan: Transaksi tercatat otomatis
-              </div>
-            </div>
-          `;
-        }).join('');
-
-        historyList.innerHTML = html;
+        // Cache data and apply client-side filtering
+        cachedHistoryData = data.completed;
+        searchHistory();
       } catch (error) {
         console.error('Error loading completed schedules:', error);
         historyList.innerHTML = `<p style="text-align: center; color: var(--ps3-red); padding: 30px;">❌ Error: ${escapeHtml(error.message)}</p>`;
@@ -3883,67 +4297,19 @@
         const data = await api('GET', '/schedules/deleted');
 
         if (!data.deleted || data.deleted.length === 0) {
+          cachedTrashScheduleData = [];
           trashList.innerHTML = '<p class="empty-state-p30">🗑️ Belum ada data yang dihapus</p>';
           return;
         }
 
-        // Urutkan berdasarkan TX ID terbesar ke terkecil (descending)
-        const sortedDeleted = data.deleted.sort((a, b) => {
-          const idA = a.originalId || '';
-          const idB = b.originalId || '';
-          return idB.localeCompare(idA); // Descending: Z-A, 9-0
-        });
+        // Map API data to consistent format
+        cachedTrashScheduleData = data.deleted.map(item => ({
+          ...item,
+          scheduleId: item.originalId || item.scheduleId
+        }));
 
-        const html = sortedDeleted.map((item, index) => {
-          const deletedDate = formatDateTimeWIB(item.deletedAt);
-          const badge = getDeletedScheduleStatusBadge(item.status);
-          const nomor = index + 1;
-
-          // Gunakan format yang sama dengan renderSchedules
-          const fakeSchedule = {
-            scheduledDate: item.scheduledDate,
-            scheduledTime: item.scheduledTime,
-            duration: item.duration,
-            scheduledEndDate: item.scheduledEndDate,
-            scheduledEndTime: item.scheduledEndTime
-          };
-
-          const formattedDate = formatScheduleDate(fakeSchedule);
-          const formattedTime = formatScheduleTime(fakeSchedule);
-
-          return `
-            <div style="background: ${badge.bg}; border: 2px solid ${badge.border}; border-radius: 10px; padding: 12px; margin-bottom: 10px; position: relative;">
-              <div class="badge-abs-top">${nomor}</div>
-              <div class="card-row-between-start">
-                <div>
-                  <div class="info-row">
-                    <span class="fw-700 text-primary">${escapeHtml(item.customer || 'Tanpa Nama')}</span>
-                    ${item.originalId ? `
-                      <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; color: var(--ps3-muted);">TX ID:</span>
-                      <span onclick="copyToClipboard('${item.originalId}')" class="tx-id-badge" title="Klik untuk copy ID" style="font-size: 0.75rem; color: var(--ps3-silver);">${item.originalId}</span>
-                    ` : ''}
-                  </div>
-                  ${item.phone ? `<div class="fs-8 text-muted mt-2">📞 ${item.phone}</div>` : ''}
-                </div>
-                <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.badgeBg}; color: ${badge.color}; font-weight: 600; white-space: nowrap;">${badge.text}</span>
-              </div>
-              <div class="text-85 text-muted mb-2px">
-                ${formattedDate}
-              </div>
-              <div class="fs-85 text-primary fw-600 mb-6">
-                ${formattedTime}
-              </div>
-              ${item.unitName ? `<div class="label-xs-muted" class="mb-4">🎮 ${escapeHtml(item.unitName)} ${item.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem;">● AKTIF</span>' : ''}</div>` : ''}
-              ${item.note ? `<div class="fs-8 text-muted italic mt-4">💬 ${escapeHtml(item.note)}</div>` : ''}
-              <div style="font-size: 0.75rem; color: var(--ps3-red); margin-top: 6px; padding: 4px 8px; background: rgba(230, 0, 18, 0.1); border-radius: 4px; border: 1px solid rgba(230, 0, 18, 0.3);">
-                🗑️ Dihapus: ${deletedDate}
-                ${item.deleteReason ? `<br>💬 Alasan: ${escapeHtml(item.deleteReason)}` : ''}
-              </div>
-            </div>
-          `;
-        }).join('');
-
-        trashList.innerHTML = html;
+        // Apply client-side filtering
+        searchTrashSchedule();
       } catch (error) {
         console.error('Error loading deleted schedules:', error);
         trashList.innerHTML = `<p style="text-align: center; color: var(--ps3-red); padding: 30px;">❌ Error: ${escapeHtml(error.message)}</p>`;

@@ -2157,16 +2157,103 @@
 
   <!-- Modal: Tempat Sampah (Deleted Schedules) -->
   <div id="modalTrash" class="modal z-3000">
-    <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">
-      <div class="modal-header">
-        <div class="modal-title">🗑️ Tempat Sampah</div>
+    <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #8B0000 0%, #4a0000 100%);">
+        <div class="modal-title">🗑️ Sampah Jadwal</div>
         <button class="modal-close" onclick="closeModal('modalTrash')">×</button>
       </div>
 
       <div class="p-20">
-        <p class="label-xs-muted mb-15">
-          📋 Data jadwal yang telah dihapus tersimpan di sini sebagai log.
-        </p>
+        <!-- Info Box -->
+        <div style="background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; color: var(--ps3-red); font-size: 0.85rem;">
+            <span>ℹ️</span>
+            <span>Jadwal yang dihapus akan tampil di sini sebagai log arsip.</span>
+          </div>
+        </div>
+
+        <!-- Search & Filter Panel -->
+        <div id="trashScheduleSearchPanel" class="card-surface-br12-p16-mb16">
+          <!-- Search Bar -->
+          <div class="relative mb-12">
+            <input type="text" id="trashScheduleSearchInput" placeholder="🔍 Cari TX ID Jadwal (contoh: PSJ-0001)..." class="input-search" oninput="debouncedSearchTrashSchedule()">
+            <span class="icon-abs-left">🔍</span>
+          </div>
+
+          <!-- Filter Toggles -->
+          <div class="flex-wrap-gap-8-mb12">
+            <button id="trashScheduleFilterToggle" onclick="toggleTrashScheduleFilters()" style="background: var(--ps3-bg); border: 1px solid var(--ps3-border); color: var(--ps3-muted); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>⚙️</span> Filter <span id="trashScheduleActiveFilterCount" style="background: var(--ps3-red); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75rem; display: none;">0</span>
+            </button>
+            <button onclick="clearAllTrashScheduleFilters()" style="background: var(--ps3-bg); border: 1px solid var(--ps3-border); color: var(--ps3-muted); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
+              🔄 Reset
+            </button>
+            <span id="trashScheduleSearchResults" class="text-muted fs-85 ml-auto self-center"></span>
+          </div>
+
+          <!-- Expandable Filter Panel -->
+          <div id="trashScheduleFilterPanel" class="hidden border-top pt-12" style="display: none;">
+            <div class="filter-grid">
+              <!-- Customer Filter -->
+              <div class="filter-field">
+                <label>👤 Nama Penyewa</label>
+                <input type="text" id="trashScheduleFilterCustomer" placeholder="Ketik nama..." oninput="debouncedSearchTrashSchedule()">
+              </div>
+
+              <!-- Unit Filter -->
+              <div class="filter-field">
+                <label>🎮 Unit/Stasiun</label>
+                <input type="text" id="trashScheduleFilterUnit" placeholder="Ketik nama unit..." oninput="debouncedSearchTrashSchedule()">
+              </div>
+
+              <!-- Start Date Range -->
+              <div class="filter-field date-range">
+                <label>📅 Tanggal Mulai</label>
+                <div class="range-inputs">
+                  <input type="date" id="trashScheduleFilterStartDateFrom" onchange="searchTrashSchedule()">
+                  <span class="range-separator">→</span>
+                  <input type="date" id="trashScheduleFilterStartDateTo" onchange="searchTrashSchedule()">
+                </div>
+              </div>
+
+              <!-- End Date Range -->
+              <div class="filter-field date-range">
+                <label>📅 Tanggal Berakhir</label>
+                <div class="range-inputs">
+                  <input type="date" id="trashScheduleFilterEndDateFrom" onchange="searchTrashSchedule()">
+                  <span class="range-separator">→</span>
+                  <input type="date" id="trashScheduleFilterEndDateTo" onchange="searchTrashSchedule()">
+                </div>
+              </div>
+
+              <!-- Start Time Range -->
+              <div class="filter-field">
+                <label>🕐 Waktu Mulai</label>
+                <div class="range-inputs">
+                  <input type="time" id="trashScheduleFilterStartTimeFrom" onchange="searchTrashSchedule()">
+                  <span class="range-separator">-</span>
+                  <input type="time" id="trashScheduleFilterStartTimeTo" onchange="searchTrashSchedule()">
+                </div>
+              </div>
+
+              <!-- Duration Range -->
+              <div class="filter-field amount-range">
+                <label>⏱️ Durasi (menit)</label>
+                <div class="range-inputs">
+                  <input type="number" id="trashScheduleFilterDurationMin" placeholder="Min" onchange="searchTrashSchedule()">
+                  <span class="range-separator">~</span>
+                  <input type="number" id="trashScheduleFilterDurationMax" placeholder="Max" onchange="searchTrashSchedule()">
+                </div>
+              </div>
+
+              <!-- Note Filter -->
+              <div class="filter-field grid-full">
+                <label>📝 Catatan</label>
+                <input type="text" id="trashScheduleFilterNote" placeholder="Cari dalam catatan..." oninput="debouncedSearchTrashSchedule()">
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div id="trashList" class="max-h-400 scroll-y">
           <p class="empty-state-p30">
@@ -2181,9 +2268,9 @@
 
   <!-- Modal: Riwayat (Completed Schedules) -->
   <div id="modalHistory" class="modal z-3000">
-    <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">
+    <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
       <div class="modal-header" style="background: var(--ps3-green-dark);">
-        <div class="modal-title">Riwayat Selesai</div>
+        <div class="modal-title">📜 Riwayat Jadwal Selesai</div>
         <button class="modal-close" onclick="closeModal('modalHistory')">×</button>
       </div>
 
@@ -2191,6 +2278,89 @@
         <p class="label-xs-muted mb-15">
           ✅ Jadwal yang telah selesai dan transaksi tercatat otomatis.
         </p>
+
+        <!-- Search & Filter Panel -->
+        <div id="historySearchPanel" class="card-surface-br12-p16-mb16">
+          <!-- Search Bar -->
+          <div class="relative mb-12">
+            <input type="text" id="historySearchInput" placeholder="🔍 Cari TX ID Jadwal (contoh: PSJ-0001)..." class="input-search" oninput="debouncedSearchHistory()">
+            <span class="icon-abs-left">🔍</span>
+          </div>
+
+          <!-- Filter Toggles -->
+          <div class="flex-wrap-gap-8-mb12">
+            <button id="historyFilterToggle" onclick="toggleHistoryFilters()" style="background: var(--ps3-bg); border: 1px solid var(--ps3-border); color: var(--ps3-muted); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              <span>⚙️</span> Filter <span id="historyActiveFilterCount" style="background: var(--ps3-red); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75rem; display: none;">0</span>
+            </button>
+            <button onclick="clearAllHistoryFilters()" style="background: var(--ps3-bg); border: 1px solid var(--ps3-border); color: var(--ps3-muted); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
+              🔄 Reset
+            </button>
+            <span id="historySearchResults" class="text-muted fs-85 ml-auto self-center"></span>
+          </div>
+
+          <!-- Expandable Filter Panel -->
+          <div id="historyFilterPanel" class="hidden border-top pt-12" style="display: none;">
+            <div class="filter-grid">
+              <!-- Customer Filter -->
+              <div class="filter-field">
+                <label>👤 Nama Penyewa</label>
+                <input type="text" id="historyFilterCustomer" placeholder="Ketik nama..." oninput="debouncedSearchHistory()">
+              </div>
+
+              <!-- Unit Filter -->
+              <div class="filter-field">
+                <label>🎮 Unit/Stasiun</label>
+                <input type="text" id="historyFilterUnit" placeholder="Ketik nama unit..." oninput="debouncedSearchHistory()">
+              </div>
+
+              <!-- Start Date Range -->
+              <div class="filter-field date-range">
+                <label>📅 Tanggal Mulai</label>
+                <div class="range-inputs">
+                  <input type="date" id="historyFilterStartDateFrom" onchange="searchHistory()">
+                  <span class="range-separator">→</span>
+                  <input type="date" id="historyFilterStartDateTo" onchange="searchHistory()">
+                </div>
+              </div>
+
+              <!-- End Date Range -->
+              <div class="filter-field date-range">
+                <label>📅 Tanggal Berakhir</label>
+                <div class="range-inputs">
+                  <input type="date" id="historyFilterEndDateFrom" onchange="searchHistory()">
+                  <span class="range-separator">→</span>
+                  <input type="date" id="historyFilterEndDateTo" onchange="searchHistory()">
+                </div>
+              </div>
+
+              <!-- Start Time Range -->
+              <div class="filter-field">
+                <label>🕐 Waktu Mulai</label>
+                <div class="range-inputs">
+                  <input type="time" id="historyFilterStartTimeFrom" onchange="searchHistory()">
+                  <span class="range-separator">-</span>
+                  <input type="time" id="historyFilterStartTimeTo" onchange="searchHistory()">
+                </div>
+              </div>
+
+              <!-- Duration Range -->
+              <div class="filter-field amount-range">
+                <label>⏱️ Durasi (menit)</label>
+                <div class="range-inputs">
+                  <input type="number" id="historyFilterDurationMin" placeholder="Min" onchange="searchHistory()">
+                  <span class="range-separator">~</span>
+                  <input type="number" id="historyFilterDurationMax" placeholder="Max" onchange="searchHistory()">
+                </div>
+              </div>
+
+              <!-- Note Filter -->
+              <div class="filter-field grid-full">
+                <label>📝 Catatan</label>
+                <input type="text" id="historyFilterNote" placeholder="Cari dalam catatan..." oninput="debouncedSearchHistory()">
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div id="historyList" class="max-h-400 scroll-y">
           <p class="empty-state-p30">
