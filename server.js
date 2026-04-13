@@ -1716,11 +1716,11 @@ app.post('/api/stations/:id/stop', requireAuth, (req, res) => {
     date: dateKey
   };
 
-  // Insert transaction with station_id/station_name
+  // Insert transaction with station_id/station_name + unitId/unitName for backward compatibility
   db.prepare(`INSERT INTO transactions 
-    (id, station_id, station_name, customer, startTime, endTime, durationMin, paid, payment, note, date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(tx.id, tx.station_id, tx.station_name, tx.customer, tx.startTime, tx.endTime, tx.durationMin, tx.paid, tx.payment, tx.note, tx.date);
+    (id, station_id, station_name, unitId, unitName, customer, startTime, endTime, durationMin, paid, payment, note, date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(tx.id, tx.station_id, tx.station_name, tx.station_id, tx.station_name, tx.customer, tx.startTime, tx.endTime, tx.durationMin, tx.paid, tx.payment, tx.note, tx.date);
 
   // If linked to a schedule, update schedule status to 'completed'
   if (station.linked_schedule_id) {
