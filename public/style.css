@@ -2112,3 +2112,108 @@
       flex: 1;
       min-width: 80px;
     }
+
+    /* ═══════════════════════════════════════════════════════════════
+       PHASE 3: Typography & Color Utility Classes
+       Font sizes, text colors, weight, badges
+    ═══════════════════════════════════════════════════════════════ */
+
+    /* Font Size Utilities */
+    .text-xs { font-size: 0.65rem; }
+    .text-sm { font-size: 0.7rem; }
+    .text-75 { font-size: 0.75rem; }
+    .text-8 { font-size: 0.8rem; }
+    .text-85 { font-size: 0.85rem; }
+    .text-9 { font-size: 0.9rem; }
+    .text-base { font-size: 0.95rem; }
+    .text-lg { font-size: 1rem; }
+    .text-xl { font-size: 1.1rem; }
+    .text-2xl { font-size: 1.2rem; }
+
+    /* Text Colors */
+    .text-muted { color: var(--ps3-muted); }
+    .text-primary { color: var(--ps3-text); }
+    .text-silver { color: var(--ps3-silver); }
+    .text-red { color: var(--ps3-red); }
+    .text-green { color: var(--ps3-green); }
+    .text-yellow { color: var(--ps3-yellow); }
+
+    /* Font Weight */
+    .font-normal { font-weight: 400; }
+    .font-medium { font-weight: 500; }
+    .font-semibold { font-weight: 600; }
+    .font-bold { font-weight: 700; }
+
+    /* Text Transform */
+    .uppercase { text-transform: uppercase; }
+    .tracking-wide { letter-spacing: 0.08em; }
+    .tracking-wider { letter-spacing: 0.1em; }
+    .tracking-tight { letter-spacing: 0.05em; }
+
+    /* Text Alignment */
+    .text-center { text-align: center; }
+
+    /* Opacity */
+    .opacity-70 { opacity: 0.7; }
+    .opacity-85 { opacity: 0.85; }
+
+    /* Typography Combinations */
+    .label-xs-muted {
+      font-size: 0.75rem;
+      color: var(--ps3-muted);
+    }
+    .label-sm-muted {
+      font-size: 0.8rem;
+      color: var(--ps3-muted);
+    }
+    .heading-section {
+      font-size: 0.85rem;
+      color: var(--ps3-silver);
+      font-weight: 600;
+    }
+    /* Transaction Meta */
+    .text-tx-meta {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.7;
+    }
+    .tx-id-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.7;
+    }
+    .text-badge-number {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .text-amount-green {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--ps3-green);
+    }
+    .text-amount-red {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--ps3-red);
+    }
+    .text-customer-name {
+      font-weight: 700;
+      color: var(--ps3-text);
+    }
+    .text-customer-name-lg {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ps3-text);
+    }
+    .text-date-muted {
+      font-size: 0.9rem;
+      color: var(--ps3-muted);
+      font-weight: 500;
+    }
+    .text-id-mono {
+      font-family: monospace;
+      font-size: 0.75rem;
+    }
