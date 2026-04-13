@@ -4814,7 +4814,7 @@
             <div class="customer-info-row">
               <span class="customer-info-label">Catatan</span>
               <span class="customer-info-value">${(() => {
-              const txMatch = unit.note.match(/\[([A-Z]+\d+)\](.*)/);
+              const txMatch = unit.note.match(/\[([A-Z]+-\d+)\](.*)/);
               if (txMatch) {
                 const txId = txMatch[1];
                 const actualNote = txMatch[2] ? txMatch[2].replace(/^ - /, '') : '';
