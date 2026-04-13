@@ -18,25 +18,45 @@ A complete rental management solution for PlayStation 3 rental businesses, featu
 - **Audio Alert System**: 4 unique chill jingles for final 30-second warnings
 
 ### 📊 **Financial Management**
-- **Transaction IDs**: Auto-generated sequential IDs (PSM00001, PSM00002...)
+- **Transaction IDs**: Auto-generated sequential IDs (PSM-0001, PSM-0002...)
 - **Payment Methods**: Cash, QRIS, and Bank Transfer tracking
-- **Expense Tracking**: Categorized expenses with sub-categories (PSK00001, PSK00002...)
+- **Expense Tracking**: Categorized expenses with sub-categories (PSK-0001, PSK-0002...)
 - **Daily Reports**: Income, expense, and profit analysis with date range filtering
 - **CSV Export**: One-click export for accounting purposes
 
 ### 📅 **Booking & Scheduling**
-- **Schedule IDs**: Auto-generated booking IDs (PSJ00001, PSJ00002...)
+- **Schedule IDs**: Auto-generated booking IDs (PSJ-0001, PSJ-0002...)
 - **Advance Bookings**: Record customer reservations with phone, date, time, duration
 - **Conflict Detection**: Automatic overlap detection for unit reservations
 - **Status Tracking**: Pending, Active, Completed, Cancelled states
 - **Mobile-first Design**: Optimized for phone-based booking management
 
-### 📦 **Asset Management**
-- **Inventory Tracking**: Full equipment lifecycle management
-- **Categories**: Console, Controller/Stik, TV/Monitor, Accessories, Furniture, Other
-- **Condition States**: Excellent, Good, Fair, Poor
-- **Purchase Logging**: Date and price tracking for all assets
+### 📦 **Asset & Inventory Management**
+- **Inventory Tracking**: Full equipment lifecycle management with unique IDs
+- **Item ID Format**: 
+  - Konsol PS3: `PS3-01`, `PS3-02`...
+  - TV/Monitor: `TV-01`, `TV-02`...
+  - Stik Controller: `STK-01`, `STK-02`...
+  - Kabel USB: `USB-01`, `USB-02`...
+  - Kabel HDMI: `HDMI-01`, `HDMI-02`...
+  - Kabel Power: `PLUG-01`, `PLUG-02`...
+  - Lainnya: `LAIN-01`, `LAIN-02`...
+- **Categories**: 🎮 Konsol, 📺 TV, 🕹️ Stik, 🔌 Kabel USB, 🔌 Kabel HDMI, 🔌 Kabel Power, 📦 Lainnya
+- **Condition States**: 🟢 Baik, 🔴 Rusak, 🟡 Dalam Perbaikan, ⚫ Rusak Total
+- **Purchase Logging**: Date, price, vendor tracking for all assets
 - **Storage Locations**: Track where each item is stored
+- **Usage Tracking**: Auto-track usage hours from rental data (for Konsol/TV)
+- **Depreciation**: Automatic book value calculation
+
+### 🔗 **Inventory Pairing (Station) System**
+- **Station IDs**: `HOME-01`, `HOME-02`...
+- **Flexible Pairing**: Bundle Konsol + TV + Stik + Kabel into a Station
+- **Dynamic Assignment**: One item can belong to multiple pairings over time
+- **Pairing History**: Track when items were added/removed from stations
+- **Quick Swap**: One-click move all accessories to a different Konsol
+- **Cost Analysis**: Per-station revenue vs operational cost
+- **Performance Ranking**: Which station generates most revenue
+- **Break-even Analysis**: ROI per station based on usage
 
 ### 💰 **Capital & ROI Analysis**
 - **Initial Capital Recording**: Log startup investments
@@ -79,10 +99,21 @@ Authentic PlayStation 3 launch-era visual design:
 | Icons | System Emoji | Native, fast rendering |
 
 ### ID Badge System
-All records display silver-colored unique IDs:
-- **Income**: `PSMxxxxx` (PlayStation Masuk)
-- **Expense**: `PSKxxxxx` (PlayStation Keluar)
-- **Schedule**: `PSJxxxxx` (PlayStation Jadwal)
+All records display silver-colored unique IDs with hyphen format:
+
+| Type | Format | Description |
+|------|--------|-------------|
+| **Income** | `PSM-0001` | PlayStation Masuk - Transaction ID |
+| **Expense** | `PSK-0001` | PlayStation Keluar - Expense ID |
+| **Schedule** | `PSJ-0001` | PlayStation Jadwal - Booking ID |
+| **Konsol** | `PS3-01` | PS3 Console inventory |
+| **TV/Monitor** | `TV-01` | Display inventory |
+| **Stik** | `STK-01` | Controller inventory |
+| **Kabel USB** | `USB-01` | USB cable inventory |
+| **Kabel HDMI** | `HDMI-01` | HDMI cable inventory |
+| **Kabel Power** | `PLUG-01` | Power cable inventory |
+| **Lainnya** | `LAIN-01` | Other items |
+| **Station** | `HOME-01` | Pairing/Station ID |
 
 ---
 
@@ -170,11 +201,21 @@ Access via 📋 button in navigation.
 - **ID Display**: Each schedule shows `PSJxxxxx` badge
 
 #### 📦 Inventory (Asset Tracking)
-- **Categories**: Console, Controller/Stik, TV/Monitor, Accessories, Furniture, Other
-- **Sub-categories**: Dynamic based on category selection
-- **Condition**: Excellent / Good / Fair / Poor
-- **Purchase Info**: Date, price, seller
+- **Categories**: 🎮 Konsol, 📺 TV, 🕹️ Stik, 🔌 Kabel USB, 🔌 Kabel HDMI, 🔌 Kabel Power, 📦 Lainnya
+- **Item IDs**: Auto-generated per category (PS3-01, TV-01, STK-01, etc.)
+- **Condition**: 🟢 Baik / 🔴 Rusak / 🟡 Dalam Perbaikan / ⚫ Rusak Total
+- **Purchase Info**: Date, price, vendor, warranty
+- **Usage Stats**: Auto-tracked hours for Konsol/TV from rental data
+- **Book Value**: Depreciation tracking over time
+- **Maintenance Log**: Service history with costs
 - **Visual Grid**: Grouped by category with emoji icons
+
+#### 🔗 Station Pairing
+- **Create Station**: `HOME-01`, `HOME-02`...
+- **Composition**: Konsol (1) + TV (1) + Stik (0-2) + Kabel (unlimited)
+- **Quick Swap**: Move all accessories to different Konsol in one click
+- **Analytics**: Cost/revenue per station, usage ranking
+- **History**: Track item movements between stations
 
 #### 💰 Modal Awal (Capital & ROI)
 - **Capital In**: Record initial investment
@@ -206,7 +247,7 @@ Access via 📋 button in navigation.
 
 **Transactions (Income):**
 ```
-Search: PSM0001 (TX ID partial match)
+Search: PSM-0001 (TX ID partial match with hyphen)
 Customer: Auto-complete with highlight
 Unit: Auto-complete with highlight
 Payment: Cash / QRIS / Transfer
@@ -217,13 +258,22 @@ Sort: Date / Amount / Customer / Unit / TX ID
 
 **Expenses:**
 ```
-Search: PSK0001 (TX ID partial match)
+Search: PSK-0001 (TX ID partial match with hyphen)
 Tipe Biaya: Dropdown (matches submission form)
 Sub-Kategori: Dynamic dropdown (for Servis & Aksesoris)
 Item: Auto-complete
 Note: Text search
 Amount: Min / Max range
 Date: From / To picker
+```
+
+**Inventory:**
+```
+Search: PS3-01, TV-02, STK-01 (Item ID)
+Category: Konsol / TV / Stik / Kabel USB / Kabel HDMI / Kabel Power / Lainnya
+Condition: Baik / Rusak / Perbaikan / Rusak Total
+Location: Text search
+Vendor: Text search
 ```
 
 ---
@@ -257,16 +307,22 @@ Date: From / To picker
 │  └── Error handling                                         │
 ├─────────────────────────────────────────────────────────────┤
 │  SQLite Database (better-sqlite3)                             │
-│  ├── settings        (Business configuration)               │
-│  ├── units           (Rental units)                           │
-│  ├── transactions    (Income records with PSMxxxxx IDs)     │
-│  ├── expenses        (Expense records with PSKxxxxx IDs)    │
-│  ├── schedules       (Bookings with PSJxxxxx IDs)           │
-│  ├── inventory       (Asset tracking)                         │
-│  ├── capital         (Initial capital & expenses)           │
-│  ├── sessions        (JWT token storage)                    │
-│  ├── edit_logs       (Edit audit trail)                     │
-│  └── deletion_logs   (Soft-delete compliance)               │
+│  ├── settings               (Business configuration)        │
+│  ├── units                  (Rental units)                  │
+│  ├── transactions           (Income with PSM-0001 IDs)      │
+│  ├── expenses               (Expense with PSK-0001 IDs)     │
+│  ├── schedules              (Bookings with PSJ-0001 IDs)    │
+│  ├── inventory_items        (Assets: PS3-01, TV-01, etc.) │
+│  ├── inventory_pairings     (Stations: HOME-01, etc.)     │
+│  ├── inventory_pairing_items (Station composition)          │
+│  ├── inventory_maintenance  (Service history)               │
+│  ├── inventory_usage        (Usage tracking)                │
+│  ├── inventory_depreciation (Asset depreciation)            │
+│  ├── inventory_pairing_history (Change tracking)            │
+│  ├── capital                (Initial capital & expenses)  │
+│  ├── sessions               (JWT token storage)             │
+│  ├── edit_logs              (Edit audit trail)              │
+│  └── deletion_logs          (Soft-delete compliance)        │
 ├─────────────────────────────────────────────────────────────┤
 │  Persistence                                                │
 │  └── Fly.io Volume: ps3_data → /app/data                    │
@@ -303,7 +359,7 @@ Date: From / To picker
 
 **Query Parameters for GET /api/transactions:**
 ```
-search      - Partial TX ID match (PSMxxx)
+search      - Partial TX ID match (PSM-0001)
 customer    - Customer name filter (partial, case-insensitive)
 unit        - Unit name filter (partial, case-insensitive)
 payment     - cash | qris | transfer
@@ -332,17 +388,43 @@ offset      - Pagination offset
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/schedules` | List all bookings |
-| POST | `/api/schedules` | Create booking (auto-assigns PSJxxxxx) |
+| POST | `/api/schedules` | Create booking (auto-assigns PSJ-0001) |
 | PUT | `/api/schedules/:id` | Update booking |
 | DELETE | `/api/schedules/:id` | Delete booking |
 
 ### Inventory
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/inventory` | List all assets |
-| POST | `/api/inventory` | Add asset |
+| GET | `/api/inventory` | List all assets with filters |
+| POST | `/api/inventory` | Add asset (auto-generates ID: PS3-01, TV-01, etc.) |
+| GET | `/api/inventory/:id` | Get single asset with full details |
 | PUT | `/api/inventory/:id` | Update asset |
-| DELETE | `/api/inventory/:id` | Delete asset |
+| DELETE | `/api/inventory/:id` | Soft-delete asset |
+| POST | `/api/inventory/:id/maintenance` | Add maintenance record |
+| GET | `/api/inventory/:id/maintenance` | Get maintenance history |
+| GET | `/api/inventory/:id/usage` | Get usage statistics |
+| GET | `/api/inventory/:id/depreciation` | Get depreciation history |
+
+### Inventory Pairings (Stations)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/pairings` | List all stations |
+| POST | `/api/pairings` | Create station (auto-assigns HOME-01) |
+| GET | `/api/pairings/:id` | Get station with items |
+| PUT | `/api/pairings/:id` | Update station |
+| DELETE | `/api/pairings/:id` | Delete station |
+| POST | `/api/pairings/:id/items` | Add item to station |
+| DELETE | `/api/pairings/:id/items/:itemId` | Remove item from station |
+| POST | `/api/pairings/swap` | Quick swap items between stations |
+| GET | `/api/pairings/:id/analysis` | Get cost/revenue analysis |
+| GET | `/api/pairings/:id/history` | Get pairing change history |
+
+### Inventory Analytics
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/inventory/analytics` | Global analytics (top performer, etc.) |
+| GET | `/api/inventory/categories` | List category counts |
+| GET | `/api/inventory/locations` | List location counts |
 
 ### Capital & ROI
 | Method | Endpoint | Description |
@@ -404,7 +486,7 @@ order (INTEGER)
 **transactions** (Income)
 ```sql
 id (INTEGER PRIMARY KEY)
-transactionId (TEXT UNIQUE) - Format: PSMxxxxx
+transactionId (TEXT UNIQUE) - Format: PSM-0001 (hyphenated)
 customerName (TEXT)
 unitName (TEXT)
 amount (INTEGER)
@@ -420,7 +502,7 @@ createdAt (INTEGER)
 **expenses**
 ```sql
 id (INTEGER PRIMARY KEY)
-expenseId (TEXT UNIQUE) - Format: PSKxxxxx
+expenseId (TEXT UNIQUE) - Format: PSK-0001 (hyphenated)
 category (TEXT)
 subCategory (TEXT)
 item (TEXT)
@@ -430,10 +512,10 @@ notes (TEXT)
 createdAt (INTEGER)
 ```
 
-**schedules**
+**schedules** (Bookings)
 ```sql
 id (INTEGER PRIMARY KEY)
-scheduleId (TEXT UNIQUE) - Format: PSJxxxxx
+scheduleId (TEXT UNIQUE) - Format: PSJ-0001 (hyphenated)
 customerName (TEXT)
 phone (TEXT)
 startDate (TEXT)
@@ -448,19 +530,87 @@ status (TEXT: pending/active/completed/cancelled)
 createdAt (INTEGER)
 ```
 
-**inventory**
+**inventory_items**
+```sql
+id (TEXT PRIMARY KEY) - Format: PS3-01, TV-01, STK-01, etc.
+name (TEXT)
+category (TEXT: konsol/tv/stik/kabel_usb/kabel_hdmi/kabel_power/lainnya)
+subcategory (TEXT)
+purchase_date (TEXT)
+purchase_cost (INTEGER)
+vendor (TEXT)
+warranty_info (TEXT)
+condition (TEXT: baik/rusak/perbaikan/rusak_total)
+current_location (TEXT)
+notes (TEXT)
+photo_url (TEXT)
+is_active (INTEGER DEFAULT 1)
+created_at (INTEGER)
+updated_at (INTEGER)
+```
+
+**inventory_pairings** (Stations)
+```sql
+id (TEXT PRIMARY KEY) - Format: HOME-01, HOME-02...
+name (TEXT)
+description (TEXT)
+is_active (INTEGER DEFAULT 1)
+created_at (INTEGER)
+updated_at (INTEGER)
+```
+
+**inventory_pairing_items**
+```sql
+pairing_id (TEXT) - Reference to inventory_pairings
+item_id (TEXT) - Reference to inventory_items
+role (TEXT: konsol/tv/stik1/stik2/hdmi/charger/etc)
+added_date (TEXT)
+notes (TEXT)
+PRIMARY KEY (pairing_id, item_id)
+```
+
+**inventory_maintenance**
 ```sql
 id (INTEGER PRIMARY KEY)
-name (TEXT)
-category (TEXT)
-subCategory (TEXT)
-condition (TEXT: excellent/good/fair/poor)
-location (TEXT)
-purchaseDate (TEXT)
-purchasePrice (INTEGER)
-notes (TEXT)
-quantity (INTEGER DEFAULT 1)
-createdAt (INTEGER)
+item_id (TEXT) - Reference to inventory_items
+maintenance_date (TEXT)
+cost (INTEGER)
+description (TEXT)
+vendor (TEXT)
+next_scheduled_maintenance (TEXT)
+created_at (INTEGER)
+```
+
+**inventory_usage**
+```sql
+id (INTEGER PRIMARY KEY)
+item_id (TEXT) - Reference to inventory_items
+date (TEXT)
+hours_used (INTEGER)
+source (TEXT: auto_from_schedule/manual_input)
+pairing_id (TEXT) - Nullable, reference to inventory_pairings
+created_at (INTEGER)
+```
+
+**inventory_depreciation**
+```sql
+id (INTEGER PRIMARY KEY)
+item_id (TEXT) - Reference to inventory_items
+depreciation_date (TEXT)
+book_value (INTEGER)
+depreciation_method (TEXT: straight_line/declining)
+created_at (INTEGER)
+```
+
+**inventory_pairing_history**
+```sql
+id (INTEGER PRIMARY KEY)
+item_id (TEXT) - Reference to inventory_items
+old_pairing_id (TEXT) - Nullable
+new_pairing_id (TEXT) - Nullable
+change_date (TEXT)
+reason (TEXT)
+changed_by (TEXT)
 ```
 
 **capital**
