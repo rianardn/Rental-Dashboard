@@ -2588,6 +2588,95 @@
   color: var(--ps3-muted);
 }
 
+.form-label-75-silver {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ps3-silver);
+  margin-bottom: 5px;
+}
+
+.form-label-85-block {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+}
+
+.form-label-85-silver {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  color: var(--ps3-silver);
+}
+
+/* Modal/Card utilities */
+.pt16-pb20-border-top {
+  padding: 16px 20px;
+  border-top: 1px solid var(--ps3-border);
+}
+
+.mt-15 {
+  margin-top: 15px;
+}
+
+.pt-15 {
+  padding-top: 15px;
+}
+
+.border-top {
+  border-top: 1px solid var(--ps3-border);
+}
+
+.max-h-90vh {
+  max-height: 90vh;
+}
+
+/* Text utilities */
+.text-muted {
+  color: var(--ps3-muted);
+}
+
+.text-primary {
+  color: var(--ps3-text);
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+/* Max height utilities */
+.max-h-300 { max-height: 300px; }
+.max-h-350 { max-height: 350px; }
+.max-h-400 { max-height: 400px; }
+
+.scroll-y { overflow-y: auto; }
+
+/* Composite flex patterns */
+.flex-gap-10-mb16 {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.flex-gap-8-mb16 {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.flex-p14 {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Margin-top utilities */
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mt-20 { margin-top: 20px; }
+
 /* Badge/Tag absolute positioned */
 .badge-abs-top {
   position: absolute;
@@ -2647,7 +2736,13 @@
 .fw-700 { font-weight: 700; }
 
 /* Font size utilities */
+.fs-65 { font-size: 0.65rem; }
+.fs-7 { font-size: 0.7rem; }
+.fs-75 { font-size: 0.75rem; }
+.fs-8 { font-size: 0.8rem; }
+.fs-85 { font-size: 0.85rem; }
 .fs-9 { font-size: 0.9rem; }
+.fs-105 { font-size: 1.05rem; }
 .fs-1 { font-size: 1rem; }
 
 /* Color utilities */
@@ -2656,12 +2751,127 @@
 .text-green { color: var(--ps3-green); }
 .text-primary { color: var(--ps3-text); }
 
+/* Font style */
+.italic { font-style: italic; }
+.lh-14 { line-height: 1.4; }
+
+/* Layout utilities */
+.min-w-0 { min-width: 0; }
+.pr-10 { padding-right: 10px; }
+.fw-500 { font-weight: 500; }
+
+/* Grid utilities */
+.grid-full {
+  grid-column: 1 / -1;
+}
+
+/* Color - red variations */
+.text-red {
+  color: var(--ps3-red);
+}
+
+.fs-115 { font-size: 1.15rem; }
+.fs-2 { font-size: 2rem; }
+
+/* Flex patterns */
+.flex-2-p14 {
+  flex: 2;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.flex-gap-8-mb6 {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.flex-gap-12-mt15 {
+  display: flex;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.flex-wrap-gap-8-mb12 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.flex-center-gap-6-mb8 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.flex-center-gap-4 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.flex-center-gap-10 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.ml-auto {
+  margin-left: auto;
+}
+
+.self-center {
+  align-self: center;
+}
+
+.flex-between-center {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Surface/border background */
+.surface-border {
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--ps3-surface);
+  border: 1px solid var(--ps3-border);
+}
+
+.bg-surface {
+  background: var(--ps3-surface);
+}
+
+/* Padding utilities */
+.p-8 { padding: 8px; }
+.py-5 { padding-top: 5px; padding-bottom: 5px; }
+.py-8 { padding-top: 8px; padding-bottom: 8px; }
+.px-10 { padding-left: 10px; padding-right: 10px; }
+.px-12 { padding-left: 12px; padding-right: 12px; }
+
+/* Border radius */
+.br-8 { border-radius: 8px; }
+
 /* Margin utilities */
 .mt-2 { margin-top: 2px; }
 .mt-4 { margin-top: 4px; }
 .mt-12 { margin-top: 12px; }
 .mt-16 { margin-top: 16px; }
 .mt-20 { margin-top: 20px; }
+.mt-24 { margin-top: 24px; }
 
 .mb-4 { margin-bottom: 4px; }
 .mb-5 { margin-bottom: 5px; }
@@ -2680,3 +2890,53 @@
 .scroll-y { overflow-y: auto; }
 .max-h-300 { max-height: 300px; }
 .max-h-400 { max-height: 400px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   BATCH 20: FINAL COMPLETE MIGRATION UTILITIES
+═══════════════════════════════════════════════════════════════ */
+
+/* Additional margin utilities */
+.mr-4 { margin-right: 4px; }
+.mr-8 { margin-right: 8px; }
+.ml-auto { margin-left: auto; }
+.mr-auto { margin-right: auto; }
+
+/* Text utilities */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.strike { text-decoration: line-through; }
+
+/* Width/Height */
+.w-100 { width: 100%; }
+.h-100 { height: 100%; }
+
+/* Display */
+.block { display: block; }
+
+/* Card patterns */
+.card-surface-br12-p16-mb16 {
+  background: var(--ps3-surface);
+  border: 1px solid var(--ps3-border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.card-surface-br10-p15-center {
+  background: var(--ps3-surface);
+  border: 1px solid var(--ps3-border);
+  border-radius: 10px;
+  padding: 15px;
+  text-align: center;
+}
+
+/* Button patterns */
+.btn-surface {
+  background: var(--ps3-surface);
+  border: 1px solid var(--ps3-border);
+  color: var(--ps3-text);
+}
+
+.px-16 { padding-left: 16px; padding-right: 16px; }
+.py-8 { padding-top: 8px; padding-bottom: 8px; }
+.br-6 { border-radius: 6px; }
