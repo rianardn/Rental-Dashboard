@@ -238,7 +238,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
           <div class="section-title" style="margin: 0;">📅 Daftar Jadwal</div>
         </div>
-        <p style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 15px;">Kelola booking penyewa yang akan datang</p>
+        <p class="text-8 text-muted mb-15">Kelola booking penyewa yang akan datang</p>
         
         <div id="scheduleList" style="max-height: 400px; overflow-y: auto;">
           <p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada jadwal booking</p>
@@ -275,7 +275,7 @@
       ═══════════════════════════════════════════════════════════════ -->
       <div class="card" style="margin-top: 20px;">
         <div class="section-title">📦 Sistem Manajemen Inventori</div>
-        <p style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 15px;">Kelola aset, stasiun, dan tracking perawatan</p>
+        <p class="text-8 text-muted mb-15">Kelola aset, stasiun, dan tracking perawatan</p>
 
         <!-- Tab Navigation -->
         <div style="display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 1px solid var(--ps3-border); padding-bottom: 10px;">
@@ -356,7 +356,7 @@
       <!-- Initial Capital Section -->
       <div class="card" style="margin-top: 20px;">
         <div class="section-title">💰 Modal Awal & Investasi</div>
-        <p style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 15px;">Catat modal awal dan proyeksi balik modal</p>
+        <p class="text-8 text-muted mb-15">Catat modal awal dan proyeksi balik modal</p>
         
         <!-- Capital Input -->
         <div style="background: rgba(0,170,0,0.1); border: 1px solid var(--ps3-green); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
@@ -425,7 +425,7 @@
       <!-- Unit Management Section (Moved from Dashboard/Settings) -->
       <div class="card" style="margin-top: 20px;">
         <div class="section-title">🎮 Manajemen Unit</div>
-        <p style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 15px;">Tambah, hapus, atau ubah nama unit PS</p>
+        <p class="text-8 text-muted mb-15">Tambah, hapus, atau ubah nama unit PS</p>
         
         <div class="form-group">
           <label>Nama Unit Baru</label>
@@ -517,7 +517,7 @@
             <label class="label-row-12">
               <input type="checkbox" id="exportIncludeIncome" checked class="checkbox-ps3">
               <div>
-                <div style="font-weight: 600; color: var(--ps3-text);">📈 Transaksi Pendapatan</div>
+                <div class="font-semibold text-primary">📈 Transaksi Pendapatan</div>
                 <div class="text-75 text-muted">Data pemasukan dari penyewaan PS</div>
               </div>
             </label>
@@ -525,7 +525,7 @@
             <label class="label-row-12">
               <input type="checkbox" id="exportIncludeExpense" checked class="checkbox-ps3">
               <div>
-                <div style="font-weight: 600; color: var(--ps3-text);">📉 Transaksi Pengeluaran</div>
+                <div class="font-semibold text-primary">📉 Transaksi Pengeluaran</div>
                 <div class="text-75 text-muted">Data pengeluaran operasional</div>
               </div>
             </label>
@@ -556,7 +556,7 @@
             <label class="label-row-12">
               <input type="checkbox" id="exportIncludeTransactionHistory" class="checkbox-ps3">
               <div>
-                <div style="font-weight: 600; color: var(--ps3-text);">📋 Riwayat Transaksi</div>
+                <div class="font-semibold text-primary">📋 Riwayat Transaksi</div>
                 <div class="text-75 text-muted">Data transaksi aktif yang tersimpan di database</div>
               </div>
             </label>
@@ -565,7 +565,7 @@
             <label class="label-row-12">
               <input type="checkbox" id="exportIncludeEditHistory" class="checkbox-ps3">
               <div>
-                <div style="font-weight: 600; color: var(--ps3-text);">✏️ Riwayat Edit</div>
+                <div class="font-semibold text-primary">✏️ Riwayat Edit</div>
                 <div class="text-75 text-muted">Catatan perubahan data transaksi</div>
               </div>
             </label>
@@ -574,8 +574,8 @@
             <label id="ghostRecordsOption" class="label-row-12">
               <input type="checkbox" id="exportIncludeDeleteHistory" class="checkbox-ps3">
               <div>
-                <div style="font-weight: 600; color: var(--ps3-text);">🗑️ Riwayat Hapus (Ghost Records)</div>
-                <div style="font-size: 0.75rem; color: var(--ps3-muted);">TX ID transaksi yang sudah dihapus dengan keterangan "Dihapus"</div>
+                <div class="font-semibold text-primary">🗑️ Riwayat Hapus (Ghost Records)</div>
+                <div class="text-75 text-muted">TX ID transaksi yang sudah dihapus dengan keterangan "Dihapus"</div>
               </div>
             </label>
           </div>
@@ -610,11 +610,11 @@
           <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
             <div class="flex gap-12">
               <div style="flex: 1;">
-                <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 6px;">Dari Tanggal</label>
+                <label class="form-group-label-8">Dari Tanggal</label>
                 <input type="date" id="customExportStartDate" class="input-date">
               </div>
               <div style="flex: 1;">
-                <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 6px;">Sampai Tanggal</label>
+                <label class="form-group-label-8">Sampai Tanggal</label>
                 <input type="date" id="customExportEndDate" class="input-date">
               </div>
             </div>
@@ -622,33 +622,33 @@
 
           <!-- File Format -->
           <div style="margin-bottom: 16px;">
-            <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 8px;">Format File</label>
+            <label class="form-group-label-8mb8">Format File</label>
             <div class="flex gap-12">
               <label style="flex: 1; display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
                 <input type="checkbox" id="customExportCSV" checked class="checkbox-ps3">
-                <span style="font-weight: 600; color: var(--ps3-text);">📊 CSV</span>
+                <span class="font-semibold text-primary">📊 CSV</span>
               </label>
               <label style="flex: 1; display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
                 <input type="checkbox" id="customExportJSON" checked class="checkbox-ps3">
-                <span style="font-weight: 600; color: var(--ps3-text);">💾 JSON</span>
+                <span class="font-semibold text-primary">💾 JSON</span>
               </label>
             </div>
           </div>
 
           <!-- Data Type -->
           <div style="margin-bottom: 16px;">
-            <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 8px;">Jenis Data</label>
+            <label class="form-group-label-8mb8">Jenis Data</label>
             <div style="display: flex; flex-direction: column; gap: 10px;">
               <label class="label-row-12">
                 <input type="checkbox" id="customExportIncome" checked class="checkbox-ps3">
                 <div>
-                  <div style="font-weight: 600; color: var(--ps3-text);">📈 Transaksi Pendapatan</div>
+                  <div class="font-semibold text-primary">📈 Transaksi Pendapatan</div>
                 </div>
               </label>
               <label class="label-row-12">
                 <input type="checkbox" id="customExportExpense" checked class="checkbox-ps3">
                 <div>
-                  <div style="font-weight: 600; color: var(--ps3-text);">📉 Transaksi Pengeluaran</div>
+                  <div class="font-semibold text-primary">📉 Transaksi Pengeluaran</div>
                 </div>
               </label>
             </div>
@@ -679,7 +679,7 @@
             <label class="label-row-12">
               <input type="checkbox" id="customExportTransactionHistory" checked class="checkbox-ps3">
               <div>
-                <div style="font-weight: 600; color: var(--ps3-text);">📋 Riwayat Transaksi Aktif</div>
+                <div class="font-semibold text-primary">📋 Riwayat Transaksi Aktif</div>
                 <div class="text-75 text-muted">Data transaksi aktif yang tersimpan di database</div>
               </div>
             </label>
@@ -688,7 +688,7 @@
             <label class="label-row-12">
               <input type="checkbox" id="customExportEditHistory" checked class="checkbox-ps3">
               <div>
-                <div style="font-weight: 600; color: var(--ps3-text);">✏️ Riwayat Edit</div>
+                <div class="font-semibold text-primary">✏️ Riwayat Edit</div>
                 <div class="text-75 text-muted">Catatan perubahan data transaksi</div>
               </div>
             </label>
@@ -697,7 +697,7 @@
             <label class="label-row-12">
               <input type="checkbox" id="customExportDeleteHistory" checked class="checkbox-ps3">
               <div>
-                <div style="font-weight: 600; color: var(--ps3-text);">🗑️ Riwayat Hapus (Ghost Records)</div>
+                <div class="font-semibold text-primary">🗑️ Riwayat Hapus (Ghost Records)</div>
                 <div class="text-75 text-muted">TX ID transaksi yang sudah dihapus dengan keterangan "Dihapus"</div>
               </div>
             </label>
@@ -731,7 +731,7 @@
           
           <!-- Range Selection -->
           <div style="margin-bottom: 16px;">
-            <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 8px;">Range Waktu</label>
+            <label class="form-group-label-8mb8">Range Waktu</label>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
               <button type="button" id="schedRangeToday" class="btn-range-toggle active" onclick="selectScheduleRange('today')" style="padding: 10px; font-size: 0.75rem; background: var(--ps3-red); border: 1px solid var(--ps3-red); color: #fff; border-radius: 6px; cursor: pointer;">
                 📅 Hari Ini
@@ -767,29 +767,29 @@
           
           <!-- Schedule Types -->
           <div style="margin-bottom: 16px;">
-            <label style="display: block; font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 8px;">Jenis Jadwal (minimal pilih satu)</label>
+            <label class="form-group-label-8mb8">Jenis Jadwal (minimal pilih satu)</label>
             <div class="flex-col gap-8">
               <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(0,170,0,0.1); border: 1px solid var(--ps3-green); border-radius: 8px; cursor: pointer;">
                 <input type="checkbox" id="schedTypeActive" checked class="checkbox-green">
-                <span style="font-size: 0.85rem; color: var(--ps3-text);">
+                <span class="text-85 text-primary">
                   <strong style="color: var(--ps3-green);">▶ Jadwal Aktif</strong> — Menunggu & Berjalan
                 </span>
               </label>
               <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
                 <input type="checkbox" id="schedTypeCompleted" checked class="checkbox-ps3">
-                <span style="font-size: 0.85rem; color: var(--ps3-text);">
+                <span class="text-85 text-primary">
                   <strong style="color: #4CAF50;">✓ Jadwal Selesai</strong> — Yang sudah diselesaikan
                 </span>
               </label>
               <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
                 <input type="checkbox" id="schedTypeEditHistory" checked class="checkbox-ps3">
-                <span style="font-size: 0.85rem; color: var(--ps3-text);">
+                <span class="text-85 text-primary">
                   <strong style="color: #FFC107;">📝 Riwayat Edit</strong> — Perubahan jadwal
                 </span>
               </label>
               <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(255,0,0,0.05); border: 1px solid rgba(255,0,0,0.3); border-radius: 8px; cursor: pointer;">
                 <input type="checkbox" id="schedTypeCancelled" checked class="checkbox-ps3">
-                <span style="font-size: 0.85rem; color: var(--ps3-text);">
+                <span class="text-85 text-primary">
                   <strong style="color: #f44336;">✕ Jadwal Dibatalkan</strong> — Yang dibatalkan
                 </span>
               </label>
@@ -1020,7 +1020,7 @@
           </div>
           <div class="flex-between">
             <span style="color: var(--ps3-muted); font-size: 0.8rem;">Durasi:</span>
-            <span style="font-weight: 600; color: var(--ps3-text);" id="scheduleUnitDuration"></span>
+            <span class="font-semibold text-primary" id="scheduleUnitDuration"></span>
           </div>
         </div>
         <div class="form-group">
@@ -1801,10 +1801,10 @@
         
         <!-- Transaction Details -->
         <div style="background: var(--ps3-surface); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
-          <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 4px;">Item</div>
+          <div class="text-8 text-muted mb-4">Item</div>
           <div id="deleteExpenseItem" style="font-weight: 600; margin-bottom: 12px;">-</div>
           
-          <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 4px;">Jumlah</div>
+          <div class="text-8 text-muted mb-4">Jumlah</div>
           <div id="deleteExpenseAmount" style="font-weight: 600; color: var(--ps3-red);">-</div>
         </div>
         
@@ -2479,8 +2479,8 @@
           <input type="text" id="stationDesc" placeholder="Contoh: PS3 di ruang depan">
         </div>
         <div style="background: rgba(0,170,0,0.1); border: 1px solid var(--ps3-green); border-radius: 8px; padding: 12px; margin: 15px 0;">
-          <div style="font-size: 0.75rem; color: var(--ps3-green);">ℹ️ Info</div>
-          <div style="font-size: 0.7rem; color: var(--ps3-muted);">
+          <div class="text-75 text-green">ℹ️ Info</div>
+          <div class="text-sm text-muted">
             ID Stasiun akan dibuat otomatis (contoh: HOME-01).<br>
             Tambahkan item ke stasiun setelah stasiun dibuat.
           </div>
@@ -2742,7 +2742,7 @@
         <!-- Filter Aktif -->
         <div id="calendarActiveFilter" style="display: none; margin-bottom: 15px; padding: 10px 15px; background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 10px;">
           <div class="flex-between-center">
-            <span style="font-size: 0.85rem; color: var(--ps3-text);">
+            <span class="text-85 text-primary">
               📅 Filter: <span id="calendarFilterText"></span>
             </span>
             <button onclick="clearCalendarFilter()" style="background: var(--ps3-red); color: #fff; border: none; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">
@@ -6671,7 +6671,7 @@
                 </div>
                 <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.badgeBg}; color: ${badge.color}; font-weight: 600; white-space: nowrap; border: 1px solid ${badge.badgeBg};">${badge.text}</span>
               </div>
-              <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
+              <div class="text-85 text-muted mb-2px">
                 ${formattedDate}
               </div>
               <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
@@ -6758,7 +6758,7 @@
                 </div>
                 <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.badgeBg}; color: ${badge.color}; font-weight: 600; white-space: nowrap;">${badge.text}</span>
               </div>
-              <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
+              <div class="text-85 text-muted mb-2px">
                 ${formattedDate}
               </div>
               <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
@@ -7194,7 +7194,7 @@
 
           return `
             <div style="border-left: 3px solid var(--ps3-red); padding: 12px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border-radius: 0 10px 10px 0;">
-              <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 6px;">
+              <div class="text-8 text-muted mb-6">
                 ${dateStr} • oleh ${log.editedBy || 'admin'}
               </div>
               <div style="font-weight: 600; margin-bottom: 4px; color: var(--ps3-text);">
@@ -7714,11 +7714,11 @@
             <!-- Deleted Info -->
             <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 12px;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <span style="font-size: 0.75rem; color: var(--ps3-muted);">Dihapus:</span>
+                <span class="text-75 text-muted">Dihapus:</span>
                 <span style="font-size: 0.75rem; color: var(--ps3-red);">${formatTrashDateTime(log.deletedAt)}</span>
               </div>
               <div class="flex-between">
-                <span style="font-size: 0.75rem; color: var(--ps3-muted);">Alasan:</span>
+                <span class="text-75 text-muted">Alasan:</span>
                 <span style="font-size: 0.75rem; color: var(--ps3-text);">${log.deleteReason || '-'}</span>
               </div>
             </div>
@@ -8261,11 +8261,11 @@
             <!-- Deleted Info -->
             <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 12px;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <span style="font-size: 0.75rem; color: var(--ps3-muted);">Dihapus:</span>
+                <span class="text-75 text-muted">Dihapus:</span>
                 <span style="font-size: 0.75rem; color: var(--ps3-red);">${formatTrashDateTime(log.deletedAt)}</span>
               </div>
               <div class="flex-between">
-                <span style="font-size: 0.75rem; color: var(--ps3-muted);">Alasan:</span>
+                <span class="text-75 text-muted">Alasan:</span>
                 <span style="font-size: 0.75rem; color: var(--ps3-text);">${log.deleteReason || '-'}</span>
               </div>
             </div>
@@ -8799,7 +8799,7 @@
           
           return `
             <div style="border-left: 3px solid var(--ps3-red); padding: 12px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border-radius: 0 10px 10px 0;">
-              <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 6px;">
+              <div class="text-8 text-muted mb-6">
                 ${dateStr} • oleh ${log.editedBy || 'admin'}
               </div>
               <div style="font-weight: 600; margin-bottom: 4px; color: var(--ps3-text);">
@@ -9671,7 +9671,7 @@
               </div>
               <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.bg}; color: ${badge.color}; font-weight: 600; white-space: nowrap;">${badge.text}</span>
             </div>
-            <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
+            <div class="text-85 text-muted mb-2px">
               ${formatScheduleDate(s)}
             </div>
             <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
@@ -9724,8 +9724,8 @@
               </svg>
             </span>
             <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
-              <span style="font-weight: 600; color: var(--ps3-text);">Lihat Semua Jadwal</span>
-              <span style="font-size: 0.75rem; color: var(--ps3-muted);">${totalActive} jadwal aktif</span>
+              <span class="font-semibold text-primary">Lihat Semua Jadwal</span>
+              <span class="text-75 text-muted">${totalActive} jadwal aktif</span>
             </span>
             <span style="margin-left: auto; display: flex; align-items: center; color: var(--ps3-red);">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -10268,7 +10268,7 @@
                 </div>
                 <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: ${badge.bg}; color: ${badge.color}; font-weight: 600; white-space: nowrap;">${badge.text}</span>
               </div>
-              <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
+              <div class="text-85 text-muted mb-2px">
                 ${formatScheduleDate(s)}
               </div>
               <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
@@ -10518,7 +10518,7 @@
           </div>
 
           <!-- Date/Time dengan bold -->
-          <div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 2px;">
+          <div class="text-85 text-muted mb-2px">
             ${formatScheduleDate(s)}
           </div>
           <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
@@ -11004,7 +11004,7 @@
 
           return `
             <div style="border-left: 3px solid var(--ps3-red); padding: 12px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border-radius: 0 10px 10px 0;">
-              <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 6px;">
+              <div class="text-8 text-muted mb-6">
                 ${dateStr} • oleh ${log.editedBy || 'admin'}
               </div>
               <div style="font-weight: 600; margin-bottom: 4px; color: var(--ps3-text);">
@@ -11426,9 +11426,9 @@
       container.innerHTML = `
         <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 12px;">
           <div style="font-size: 0.8rem; font-weight: 600;">🏢 ${item.current_pairing.name}</div>
-          <div style="font-size: 0.7rem; color: var(--ps3-muted);">ID: ${item.current_pairing.id}</div>
+          <div class="text-sm text-muted">ID: ${item.current_pairing.id}</div>
           <div style="font-size: 0.75rem; margin-top: 8px;">Role: ${item.current_pairing.role}</div>
-          <div style="font-size: 0.7rem; color: var(--ps3-muted);">Dipasang: ${new Date(item.current_pairing.assigned_at).toLocaleDateString('id-ID')}</div>
+          <div class="text-sm text-muted">Dipasang: ${new Date(item.current_pairing.assigned_at).toLocaleDateString('id-ID')}</div>
         </div>
       `;
     }
@@ -11627,9 +11627,9 @@
             <div style="background: var(--ps3-card); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
               <div class="flex-between-center">
                 <div>
-                  <div style="font-size: 0.75rem; color: var(--ps3-muted);">${i.item_id}</div>
+                  <div class="text-75 text-muted">${i.item_id}</div>
                   <div style="font-size: 0.85rem; font-weight: 600;">${i.item_name}</div>
-                  <div style="font-size: 0.7rem; color: var(--ps3-yellow);">Role: ${i.role}</div>
+                  <div class="text-sm text-yellow">Role: ${i.role}</div>
                 </div>
                 <button onclick="event.stopPropagation(); removeItemFromStation('${i.item_id}')" style="background: var(--ps3-border); color: var(--ps3-red); border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">❌</button>
               </div>
@@ -11952,19 +11952,19 @@
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
           <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 15px; text-align: center;">
             <div style="font-size: 1.3rem; font-weight: 700; color: var(--ps3-silver);">${data.total_items || 0}</div>
-            <div style="font-size: 0.7rem; color: var(--ps3-muted);">Total Items</div>
+            <div class="text-sm text-muted">Total Items</div>
           </div>
           <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 15px; text-align: center;">
             <div style="font-size: 1.3rem; font-weight: 700; color: var(--ps3-green);">Rp${(data.total_value || 0).toLocaleString()}</div>
-            <div style="font-size: 0.7rem; color: var(--ps3-muted);">Total Nilai</div>
+            <div class="text-sm text-muted">Total Nilai</div>
           </div>
           <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 15px; text-align: center;">
             <div style="font-size: 1.3rem; font-weight: 700; color: var(--ps3-yellow);">${data.total_maintenance_cost || 0}</div>
-            <div style="font-size: 0.7rem; color: var(--ps3-muted);">Biaya Perawatan</div>
+            <div class="text-sm text-muted">Biaya Perawatan</div>
           </div>
           <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 15px; text-align: center;">
             <div style="font-size: 1.3rem; font-weight: 700; color: var(--ps3-red);">${data.items_need_attention || 0}</div>
-            <div style="font-size: 0.7rem; color: var(--ps3-muted);">Butuh Perhatian</div>
+            <div class="text-sm text-muted">Butuh Perhatian</div>
           </div>
         </div>
 
@@ -11976,7 +11976,7 @@
               <span style="font-size: 0.8rem;">${categoryLabels[c.category] || c.category}</span>
               <div style="text-align: right;">
                 <div style="font-size: 0.8rem; font-weight: 600;">${c.count} item</div>
-                <div style="font-size: 0.7rem; color: var(--ps3-green);">Rp${(c.value || 0).toLocaleString()}</div>
+                <div class="text-sm text-green">Rp${(c.value || 0).toLocaleString()}</div>
               </div>
             </div>
           `).join('') || '<p style="text-align: center; color: var(--ps3-muted);">Tidak ada data</p>'}
@@ -12195,9 +12195,9 @@
             <div style="background: rgba(0,170,0,0.1); border-left: 3px solid var(--ps3-green); padding: 10px; margin-bottom: 8px; border-radius: 0 8px 8px 0;">
               <div class="flex-between">
                 <span style="font-weight: 600; color: var(--ps3-green);">+ Rp${item.amount.toLocaleString()}</span>
-                <span style="font-size: 0.75rem; color: var(--ps3-muted);">${formatDate(item.date)}</span>
+                <span class="text-75 text-muted">${formatDate(item.date)}</span>
               </div>
-              ${item.description ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">${item.description}</div>` : ''}
+              ${item.description ? `<div class="text-8 text-muted mt-2">${item.description}</div>` : ''}
             </div>
           `;
         } else {
@@ -12205,10 +12205,10 @@
             <div style="background: rgba(230,0,18,0.1); border-left: 3px solid var(--ps3-red); padding: 10px; margin-bottom: 8px; border-radius: 0 8px 8px 0;">
               <div class="flex-between">
                 <span style="font-weight: 600; color: var(--ps3-red);">- Rp${item.amount.toLocaleString()}</span>
-                <span style="font-size: 0.75rem; color: var(--ps3-muted);">${formatDate(item.date)}</span>
+                <span class="text-75 text-muted">${formatDate(item.date)}</span>
               </div>
               <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 2px;">${item.item}</div>
-              ${item.category ? `<div style="font-size: 0.7rem; color: var(--ps3-muted);">${item.category}</div>` : ''}
+              ${item.category ? `<div class="text-sm text-muted">${item.category}</div>` : ''}
             </div>
           `;
         }
@@ -12247,7 +12247,7 @@
                         border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <div style="font-weight: 600;">${unit.name}</div>
-                <div style="font-size: 0.75rem; color: var(--ps3-muted);">
+                <div class="text-75 text-muted">
                   ${unit.active ? '🟢 Sedang aktif' : '⚫ Tersedia'}
                 </div>
               </div>
