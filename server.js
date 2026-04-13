@@ -63,11 +63,17 @@ function generateScheduleId() {
 function generateInventoryId(category) {
   const prefixMap = {
     'konsol': 'PS3',
+    'ps3': 'PS3',           // Alias
     'tv': 'TV',
     'stik': 'STK',
     'kabel_usb': 'USB',
+    'charger': 'USB',       // Alias
+    'kabel_charger': 'USB', // Alias
     'kabel_hdmi': 'HDMI',
+    'hdmi': 'HDMI',         // Alias
     'kabel_power': 'PLUG',
+    'plug': 'PLUG',         // Alias
+    'kabel': 'USB',         // Generic cable fallback
     'furniture': 'FURN',
     'aksesoris': 'AKS',
     'lainnya': 'LAIN'
@@ -3234,6 +3240,30 @@ app.get('/api/inventory', requireAuth, (req, res) => {
   res.json(items);
 });
 
+// Get all paired item IDs (for filtering dropdowns) - MUST be before /api/inventory/:id
+app.get('/api/inventory/paired-items', requireAuth, (req, res) => {
+  try {
+    const pairedItems = db.prepare(`
+      SELECT DISTINCT item_id, pairing_id
+      FROM inventory_pairing_items
+    `).all();
+    
+    console.log(`[API] /api/inventory/paired-items - Found ${pairedItems.length} paired items`);
+    
+    res.json({
+      paired_items: pairedItems.map(p => p.item_id),
+      pairings: pairedItems.reduce((acc, p) => {
+        acc[p.item_id] = p.pairing_id;
+        return acc;
+      }, {}),
+      count: pairedItems.length
+    });
+  } catch (e) {
+    console.error('[API] Error fetching paired items:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Get single inventory item with details
 app.get('/api/inventory/:id', requireAuth, (req, res) => {
   const item = db.prepare('SELECT * FROM inventory_items WHERE id = ?').get(req.params.id);
@@ -3405,13 +3435,15 @@ app.get('/api/pairings', requireAuth, (req, res) => {
   // Helper function to validate station requirements
   function validateStationItems(items) {
     const counts = {
-      ps3: items.filter(i => i.category === 'ps3').length,
+      ps3: items.filter(i => i.category === 'ps3' || i.category === 'konsol').length,
       tv: items.filter(i => i.category === 'tv').length,
       stik: items.filter(i => i.category === 'stik').length,
-      usb: items.filter(i => i.category === 'usb').length,
-      hdmi: items.filter(i => i.category === 'hdmi').length,
-      plug: items.filter(i => i.category === 'plug').length,
-      lainnya: items.filter(i => i.category === 'lainnya').length
+      usb: items.filter(i => i.category === 'usb' || i.category === 'charger' || 
+                          (i.category === 'kabel_power' && i.role && i.role.startsWith('charger'))).length,
+      hdmi: items.filter(i => i.category === 'hdmi' || i.category === 'kabel_hdmi').length,
+      plug: items.filter(i => i.category === 'plug' || 
+                          (i.category === 'kabel_power' && (!i.role || i.role === 'power'))).length,
+      lainnya: items.filter(i => i.category === 'lainnya' || i.category === 'kabel').length
     };
 
     const errors = [];
@@ -3494,13 +3526,15 @@ app.get('/api/pairings/:id', requireAuth, (req, res) => {
   // Helper function to validate station requirements
   function validateStationItems(items) {
     const counts = {
-      ps3: items.filter(i => i.category === 'ps3').length,
+      ps3: items.filter(i => i.category === 'ps3' || i.category === 'konsol').length,
       tv: items.filter(i => i.category === 'tv').length,
       stik: items.filter(i => i.category === 'stik').length,
-      usb: items.filter(i => i.category === 'usb').length,
-      hdmi: items.filter(i => i.category === 'hdmi').length,
-      plug: items.filter(i => i.category === 'plug').length,
-      lainnya: items.filter(i => i.category === 'lainnya').length
+      usb: items.filter(i => i.category === 'usb' || i.category === 'charger' || 
+                          (i.category === 'kabel_power' && i.role && i.role.startsWith('charger'))).length,
+      hdmi: items.filter(i => i.category === 'hdmi' || i.category === 'kabel_hdmi').length,
+      plug: items.filter(i => i.category === 'plug' || 
+                          (i.category === 'kabel_power' && (!i.role || i.role === 'power'))).length,
+      lainnya: items.filter(i => i.category === 'lainnya' || i.category === 'kabel').length
     };
 
     const errors = [];
@@ -3621,22 +3655,48 @@ app.put('/api/pairings/:id', requireAuth, (req, res) => {
 // Add item to pairing
 app.post('/api/pairings/:id/items', requireAuth, (req, res) => {
   const { item_id, role, notes } = req.body;
+  const pairingId = req.params.id;
   const now = Date.now();
+  
+  // Get the item's category
+  const item = db.prepare('SELECT id, category FROM inventory_items WHERE id = ?').get(item_id);
+  if (!item) {
+    return res.status(404).json({ ok: false, error: 'Item tidak ditemukan' });
+  }
+  
+  // Check if this category already exists in the target pairing (prevents duplicates like 2 konsol)
+  // Stik, Charger, and Lainnya can have multiple; others (konsol, tv, hdmi, plug) can only have 1
+  const singleItemCategories = ['ps3', 'konsol', 'tv', 'hdmi', 'plug', 'kabel_hdmi', 'kabel_power'];
+  if (singleItemCategories.includes(item.category)) {
+    const existingInPairing = db.prepare(`
+      SELECT pi.item_id, i.category 
+      FROM inventory_pairing_items pi
+      JOIN inventory_items i ON pi.item_id = i.id
+      WHERE pi.pairing_id = ? AND i.category = ?
+    `).get(pairingId, item.category);
+    
+    if (existingInPairing) {
+      return res.status(400).json({ 
+        ok: false, 
+        error: `Kategori ${item.category} sudah ada di stasiun ini (item: ${existingInPairing.item_id}). Hapus yang lama dulu untuk mengganti.` 
+      });
+    }
+  }
   
   // Check if item already in another pairing
   const existing = db.prepare('SELECT pairing_id FROM inventory_pairing_items WHERE item_id = ?').get(item_id);
   if (existing) {
     // Log the change
     db.prepare('INSERT INTO inventory_pairing_history (item_id, old_pairing_id, new_pairing_id, change_date, reason) VALUES (?, ?, ?, ?, ?)')
-      .run(item_id, existing.pairing_id, req.params.id, now, 'Moved to different pairing');
+      .run(item_id, existing.pairing_id, pairingId, now, 'Moved to different pairing');
     
     // Remove from old pairing
     db.prepare('DELETE FROM inventory_pairing_items WHERE item_id = ?').run(item_id);
   }
   
   // Add to new pairing
-  db.prepare('INSERT INTO inventory_pairing_items (pairing_id, item_id, role, added_date, notes) VALUES (?, ?, ?, date("now"), ?)')
-    .run(req.params.id, item_id, role, notes || null);
+  db.prepare('INSERT INTO inventory_pairing_items (pairing_id, item_id, role, added_date, notes) VALUES (?, ?, ?, date(\'now\'), ?)')
+    .run(pairingId, item_id, role, notes || null);
   
   res.json({ ok: true, message: 'Item added to pairing' });
 });
@@ -3672,7 +3732,7 @@ app.post('/api/pairings/swap', requireAuth, (req, res) => {
   db.prepare('DELETE FROM inventory_pairing_items WHERE pairing_id = ? AND item_id = ?').run(from_pairing_id, item_id);
   
   // Add to new
-  db.prepare('INSERT INTO inventory_pairing_items (pairing_id, item_id, role, added_date, notes) VALUES (?, ?, ?, date("now"), ?)')
+  db.prepare('INSERT INTO inventory_pairing_items (pairing_id, item_id, role, added_date, notes) VALUES (?, ?, ?, date(\'now\'), ?)')
     .run(to_pairing_id, item_id, item.role, item.notes || null);
   
   res.json({ ok: true, message: 'Item swapped successfully' });
@@ -3751,7 +3811,7 @@ app.post('/api/units/:unit_id/pairing', requireAuth, (req, res) => {
   db.prepare('UPDATE unit_pairings SET is_active = 0 WHERE unit_id = ?').run(req.params.unit_id);
   
   // Add new pairing
-  db.prepare('INSERT OR REPLACE INTO unit_pairings (unit_id, pairing_id, assigned_date, is_active) VALUES (?, ?, date("now"), 1)')
+  db.prepare('INSERT OR REPLACE INTO unit_pairings (unit_id, pairing_id, assigned_date, is_active) VALUES (?, ?, date(\'now\'), 1)')
     .run(req.params.unit_id, pairing_id);
   
   res.json({ ok: true, message: 'Pairing linked to unit' });

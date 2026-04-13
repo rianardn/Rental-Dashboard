@@ -307,12 +307,23 @@
     // Store previous data hashes for smart rendering
     let lastTransactionsHash = '';
     let lastExpensesHash = '';
+    let lastStationsHash = '';
     
     function getDataHash(data) {
       // Simple hash of data length and last item ID/timestamp
       if (!data || data.length === 0) return 'empty';
       const lastItem = data[data.length - 1];
       return `${data.length}-${lastItem.id || ''}-${lastItem.endTime || lastItem.created_at || ''}`;
+    }
+
+    // Special hash for stations that checks is_valid and item_count
+    function getStationsHash(stations) {
+      if (!Array.isArray(stations) || stations.length === 0) return 'empty';
+      // Check critical fields that affect UI: id, is_valid, item_count, active
+      const summary = stations.map(s => 
+        `${s.id}:${s.is_valid ? 1 : 0}:${s.item_count || 0}:${s.active ? 1 : 0}`
+      ).join('|');
+      return `${stations.length}-${summary}`;
     }
     
     function startPolling() {
@@ -325,11 +336,27 @@
           // Smart render: only re-render if data actually changed
           const currentTxHash = getDataHash(transactions);
           const currentExpHash = getDataHash(expenses);
+          const currentStationsHash = getStationsHash(stations);
           
-          if (currentTxHash !== lastTransactionsHash || currentExpHash !== lastExpensesHash) {
+          const txChanged = currentTxHash !== lastTransactionsHash;
+          const expChanged = currentExpHash !== lastExpensesHash;
+          const stationsChanged = currentStationsHash !== lastStationsHash;
+          
+          if (txChanged || expChanged) {
             lastTransactionsHash = currentTxHash;
             lastExpensesHash = currentExpHash;
             renderAll();
+          }
+          
+          // Always update dashboard if stations changed (for SIAP/BELUM SIAP status sync)
+          if (stationsChanged) {
+            lastStationsHash = currentStationsHash;
+            console.log('[Polling] Stations data changed, updating dashboard...');
+            renderDashboard();
+            // Also re-render stations list if on inventory tab
+            if (document.getElementById('inventoryTabStations')?.style.display === 'block') {
+              renderStations();
+            }
           }
         } catch (e) {
           console.error('Poll error:', e);
@@ -9317,6 +9344,7 @@
     let currentStationDetail = null;
     let stations = [];
     let inventoryAnalytics = null;
+    let globalPairedItemIds = []; // Track items paired to any station
 
     // Inventory Constants (Global Scope)
     const categoryLabels = {
@@ -9342,6 +9370,26 @@
       perbaikan: 'var(--ps3-yellow)',
       rusak_total: '#666'
     };
+
+    // Helper function to get category label in Indonesian
+    function getCategoryLabel(category) {
+      const labels = {
+        'konsol': 'Konsol PS3',
+        'ps3': 'Konsol PS3',
+        'tv': 'TV',
+        'stik': 'Stik PS3',
+        'kabel_power': 'Kabel Power',
+        'usb': 'Kabel Charger USB',
+        'charger': 'Kabel Charger',
+        'plug': 'Kabel Plug',
+        'power': 'Kabel Power',
+        'kabel_hdmi': 'Kabel HDMI',
+        'hdmi': 'Kabel HDMI',
+        'lainnya': 'Item Lainnya',
+        'kabel': 'Kabel Lainnya'
+      };
+      return labels[category] || category;
+    }
 
     // Tab Switching
     function switchInventoryTab(tab) {
@@ -9785,32 +9833,93 @@
           </div>
         `;
 
-        // Render items in station
-        const items = station.items || [];
+        // Render items in station with emoji backgrounds and category sorting
+        let items = station.items || [];
+        
+        // Emoji mapping for categories
+        const categoryEmojis = {
+          'konsol': '🎮',
+          'ps3': '🎮',
+          'tv': '📺',
+          'stik': '🎮',
+          'kabel_power': '🔌',
+          'usb': '🔌',
+          'charger': '🔌',
+          'plug': '⚡',
+          'power': '⚡',
+          'kabel_hdmi': '📡',
+          'hdmi': '📡',
+          'lainnya': '📦',
+          'kabel': '🔧'
+        };
+        
+        // Category sort order: Konsol, TV, Stik, Charger, Plug, HDMI, Lainnya
+        const categoryOrder = {
+          'konsol': 1, 'ps3': 1,
+          'tv': 2,
+          'stik': 3,
+          'kabel_power': 4, 'usb': 4, 'charger': 4,
+          'plug': 5, 'power': 5,
+          'kabel_hdmi': 6, 'hdmi': 6,
+          'lainnya': 7, 'kabel': 7
+        };
+        
+        // Sort items by category order
+        items = items.sort((a, b) => {
+          const orderA = categoryOrder[a.category] || 99;
+          const orderB = categoryOrder[b.category] || 99;
+          if (orderA !== orderB) return orderA - orderB;
+          // Secondary sort by role
+          return (a.role || '').localeCompare(b.role || '');
+        });
+        
         const itemsContainer = document.getElementById('stationItemsList');
         if (items.length === 0) {
           itemsContainer.innerHTML = '<p class="empty-state-p15">Belum ada item di stasiun ini</p>';
         } else {
-          itemsContainer.innerHTML = items.map(i => `
-            <div style="background: var(--ps3-card); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
-              <div class="flex-between-center">
+          itemsContainer.innerHTML = items.map(i => {
+            const emoji = categoryEmojis[i.category] || '📦';
+            const categoryLabel = getCategoryLabel(i.category);
+            return `
+            <div style="background: var(--ps3-card); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; margin-bottom: 8px; position: relative; overflow: hidden;">
+              <!-- Emoji background -->
+              <div style="position: absolute; right: 40px; top: 50%; transform: translateY(-50%); font-size: 3rem; opacity: 0.08; pointer-events: none; user-select: none; z-index: 0;">${emoji}</div>
+              <div class="flex-between-center" style="position: relative; z-index: 1;">
                 <div>
                   <div class="text-75 text-muted">${i.item_id}</div>
                   <div style="font-size: 0.85rem; font-weight: 600;">${i.item_name}</div>
-                  <div class="text-sm text-yellow">Role: ${i.role}</div>
+                  <div class="text-sm" style="color: var(--ps3-silver);">${categoryLabel} • ${i.role}</div>
                 </div>
                 <button onclick="event.stopPropagation(); removeItemFromStation('${i.item_id}')" style="background: var(--ps3-border); color: var(--ps3-red); border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">❌</button>
               </div>
             </div>
-          `).join('');
+          `}).join('');
         }
 
-        // Populate category dropdowns with available items (not already in this station)
-        const availableItems = inventory.filter(i => i.is_active !== 0 && !items.find(si => si.item_id === i.id));
-        populateCategoryDropdowns(availableItems);
-
-        // Clear any existing dynamic rows (reset to default state)
+        // Clear any existing dynamic rows (reset to default state) FIRST
         resetCategoryRows();
+
+        // Fetch all paired items to filter from other stations
+        try {
+          const pairedResponse = await api('GET', '/inventory/paired-items');
+          globalPairedItemIds = pairedResponse.paired_items || [];
+        } catch (e) {
+          console.warn('[Station] Could not fetch paired items:', e);
+          globalPairedItemIds = [];
+        }
+
+        // Then populate category dropdowns with available items
+        // Filter: active + not in current station + not paired to other stations
+        const currentStationItemIds = items.map(si => si.item_id);
+        const availableItems = inventory.filter(i => {
+          if (i.is_active === 0) return false;
+          // Allow items already in this station (for display purposes)
+          if (currentStationItemIds.includes(i.id)) return true;
+          // Filter out items paired to other stations
+          if (globalPairedItemIds.includes(i.id)) return false;
+          return true;
+        });
+        populateCategoryDropdowns(availableItems, currentStationItemIds);
 
         // Populate swap dropdowns
         const swapItemSelect = document.getElementById('swapItemId');
@@ -9832,7 +9941,7 @@
     }
 
     // Category-based item management functions
-    function populateCategoryDropdowns(availableItems) {
+    function populateCategoryDropdowns(availableItems, currentStationItemIds = []) {
       // Filter items by category
       const konsolItems = availableItems.filter(i => i.id.startsWith('PS3-'));
       const tvItems = availableItems.filter(i => i.id.startsWith('TV-'));
@@ -9842,23 +9951,35 @@
       const plugItems = availableItems.filter(i => i.id.startsWith('PLUG-'));
       const lainnyaItems = availableItems.filter(i => i.id.startsWith('LAIN-'));
 
-      // Populate each dropdown
-      populateSelect('.konsol-select', konsolItems, 'Pilih Konsol...');
-      populateSelect('.tv-select', tvItems, 'Pilih TV...');
-      populateSelect('.stik-select', stikItems, 'Pilih Stik...');
-      populateSelect('.charger-select', chargerItems, 'Pilih Charger/USB...');
-      populateSelect('.hdmi-select', hdmiItems, 'Pilih HDMI...');
-      populateSelect('.plug-select', plugItems, 'Pilih Power...');
-      populateSelect('.lainnya-select', lainnyaItems, 'Pilih Item...');
+      // Populate each dropdown (mark current station items as disabled)
+      populateSelect('.konsol-select', konsolItems, 'Pilih Konsol...', currentStationItemIds);
+      populateSelect('.tv-select', tvItems, 'Pilih TV...', currentStationItemIds);
+      populateSelect('.stik-select', stikItems, 'Pilih Stik...', currentStationItemIds);
+      populateSelect('.charger-select', chargerItems, 'Pilih Charger/USB...', currentStationItemIds);
+      populateSelect('.hdmi-select', hdmiItems, 'Pilih HDMI...', currentStationItemIds);
+      populateSelect('.plug-select', plugItems, 'Pilih Power...', currentStationItemIds);
+      populateSelect('.lainnya-select', lainnyaItems, 'Pilih Item...', currentStationItemIds);
     }
 
-    function populateSelect(selector, items, placeholder) {
+    function populateSelect(selector, items, placeholder, currentStationItemIds = []) {
       const selects = document.querySelectorAll(selector);
-      const options = `<option value="">${placeholder}</option>` +
-        items.map(i => `<option value="${i.id}">${i.id} - ${i.name}</option>`).join('');
       selects.forEach(select => {
         const currentValue = select.value;
-        select.innerHTML = options;
+        
+        // Build options HTML
+        let optionsHtml = `<option value="">${placeholder}</option>`;
+        
+        items.forEach(i => {
+          const isInCurrentStation = currentStationItemIds.includes(i.id);
+          const disabled = isInCurrentStation ? 'disabled' : '';
+          const prefix = isInCurrentStation ? '✓ ' : '';
+          const suffix = isInCurrentStation ? ' (terpasang)' : '';
+          const style = isInCurrentStation ? 'style="color: var(--ps3-green); opacity: 0.7;"' : '';
+          
+          optionsHtml += `<option value="${i.id}" ${disabled} ${style}>${prefix}${i.id} - ${i.name}${suffix}</option>`;
+        });
+        
+        select.innerHTML = optionsHtml;
         select.value = currentValue;
       });
     }
@@ -9907,13 +10028,14 @@
                          category === 'lainnya' ? 'Pilih Item...' : 'Pilih...';
 
       // Get available items for this category
+      // Filter: active + not paired to other stations
       const availableItems = inventory.filter(i => {
         if (!i.is_active) return false;
         if (category === 'stik') return i.id.startsWith('STK-');
         if (category === 'charger') return i.id.startsWith('USB-');
         if (category === 'lainnya') return i.id.startsWith('LAIN-');
         return false;
-      });
+      }).filter(i => !globalPairedItemIds.includes(i.id)); // Filter out items paired to other stations
 
       // Filter out already selected items in other rows
       const selectedInCategory = Array.from(document.querySelectorAll('.' + selectClass))
@@ -9936,45 +10058,33 @@
     function removeCategoryRow(button) {
       const row = button.closest('.category-row');
       if (row) {
-        const category = row.dataset.category;
-        const container = document.getElementById(category + 'Rows');
-        const rows = container.querySelectorAll('.category-row');
-
-        // Check minimum requirements
-        if (category === 'stik' && rows.length <= 1) {
-          showToast('Stik minimal 1', 'error');
-          return;
-        }
-        if (category === 'charger' && rows.length <= 1) {
-          showToast('Kabel Charger minimal 1', 'error');
-          return;
-        }
-        // Lainnya can be 0
-
         row.remove();
+        // No minimum requirements - user can have 0 stik/charger if they want
+        // (though station won't be "SIAP" until complete)
       }
     }
 
     function validateCategoryForm() {
       const errors = [];
 
-      // Check required fields (exactly 1)
+      // Check for duplicate categories in the form itself
       const konsol = document.querySelector('.konsol-select')?.value;
       const tv = document.querySelector('.tv-select')?.value;
       const hdmi = document.querySelector('.hdmi-select')?.value;
       const plug = document.querySelector('.plug-select')?.value;
-
-      if (!konsol) errors.push('Konsol wajib diisi (1 unit)');
-      if (!tv) errors.push('TV wajib diisi (1 unit)');
-      if (!hdmi) errors.push('Kabel HDMI wajib diisi (1 unit)');
-      if (!plug) errors.push('Kabel Power wajib diisi (1 unit)');
-
-      // Check minimum requirements
-      const stikValues = Array.from(document.querySelectorAll('.stik-select')).map(s => s.value).filter(v => v);
-      const chargerValues = Array.from(document.querySelectorAll('.charger-select')).map(s => s.value).filter(v => v);
-
-      if (stikValues.length < 1) errors.push('Stik minimal 1 unit');
-      if (chargerValues.length < 1) errors.push('Kabel Charger minimal 1 unit');
+      
+      // Only validate if user is trying to add something that already exists in the form
+      // (This will be caught by backend too, but we can warn early)
+      
+      // Check if at least one item is selected
+      const hasAnyItem = konsol || tv || hdmi || plug || 
+        Array.from(document.querySelectorAll('.stik-select')).some(s => s.value) ||
+        Array.from(document.querySelectorAll('.charger-select')).some(s => s.value) ||
+        Array.from(document.querySelectorAll('.lainnya-select')).some(s => s.value);
+      
+      if (!hasAnyItem) {
+        errors.push('Pilih minimal 1 item untuk disimpan');
+      }
 
       return errors;
     }
