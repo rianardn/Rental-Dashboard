@@ -2174,9 +2174,12 @@
 
         <!-- Search & Filter Panel -->
         <div id="trashScheduleSearchPanel" class="card-surface-br12-p16-mb16">
-          <!-- Search Bar -->
+          <!-- Search Bar with Autocomplete -->
           <div class="relative mb-12">
-            <input type="text" id="trashScheduleSearchInput" placeholder="🔍 Cari TX ID Jadwal (contoh: PSJ-0001)..." class="input-search" oninput="debouncedSearchTrashSchedule()">
+            <div class="autocomplete-wrapper">
+              <input type="text" id="trashScheduleSearchInput" placeholder="🔍 Cari TX ID Jadwal (contoh: PSJ-0001)..." class="input-search" oninput="onTrashScheduleSearchInput()" onfocus="showTrashScheduleIdSuggestions()" autocomplete="off">
+              <div id="trashScheduleIdSuggestions" class="suggestions-dropdown" style="display: none;"></div>
+            </div>
             <span class="icon-abs-left">🔍</span>
           </div>
 
@@ -2194,10 +2197,13 @@
           <!-- Expandable Filter Panel -->
           <div id="trashScheduleFilterPanel" class="hidden border-top pt-12" style="display: none;">
             <div class="filter-grid">
-              <!-- Customer Filter -->
+              <!-- Customer Filter with Autocomplete -->
               <div class="filter-field">
                 <label>👤 Nama Penyewa</label>
-                <input type="text" id="trashScheduleFilterCustomer" placeholder="Ketik nama..." oninput="debouncedSearchTrashSchedule()">
+                <div class="autocomplete-wrapper">
+                  <input type="text" id="trashScheduleFilterCustomer" placeholder="Ketik nama..." oninput="onTrashScheduleCustomerInput()" onfocus="showTrashScheduleCustomerSuggestions()" autocomplete="off">
+                  <div id="trashScheduleCustomerSuggestions" class="suggestions-dropdown" style="display: none;"></div>
+                </div>
               </div>
 
               <!-- Unit Filter -->
@@ -2246,10 +2252,22 @@
                 </div>
               </div>
 
-              <!-- Note Filter -->
+              <!-- Note Filter with Autocomplete -->
               <div class="filter-field grid-full">
                 <label>📝 Catatan</label>
-                <input type="text" id="trashScheduleFilterNote" placeholder="Cari dalam catatan..." oninput="debouncedSearchTrashSchedule()">
+                <div class="autocomplete-wrapper">
+                  <input type="text" id="trashScheduleFilterNote" placeholder="Cari dalam catatan..." oninput="onTrashScheduleNoteInput()" onfocus="showTrashScheduleNoteSuggestions()" autocomplete="off">
+                  <div id="trashScheduleNoteSuggestions" class="suggestions-dropdown" style="display: none;"></div>
+                </div>
+              </div>
+
+              <!-- Delete Reason Filter with Autocomplete -->
+              <div class="filter-field grid-full">
+                <label>💬 Alasan Dibatalkan</label>
+                <div class="autocomplete-wrapper">
+                  <input type="text" id="trashScheduleFilterReason" placeholder="Cari alasan pembatalan..." oninput="onTrashScheduleReasonInput()" onfocus="showTrashScheduleReasonSuggestions()" autocomplete="off">
+                  <div id="trashScheduleReasonSuggestions" class="suggestions-dropdown" style="display: none;"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -2281,9 +2299,12 @@
 
         <!-- Search & Filter Panel -->
         <div id="historySearchPanel" class="card-surface-br12-p16-mb16">
-          <!-- Search Bar -->
+          <!-- Search Bar with Autocomplete -->
           <div class="relative mb-12">
-            <input type="text" id="historySearchInput" placeholder="🔍 Cari TX ID Jadwal (contoh: PSJ-0001)..." class="input-search" oninput="debouncedSearchHistory()">
+            <div class="autocomplete-wrapper">
+              <input type="text" id="historySearchInput" placeholder="🔍 Cari TX ID Jadwal (contoh: PSJ-0001)..." class="input-search" oninput="onHistorySearchInput()" onfocus="showHistoryIdSuggestions()" autocomplete="off">
+              <div id="historyIdSuggestions" class="suggestions-dropdown" style="display: none;"></div>
+            </div>
             <span class="icon-abs-left">🔍</span>
           </div>
 
@@ -2301,10 +2322,13 @@
           <!-- Expandable Filter Panel -->
           <div id="historyFilterPanel" class="hidden border-top pt-12" style="display: none;">
             <div class="filter-grid">
-              <!-- Customer Filter -->
+              <!-- Customer Filter with Autocomplete -->
               <div class="filter-field">
                 <label>👤 Nama Penyewa</label>
-                <input type="text" id="historyFilterCustomer" placeholder="Ketik nama..." oninput="debouncedSearchHistory()">
+                <div class="autocomplete-wrapper">
+                  <input type="text" id="historyFilterCustomer" placeholder="Ketik nama..." oninput="onHistoryCustomerInput()" onfocus="showHistoryCustomerSuggestions()" autocomplete="off">
+                  <div id="historyCustomerSuggestions" class="suggestions-dropdown" style="display: none;"></div>
+                </div>
               </div>
 
               <!-- Unit Filter -->
@@ -2353,10 +2377,13 @@
                 </div>
               </div>
 
-              <!-- Note Filter -->
+              <!-- Note Filter with Autocomplete -->
               <div class="filter-field grid-full">
                 <label>📝 Catatan</label>
-                <input type="text" id="historyFilterNote" placeholder="Cari dalam catatan..." oninput="debouncedSearchHistory()">
+                <div class="autocomplete-wrapper">
+                  <input type="text" id="historyFilterNote" placeholder="Cari dalam catatan..." oninput="onHistoryNoteInput()" onfocus="showHistoryNoteSuggestions()" autocomplete="off">
+                  <div id="historyNoteSuggestions" class="suggestions-dropdown" style="display: none;"></div>
+                </div>
               </div>
             </div>
           </div>

@@ -3807,10 +3807,252 @@
       startTimeTo: '',
       durationMin: '',
       durationMax: '',
-      note: ''
+      note: '',
+      reason: ''
     };
     let trashScheduleSearchDebounceTimer = null;
     let cachedTrashScheduleData = [];
+
+    // ═════════════════ AUTOCOMPLETE SUGGESTIONS ═════════════════
+    // ─── History Autocomplete Functions ───
+    function getHistoryIdSuggestions(query) {
+      if (!query || !cachedHistoryData.length) return [];
+      const q = query.toLowerCase();
+      const ids = [...new Set(cachedHistoryData.map(s => s.scheduleId).filter(Boolean))];
+      return ids.filter(id => id.toLowerCase().includes(q)).slice(0, 10);
+    }
+
+    function getHistoryCustomerSuggestions(query) {
+      if (!query || !cachedHistoryData.length) return [];
+      const q = query.toLowerCase();
+      const names = [...new Set(cachedHistoryData.map(s => s.customer).filter(Boolean))];
+      return names.filter(name => name.toLowerCase().includes(q)).slice(0, 10);
+    }
+
+    function getHistoryNoteSuggestions(query) {
+      if (!query || !cachedHistoryData.length) return [];
+      const q = query.toLowerCase();
+      const notes = [...new Set(cachedHistoryData.map(s => s.note).filter(Boolean))];
+      return notes.filter(note => note.toLowerCase().includes(q)).slice(0, 10);
+    }
+
+    function showHistorySuggestions(inputId, suggestionsId, suggestions, onSelect) {
+      const input = document.getElementById(inputId);
+      const dropdown = document.getElementById(suggestionsId);
+      if (!dropdown || !input) return;
+
+      if (!suggestions || suggestions.length === 0) {
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      dropdown.innerHTML = suggestions.map(s => `
+        <div class="suggestion-item" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--ps3-border);" onmousedown="event.preventDefault(); ${onSelect}('${s.replace(/'/g, "\\'")}')">${escapeHtml(s)}</div>
+      `).join('');
+      dropdown.style.display = 'block';
+    }
+
+    function hideHistorySuggestions(suggestionsId) {
+      const dropdown = document.getElementById(suggestionsId);
+      if (dropdown) dropdown.style.display = 'none';
+    }
+
+    function onHistorySearchInput() {
+      const query = document.getElementById('historySearchInput').value;
+      const suggestions = getHistoryIdSuggestions(query);
+      showHistorySuggestions('historySearchInput', 'historyIdSuggestions', suggestions, 'selectHistoryId');
+      debouncedSearchHistory();
+    }
+
+    function selectHistoryId(value) {
+      document.getElementById('historySearchInput').value = value;
+      hideHistorySuggestions('historyIdSuggestions');
+      searchHistory();
+    }
+
+    function showHistoryIdSuggestions() {
+      const query = document.getElementById('historySearchInput').value;
+      if (query.length >= 2) {
+        const suggestions = getHistoryIdSuggestions(query);
+        showHistorySuggestions('historySearchInput', 'historyIdSuggestions', suggestions, 'selectHistoryId');
+      }
+    }
+
+    function onHistoryCustomerInput() {
+      const query = document.getElementById('historyFilterCustomer').value;
+      const suggestions = getHistoryCustomerSuggestions(query);
+      showHistorySuggestions('historyFilterCustomer', 'historyCustomerSuggestions', suggestions, 'selectHistoryCustomer');
+      debouncedSearchHistory();
+    }
+
+    function selectHistoryCustomer(value) {
+      document.getElementById('historyFilterCustomer').value = value;
+      hideHistorySuggestions('historyCustomerSuggestions');
+      searchHistory();
+    }
+
+    function showHistoryCustomerSuggestions() {
+      const query = document.getElementById('historyFilterCustomer').value;
+      if (query.length >= 2) {
+        const suggestions = getHistoryCustomerSuggestions(query);
+        showHistorySuggestions('historyFilterCustomer', 'historyCustomerSuggestions', suggestions, 'selectHistoryCustomer');
+      }
+    }
+
+    function onHistoryNoteInput() {
+      const query = document.getElementById('historyFilterNote').value;
+      const suggestions = getHistoryNoteSuggestions(query);
+      showHistorySuggestions('historyFilterNote', 'historyNoteSuggestions', suggestions, 'selectHistoryNote');
+      debouncedSearchHistory();
+    }
+
+    function selectHistoryNote(value) {
+      document.getElementById('historyFilterNote').value = value;
+      hideHistorySuggestions('historyNoteSuggestions');
+      searchHistory();
+    }
+
+    function showHistoryNoteSuggestions() {
+      const query = document.getElementById('historyFilterNote').value;
+      if (query.length >= 2) {
+        const suggestions = getHistoryNoteSuggestions(query);
+        showHistorySuggestions('historyFilterNote', 'historyNoteSuggestions', suggestions, 'selectHistoryNote');
+      }
+    }
+
+    // ─── Trash Schedule Autocomplete Functions ───
+    function getTrashScheduleIdSuggestions(query) {
+      if (!query || !cachedTrashScheduleData.length) return [];
+      const q = query.toLowerCase();
+      const ids = [...new Set(cachedTrashScheduleData.map(s => s.scheduleId).filter(Boolean))];
+      return ids.filter(id => id.toLowerCase().includes(q)).slice(0, 10);
+    }
+
+    function getTrashScheduleCustomerSuggestions(query) {
+      if (!query || !cachedTrashScheduleData.length) return [];
+      const q = query.toLowerCase();
+      const names = [...new Set(cachedTrashScheduleData.map(s => s.customer).filter(Boolean))];
+      return names.filter(name => name.toLowerCase().includes(q)).slice(0, 10);
+    }
+
+    function getTrashScheduleNoteSuggestions(query) {
+      if (!query || !cachedTrashScheduleData.length) return [];
+      const q = query.toLowerCase();
+      const notes = [...new Set(cachedTrashScheduleData.map(s => s.note).filter(Boolean))];
+      return notes.filter(note => note.toLowerCase().includes(q)).slice(0, 10);
+    }
+
+    function getTrashScheduleReasonSuggestions(query) {
+      if (!query || !cachedTrashScheduleData.length) return [];
+      const q = query.toLowerCase();
+      const reasons = [...new Set(cachedTrashScheduleData.map(s => s.deleteReason).filter(Boolean))];
+      return reasons.filter(reason => reason.toLowerCase().includes(q)).slice(0, 10);
+    }
+
+    function showTrashScheduleSuggestions(inputId, suggestionsId, suggestions, onSelect) {
+      const input = document.getElementById(inputId);
+      const dropdown = document.getElementById(suggestionsId);
+      if (!dropdown || !input) return;
+
+      if (!suggestions || suggestions.length === 0) {
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      dropdown.innerHTML = suggestions.map(s => `
+        <div class="suggestion-item" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--ps3-border);" onmousedown="event.preventDefault(); ${onSelect}('${s.replace(/'/g, "\\'")}')">${escapeHtml(s)}</div>
+      `).join('');
+      dropdown.style.display = 'block';
+    }
+
+    function hideTrashScheduleSuggestions(suggestionsId) {
+      const dropdown = document.getElementById(suggestionsId);
+      if (dropdown) dropdown.style.display = 'none';
+    }
+
+    function onTrashScheduleSearchInput() {
+      const query = document.getElementById('trashScheduleSearchInput').value;
+      const suggestions = getTrashScheduleIdSuggestions(query);
+      showTrashScheduleSuggestions('trashScheduleSearchInput', 'trashScheduleIdSuggestions', suggestions, 'selectTrashScheduleId');
+      debouncedSearchTrashSchedule();
+    }
+
+    function selectTrashScheduleId(value) {
+      document.getElementById('trashScheduleSearchInput').value = value;
+      hideTrashScheduleSuggestions('trashScheduleIdSuggestions');
+      searchTrashSchedule();
+    }
+
+    function showTrashScheduleIdSuggestions() {
+      const query = document.getElementById('trashScheduleSearchInput').value;
+      if (query.length >= 2) {
+        const suggestions = getTrashScheduleIdSuggestions(query);
+        showTrashScheduleSuggestions('trashScheduleSearchInput', 'trashScheduleIdSuggestions', suggestions, 'selectTrashScheduleId');
+      }
+    }
+
+    function onTrashScheduleCustomerInput() {
+      const query = document.getElementById('trashScheduleFilterCustomer').value;
+      const suggestions = getTrashScheduleCustomerSuggestions(query);
+      showTrashScheduleSuggestions('trashScheduleFilterCustomer', 'trashScheduleCustomerSuggestions', suggestions, 'selectTrashScheduleCustomer');
+      debouncedSearchTrashSchedule();
+    }
+
+    function selectTrashScheduleCustomer(value) {
+      document.getElementById('trashScheduleFilterCustomer').value = value;
+      hideTrashScheduleSuggestions('trashScheduleCustomerSuggestions');
+      searchTrashSchedule();
+    }
+
+    function showTrashScheduleCustomerSuggestions() {
+      const query = document.getElementById('trashScheduleFilterCustomer').value;
+      if (query.length >= 2) {
+        const suggestions = getTrashScheduleCustomerSuggestions(query);
+        showTrashScheduleSuggestions('trashScheduleFilterCustomer', 'trashScheduleCustomerSuggestions', suggestions, 'selectTrashScheduleCustomer');
+      }
+    }
+
+    function onTrashScheduleNoteInput() {
+      const query = document.getElementById('trashScheduleFilterNote').value;
+      const suggestions = getTrashScheduleNoteSuggestions(query);
+      showTrashScheduleSuggestions('trashScheduleFilterNote', 'trashScheduleNoteSuggestions', suggestions, 'selectTrashScheduleNote');
+      debouncedSearchTrashSchedule();
+    }
+
+    function selectTrashScheduleNote(value) {
+      document.getElementById('trashScheduleFilterNote').value = value;
+      hideTrashScheduleSuggestions('trashScheduleNoteSuggestions');
+      searchTrashSchedule();
+    }
+
+    function showTrashScheduleNoteSuggestions() {
+      const query = document.getElementById('trashScheduleFilterNote').value;
+      if (query.length >= 2) {
+        const suggestions = getTrashScheduleNoteSuggestions(query);
+        showTrashScheduleSuggestions('trashScheduleFilterNote', 'trashScheduleNoteSuggestions', suggestions, 'selectTrashScheduleNote');
+      }
+    }
+
+    function onTrashScheduleReasonInput() {
+      const query = document.getElementById('trashScheduleFilterReason').value;
+      const suggestions = getTrashScheduleReasonSuggestions(query);
+      showTrashScheduleSuggestions('trashScheduleFilterReason', 'trashScheduleReasonSuggestions', suggestions, 'selectTrashScheduleReason');
+      debouncedSearchTrashSchedule();
+    }
+
+    function selectTrashScheduleReason(value) {
+      document.getElementById('trashScheduleFilterReason').value = value;
+      hideTrashScheduleSuggestions('trashScheduleReasonSuggestions');
+      searchTrashSchedule();
+    }
+
+    function showTrashScheduleReasonSuggestions() {
+      const query = document.getElementById('trashScheduleFilterReason').value;
+      if (query.length >= 2) {
+        const suggestions = getTrashScheduleReasonSuggestions(query);
+        showTrashScheduleSuggestions('trashScheduleFilterReason', 'trashScheduleReasonSuggestions', suggestions, 'selectTrashScheduleReason');
+      }
+    }
 
     // ─── History (Completed Schedules) Filter Functions ───
     function toggleHistoryFilters() {
@@ -4058,6 +4300,7 @@
       trashScheduleSearchState.durationMin = document.getElementById('trashScheduleFilterDurationMin').value;
       trashScheduleSearchState.durationMax = document.getElementById('trashScheduleFilterDurationMax').value;
       trashScheduleSearchState.note = document.getElementById('trashScheduleFilterNote').value.trim();
+      trashScheduleSearchState.reason = document.getElementById('trashScheduleFilterReason').value.trim();
     }
 
     function countActiveTrashScheduleFilters() {
@@ -4069,6 +4312,7 @@
       if (trashScheduleSearchState.startTimeFrom || trashScheduleSearchState.startTimeTo) count++;
       if (trashScheduleSearchState.durationMin || trashScheduleSearchState.durationMax) count++;
       if (trashScheduleSearchState.note) count++;
+      if (trashScheduleSearchState.reason) count++;
       return count;
     }
 
@@ -4094,7 +4338,8 @@
         startTimeTo: '',
         durationMin: '',
         durationMax: '',
-        note: ''
+        note: '',
+        reason: ''
       };
       // Clear UI
       document.getElementById('trashScheduleSearchInput').value = '';
@@ -4109,6 +4354,7 @@
       document.getElementById('trashScheduleFilterDurationMin').value = '';
       document.getElementById('trashScheduleFilterDurationMax').value = '';
       document.getElementById('trashScheduleFilterNote').value = '';
+      document.getElementById('trashScheduleFilterReason').value = '';
       document.getElementById('trashScheduleFilterPanel').style.display = 'none';
       updateTrashScheduleFilterBadge();
       searchTrashSchedule();
@@ -4157,6 +4403,12 @@
         if (trashScheduleSearchState.note) {
           const noteLower = trashScheduleSearchState.note.toLowerCase();
           if (!(item.note || '').toLowerCase().includes(noteLower)) return false;
+        }
+
+        // Reason filter
+        if (trashScheduleSearchState.reason) {
+          const reasonLower = trashScheduleSearchState.reason.toLowerCase();
+          if (!(item.deleteReason || '').toLowerCase().includes(reasonLower)) return false;
         }
 
         return true;
