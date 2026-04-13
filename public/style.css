@@ -2524,3 +2524,159 @@
 .modal-sm { max-width: 420px; }
 
 .z-3000 { z-index: 3000; }
+
+/* ═══════════════════════════════════════════════════════════════
+   BATCH 9: POSITIONING & Z-INDEX
+═══════════════════════════════════════════════════════════════ */
+
+/* Z-index utilities */
+.z-3500 { z-index: 3500; }
+.z-100 { z-index: 100; }
+.z-1 { z-index: 1; }
+
+/* Position utilities */
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+
+/* Positioning helpers */
+.abs-center-y { position: absolute; top: 50%; transform: translateY(-50%); }
+.abs-top-left { position: absolute; top: -8px; left: 10px; }
+.abs-left-12 { position: absolute; left: 12px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   BATCH 7: BACKGROUND & BORDER PATTERNS
+═══════════════════════════════════════════════════════════════ */
+
+/* Empty state messages */
+.empty-state-p20 {
+  text-align: center;
+  color: var(--ps3-muted);
+  padding: 20px;
+}
+
+.empty-state-p15 {
+  text-align: center;
+  color: var(--ps3-muted);
+  padding: 15px;
+}
+
+.empty-state-p30 {
+  text-align: center;
+  color: var(--ps3-muted);
+  padding: 30px;
+}
+
+/* Form label patterns */
+.form-label-block-75 {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ps3-silver);
+  margin-bottom: 5px;
+}
+
+.form-label-block-85 {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+}
+
+.form-label-block-75-mb4 {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  color: var(--ps3-muted);
+}
+
+/* Badge/Tag absolute positioned */
+.badge-abs-top {
+  position: absolute;
+  top: -8px;
+  left: 10px;
+  background: var(--ps3-red-danger);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  z-index: 1;
+}
+
+/* Icon absolute positioned */
+.icon-abs-left {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+}
+
+/* Select/button with icon padding */
+.select-with-icon {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  background: var(--ps3-surface);
+  border: 1px solid var(--ps3-border);
+  border-radius: 6px;
+  color: var(--ps3-text);
+  cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADDITIONAL UTILITY CLASSES (for Batch 7-9)
+═══════════════════════════════════════════════════════════════ */
+
+/* Flex with padding composite */
+.flex-p14 {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.flex-p12 {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+/* Font weight + color combos */
+.fw-600 { font-weight: 600; }
+.fw-700 { font-weight: 700; }
+
+/* Font size utilities */
+.fs-9 { font-size: 0.9rem; }
+.fs-1 { font-size: 1rem; }
+
+/* Color utilities */
+.text-muted-7 { color: var(--ps3-muted); font-size: 0.7rem; }
+.text-muted-8 { color: var(--ps3-muted); font-size: 0.8rem; }
+.text-green { color: var(--ps3-green); }
+.text-primary { color: var(--ps3-text); }
+
+/* Margin utilities */
+.mt-2 { margin-top: 2px; }
+.mt-4 { margin-top: 4px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mt-20 { margin-top: 20px; }
+
+.mb-4 { margin-bottom: 4px; }
+.mb-5 { margin-bottom: 5px; }
+.mb-6 { margin-bottom: 6px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-15 { margin-bottom: 15px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-20 { margin-bottom: 20px; }
+
+/* Border-radius */
+.br-6 { border-radius: 6px; }
+.br-10 { border-radius: 10px; }
+
+/* Overflow */
+.scroll-y { overflow-y: auto; }
+.max-h-300 { max-height: 300px; }
+.max-h-400 { max-height: 400px; }

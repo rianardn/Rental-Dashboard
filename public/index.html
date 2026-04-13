@@ -240,8 +240,8 @@
         </div>
         <p class="text-8 text-muted mb-15">Kelola booking penyewa yang akan datang</p>
         
-        <div id="scheduleList" style="max-height: 400px; overflow-y: auto;">
-          <p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada jadwal booking</p>
+        <div id="scheduleList" class="max-h-400 scroll-y">
+          <p class="empty-state-p20">Belum ada jadwal booking</p>
         </div>
         
         <!-- Tombol Lihat Semua di LUAR area scroll -->
@@ -330,8 +330,8 @@
           </div>
 
           <!-- Inventory List -->
-          <div id="inventoryList" style="max-height: 350px; overflow-y: auto; margin-bottom: 15px;">
-            <p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada item inventori</p>
+          <div id="inventoryList" class="max-h-400 scroll-y mb-15">
+            <p class="empty-state-p20">Belum ada item inventori</p>
           </div>
 
           <button class="btn" onclick="openModal('modalAddInventory')" class="w-full">➕ Tambah Item Inventori</button>
@@ -511,7 +511,7 @@
           <h3>📦 Pilih Data untuk Diekspor</h3>
         </div>
         <div class="modal-body">
-          <p class="label-xs-muted" style="margin-bottom: 16px;">Pilih jenis data transaksi yang ingin disertakan dalam ekspor:</p>
+          <p class="label-xs-muted mb-16">Pilih jenis data transaksi yang ingin disertakan dalam ekspor:</p>
           
           <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
             <label class="label-row-12">
@@ -549,7 +549,7 @@
           <h3 id="modalExportHistoryTitle">📜 Pilih Data untuk Diekspor</h3>
         </div>
         <div class="modal-body">
-          <p id="modalExportHistoryDesc" class="label-xs-muted" style="margin-bottom: 16px;">Pilih data yang ingin disertakan dalam ekspor (minimal pilih satu):</p>
+          <p id="modalExportHistoryDesc" class="label-xs-muted mb-16">Pilih data yang ingin disertakan dalam ekspor (minimal pilih satu):</p>
           
           <div class="flex-col-gap-12-mb20">
             <!-- Transaction History (Active Data) -->
@@ -968,7 +968,7 @@
   </div>
 
   <!-- ═════════════════ MODAL: COMPLETE RUNNING SCHEDULE ═════════════════ -->
-  <div id="modalCompleteSchedule" class="modal" style="z-index: 3500;">
+  <div id="modalCompleteSchedule" class="modal z-3500">
     <div class="modal-content">
       <div class="modal-header">
         <h3>Selesaikan Sewa - <span id="completeScheduleUnitName"></span></h3>
@@ -1007,7 +1007,7 @@
   </div>
 
   <!-- ═════════════════ MODAL: SELECT UNIT FOR SCHEDULE ═════════════════ -->
-  <div id="modalScheduleUnit" class="modal" style="z-index: 3500;">
+  <div id="modalScheduleUnit" class="modal z-3500">
     <div class="modal-content">
       <div class="modal-header">
         <h3>▶️ Mulai dari Jadwal</h3>
@@ -1095,7 +1095,7 @@
 
       <!-- Step 2: Edit fields -->
       <div id="editStep2" style="padding: 20px; display: none;">
-        <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Masukkan nilai baru:</p>
+        <p class="mb-16 fs-9 text-muted">Masukkan nilai baru:</p>
 
         <div id="editFieldCustomer" class="hidden-mb16">
           <label class="form-group-label">Nama Penyewa</label>
@@ -1189,17 +1189,17 @@
 
       <!-- Step 3: Edit History -->
       <div id="editStep3" style="padding: 20px; display: none;">
-        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
-          <button id="btnShowEditLogs" class="btn btn-sm" onclick="showEditLogsTab()" style="flex: 1; background: var(--ps3-red);">✏️ Riwayat Edit</button>
+        <div class="flex-gap-10-mb16">
+          <button id="btnShowEditLogs" class="btn btn-sm flex-1" onclick="showEditLogsTab()" style="background: var(--ps3-red);">✏️ Riwayat Edit</button>
         </div>
-        <div id="editHistoryList" style="max-height: 300px; overflow-y: auto;"></div>
-        <button class="btn-confirm" onclick="closeModal('modalEditTransaction')" style="margin-top: 16px; width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Tutup</button>
+        <div id="editHistoryList" class="max-h-300-scroll"></div>
+        <button class="btn-confirm mt16-w100-p14" onclick="closeModal('modalEditTransaction')">Tutup</button>
       </div>
     </div>
   </div>
 
   <!-- Edit Schedule Modal -->
-  <div id="modalEditSchedule" class="modal" style="z-index: 3500;">
+  <div id="modalEditSchedule" class="modal z-3500">
     <div class="modal-content modal-sm">
       <div class="modal-header">
         <div class="modal-title">✏️ Edit Jadwal</div>
@@ -1245,7 +1245,7 @@
 
       <!-- Step 2: Edit selected fields -->
       <div id="editScheduleStep2" style="display: none; padding: 20px;">
-        <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Masukkan nilai baru:</p>
+        <p class="mb-16 fs-9 text-muted">Masukkan nilai baru:</p>
 
         <div id="editScheduleFieldCustomer" class="hidden-mb16">
           <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Nama Penyewa</label>
@@ -2071,8 +2071,8 @@
     </div>
   </div>
 
-  <!-- Modal: Tambah Jadwal Booking -->
-  <div id="modalAddSchedule" class="modal z-3000">
+<!-- Modal: Tambah Jadwal -->
+<div class="modal-overlay hidden-p20" id="modal-add-schedule">
     <div class="modal-content" style="max-width: 420px; max-height: 90vh; overflow-y: auto;">
       <div class="modal-header">
         <div class="modal-title">➕ Tambah Jadwal Booking</div>
@@ -2793,7 +2793,7 @@
   </div>
 
   <!-- Modal: Pembatalan Jadwal dengan Alasan -->
-  <div id="modalCancelSchedule" class="modal" style="z-index: 3500;">
+  <div id="modalCancelSchedule" class="modal z-3500">
     <div class="modal-content" style="max-width: 480px; max-height: 85vh; overflow-y: auto;">
       <div class="modal-header" style="background: var(--ps3-red);">
         <div class="modal-title">Pembatalan Jadwal</div>
