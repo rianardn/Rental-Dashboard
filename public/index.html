@@ -12582,26 +12582,7 @@
         if (!byCategory[cat]) byCategory[cat] = [];
         byCategory[cat].push(item);
       });
-      
-      const categoryLabels = {
-        konsol: '🎮 Konsol',
-        tv: '📺 TV',
-        stik: '🕹️ Stik',
-        kabel_hdmi: '🔌 HDMI',
-        kabel_usb: '🔌 Kabel USB',
-        kabel_power: '🔌 Kabel Plug',
-        furniture: '🪑 Furniture',
-        aksesoris: '🎒 Aksesoris',
-        lainnya: '📦 Lainnya'
-      };
-      
-      const conditionLabels = {
-        baik: '🟢 Baik',
-        rusak: '🔴 Rusak',
-        perbaikan: '🟡 Perbaikan',
-        rusak_total: '⚫ Rusak Total'
-      };
-      
+
       container.innerHTML = Object.entries(byCategory).map(([cat, items]) => `
         <div style="margin-bottom: 15px;">
           <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ps3-muted); margin-bottom: 8px; border-bottom: 1px solid var(--ps3-border); padding-bottom: 4px;">
@@ -12651,6 +12632,33 @@
     let currentStationDetail = null;
     let stations = [];
     let inventoryAnalytics = null;
+
+    // Inventory Constants (Global Scope)
+    const categoryLabels = {
+      konsol: '🎮 Konsol',
+      tv: '📺 TV',
+      stik: '🕹️ Stik',
+      kabel_hdmi: '🔌 HDMI',
+      kabel_usb: '🔌 Kabel USB',
+      kabel_power: '🔌 Kabel Plug',
+      furniture: '🪑 Furniture',
+      aksesoris: '🎒 Aksesoris',
+      lainnya: '📦 Lainnya'
+    };
+
+    const conditionLabels = {
+      baik: '🟢 Baik',
+      rusak: '🔴 Rusak',
+      perbaikan: '🟡 Perbaikan',
+      rusak_total: '⚫ Rusak Total'
+    };
+
+    const conditionColors = {
+      baik: 'var(--ps3-green)',
+      rusak: 'var(--ps3-red)',
+      perbaikan: 'var(--ps3-yellow)',
+      rusak_total: '#666'
+    };
 
     // Tab Switching
     function switchInventoryTab(tab) {
@@ -12711,32 +12719,6 @@
         if (!byCategory[cat]) byCategory[cat] = [];
         byCategory[cat].push(item);
       });
-
-      const categoryLabels = {
-        konsol: '🎮 Konsol',
-        tv: '📺 TV',
-        stik: '🕹️ Stik',
-        kabel_hdmi: '🔌 HDMI',
-        kabel_usb: '🔌 USB',
-        kabel_power: '🔌 Plug',
-        furniture: '🪑 Furniture',
-        aksesoris: '🎒 Aksesoris',
-        lainnya: '📦 Lainnya'
-      };
-
-      const conditionLabels = {
-        baik: '🟢 Baik',
-        rusak: '🔴 Rusak',
-        perbaikan: '🟡 Perbaikan',
-        rusak_total: '⚫ Rusak Total'
-      };
-
-      const conditionColors = {
-        baik: 'var(--ps3-green)',
-        rusak: 'var(--ps3-red)',
-        perbaikan: 'var(--ps3-yellow)',
-        rusak_total: '#666'
-      };
 
       container.innerHTML = Object.entries(byCategory).map(([cat, items]) => `
         <div style="margin-bottom: 15px;">
