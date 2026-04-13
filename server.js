@@ -481,6 +481,20 @@ if (db) {
   }
 }
 
+// Runtime migration: Add unitId column to schedules table if not exists
+if (db) {
+  try {
+    const schedulesInfo = db.prepare(`PRAGMA table_info(schedules)`).all();
+    const hasUnitId = schedulesInfo.find(c => c.name === 'unitId');
+    if (!hasUnitId) {
+      db.prepare(`ALTER TABLE schedules ADD COLUMN unitId INTEGER`).run();
+      console.log('[DB] Migration: Added unitId column to schedules');
+    }
+  } catch (e) {
+    console.error('[DB] Migration error for unitId column:', e.message);
+  }
+}
+
 // Runtime migration: Add scheduledEndDate and scheduledEndTime columns to schedules table
 if (db) {
   try {
@@ -539,6 +553,92 @@ if (db) {
   }
 }
 
+// Migration: Add station_id and station_name columns to schedules table
+if (db) {
+  try {
+    const schedulesInfo = db.prepare(`PRAGMA table_info(schedules)`).all();
+    
+    // Add station_id column if not exists
+    const hasStationId = schedulesInfo.find(c => c.name === 'station_id');
+    if (!hasStationId) {
+      db.prepare(`ALTER TABLE schedules ADD COLUMN station_id TEXT`).run();
+      console.log('[DB] Migration: Added station_id column to schedules');
+    }
+    
+    // Add station_name column if not exists
+    const hasStationName = schedulesInfo.find(c => c.name === 'station_name');
+    if (!hasStationName) {
+      db.prepare(`ALTER TABLE schedules ADD COLUMN station_name TEXT`).run();
+      console.log('[DB] Migration: Added station_name column to schedules');
+    }
+    
+    // Migrate data from unitId/unitName to station_id/station_name
+    if (hasStationId || hasStationName) {
+      const schedulesToMigrate = db.prepare(`
+        SELECT id, unitId, unitName FROM schedules 
+        WHERE station_id IS NULL AND unitId IS NOT NULL
+      `).all();
+      
+      if (schedulesToMigrate.length > 0) {
+        console.log(`[DB] Migration: Migrating ${schedulesToMigrate.length} schedules from unit to station`);
+        for (const schedule of schedulesToMigrate) {
+          // Map unitId to station_id format (e.g., "PS-1" or numeric)
+          const stationId = schedule.unitId ? `HOME-${String(schedule.unitId).padStart(2, '0')}` : null;
+          db.prepare(`UPDATE schedules SET station_id = ?, station_name = ? WHERE id = ?`).run(
+            stationId, schedule.unitName, schedule.id
+          );
+        }
+        console.log('[DB] Migration: Migrated unit data to station data in schedules');
+      }
+    }
+  } catch (e) {
+    console.error('[DB] Migration error for station columns in schedules:', e.message);
+  }
+}
+
+// Migration: Add station_id and station_name columns to transactions table
+if (db) {
+  try {
+    const txInfo = db.prepare(`PRAGMA table_info(transactions)`).all();
+    
+    // Add station_id column if not exists
+    const hasStationId = txInfo.find(c => c.name === 'station_id');
+    if (!hasStationId) {
+      db.prepare(`ALTER TABLE transactions ADD COLUMN station_id TEXT`).run();
+      console.log('[DB] Migration: Added station_id column to transactions');
+    }
+    
+    // Add station_name column if not exists
+    const hasStationName = txInfo.find(c => c.name === 'station_name');
+    if (!hasStationName) {
+      db.prepare(`ALTER TABLE transactions ADD COLUMN station_name TEXT`).run();
+      console.log('[DB] Migration: Added station_name column to transactions');
+    }
+    
+    // Migrate data from unitId/unitName to station_id/station_name
+    if (hasStationId || hasStationName) {
+      const txsToMigrate = db.prepare(`
+        SELECT id, unitId, unitName FROM transactions 
+        WHERE station_id IS NULL AND unitId IS NOT NULL
+      `).all();
+      
+      if (txsToMigrate.length > 0) {
+        console.log(`[DB] Migration: Migrating ${txsToMigrate.length} transactions from unit to station`);
+        for (const tx of txsToMigrate) {
+          // Map unitId to station_id format
+          const stationId = tx.unitId ? `HOME-${String(tx.unitId).padStart(2, '0')}` : null;
+          db.prepare(`UPDATE transactions SET station_id = ?, station_name = ? WHERE id = ?`).run(
+            stationId, tx.unitName, tx.id
+          );
+        }
+        console.log('[DB] Migration: Migrated unit data to station data in transactions');
+      }
+    }
+  } catch (e) {
+    console.error('[DB] Migration error for station columns in transactions:', e.message);
+  }
+}
+
 // Migration: Add phone column to transactions table if not exists
 if (db) {
   try {
@@ -550,6 +650,59 @@ if (db) {
     }
   } catch (e) {
     console.error('[DB] Migration error for transactions phone column:', e.message);
+  }
+}
+
+// Migration: Add runtime tracking columns to inventory_pairings for Dashboard integration
+if (db) {
+  try {
+    const pairingsInfo = db.prepare(`PRAGMA table_info(inventory_pairings)`).all();
+    
+    // Add active column if not exists
+    const hasActive = pairingsInfo.find(c => c.name === 'active');
+    if (!hasActive) {
+      db.prepare(`ALTER TABLE inventory_pairings ADD COLUMN active INTEGER DEFAULT 0`).run();
+      console.log('[DB] Migration: Added active column to inventory_pairings');
+    }
+    
+    // Add start_time column if not exists
+    const hasStartTime = pairingsInfo.find(c => c.name === 'start_time');
+    if (!hasStartTime) {
+      db.prepare(`ALTER TABLE inventory_pairings ADD COLUMN start_time INTEGER`).run();
+      console.log('[DB] Migration: Added start_time column to inventory_pairings');
+    }
+    
+    // Add current_customer column if not exists
+    const hasCustomer = pairingsInfo.find(c => c.name === 'current_customer');
+    if (!hasCustomer) {
+      db.prepare(`ALTER TABLE inventory_pairings ADD COLUMN current_customer TEXT`).run();
+      console.log('[DB] Migration: Added current_customer column to inventory_pairings');
+    }
+    
+    // Add current_duration column if not exists
+    const hasDuration = pairingsInfo.find(c => c.name === 'current_duration');
+    if (!hasDuration) {
+      db.prepare(`ALTER TABLE inventory_pairings ADD COLUMN current_duration INTEGER DEFAULT 0`).run();
+      console.log('[DB] Migration: Added current_duration column to inventory_pairings');
+    }
+    
+    // Add current_note column if not exists
+    const hasNote = pairingsInfo.find(c => c.name === 'current_note');
+    if (!hasNote) {
+      db.prepare(`ALTER TABLE inventory_pairings ADD COLUMN current_note TEXT`).run();
+      console.log('[DB] Migration: Added current_note column to inventory_pairings');
+    }
+    
+    // Add linked_schedule_id column if not exists
+    const hasLinkedSchedule = pairingsInfo.find(c => c.name === 'linked_schedule_id');
+    if (!hasLinkedSchedule) {
+      db.prepare(`ALTER TABLE inventory_pairings ADD COLUMN linked_schedule_id INTEGER`).run();
+      console.log('[DB] Migration: Added linked_schedule_id column to inventory_pairings');
+    }
+    
+    console.log('[DB] Migration: Station runtime tracking columns ready');
+  } catch (e) {
+    console.error('[DB] Migration error for station runtime columns:', e.message);
   }
 }
 
@@ -1368,8 +1521,254 @@ app.post('/api/units/:id/stop', requireAuth, (req, res) => {
   res.json({ ok: true, tx });
 });
 
+// ═══════════════════════════════════════════════════════════════
+// STATION OPERATIONS (Dashboard Integration)
+// These endpoints mirror the unit operations but work with inventory_pairings
+// ═══════════════════════════════════════════════════════════════
+
+// Start a station session (similar to starting a unit)
+app.post('/api/stations/:id/start', requireAuth, (req, res) => {
+  const id = req.params.id;
+  const station = db.prepare('SELECT * FROM inventory_pairings WHERE id = ?').get(id);
+  if (!station) return res.status(404).json({ error: 'Stasiun tidak ditemukan' });
+  if (station.active) return res.status(400).json({ error: 'Stasiun sudah aktif' });
+
+  // Validate station has all required items
+  const stationItems = db.prepare(`
+    SELECT i.category FROM inventory_pairing_items pi
+    JOIN inventory_items i ON pi.item_id = i.id
+    WHERE pi.pairing_id = ?
+  `).all(id);
+  
+  const itemCounts = {
+    ps3: stationItems.filter(i => i.category === 'ps3').length,
+    tv: stationItems.filter(i => i.category === 'tv').length,
+    stik: stationItems.filter(i => i.category === 'stik').length,
+    usb: stationItems.filter(i => i.category === 'usb').length,
+    hdmi: stationItems.filter(i => i.category === 'hdmi').length,
+    plug: stationItems.filter(i => i.category === 'plug').length
+  };
+  
+  const validationErrors = [];
+  if (itemCounts.ps3 !== 1) validationErrors.push(`Konsol PS3: ${itemCounts.ps3}/1 (wajib tepat 1)`);
+  if (itemCounts.tv !== 1) validationErrors.push(`TV: ${itemCounts.tv}/1 (wajib tepat 1)`);
+  if (itemCounts.stik < 1) validationErrors.push(`Stik: ${itemCounts.stik}/1 (minimal 1)`);
+  if (itemCounts.usb < 1) validationErrors.push(`Kabel Charger: ${itemCounts.usb}/1 (minimal 1)`);
+  if (itemCounts.hdmi !== 1) validationErrors.push(`Kabel HDMI: ${itemCounts.hdmi}/1 (wajib tepat 1)`);
+  if (itemCounts.plug !== 1) validationErrors.push(`Kabel Power: ${itemCounts.plug}/1 (wajib tepat 1)`);
+  
+  if (validationErrors.length > 0) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Stasiun belum siap digunakan',
+      validationErrors: validationErrors,
+      message: 'Stasiun tidak dapat digunakan karena item belum lengkap: ' + validationErrors.join(', ')
+    });
+  }
+
+  const { customer = '', duration = 0, note = '', linkedScheduleId = null } = req.body;
+  const startTime = Date.now();
+  const durationMinutes = parseInt(duration) || 0;
+
+  // Conflict detection: Check if there are pending schedules for this station
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+
+  // Calculate end time of this new rental
+  const rentalEndTime = new Date(startTime + durationMinutes * 60000);
+  const rentalEndDate = rentalEndTime.toISOString().split('T')[0];
+
+  // Find pending schedules for this station that would overlap
+  const pendingSchedules = db.prepare(
+    `SELECT * FROM schedules
+     WHERE station_id = ? AND status = 'pending'
+     AND scheduledDate >= ?`
+  ).all(id, today);
+
+  for (const schedule of pendingSchedules) {
+    if (!schedule.scheduledTime) continue;
+
+    // Parse schedule datetime range with explicit timezone +07:00 (WIB)
+    let scheduleStart = new Date(`${schedule.scheduledDate}T${schedule.scheduledTime}:00+07:00`);
+    let scheduleEnd;
+
+    if (schedule.scheduledEndDate && schedule.scheduledEndTime) {
+      scheduleEnd = new Date(`${schedule.scheduledEndDate}T${schedule.scheduledEndTime}:00+07:00`);
+    } else if (schedule.duration) {
+      scheduleEnd = new Date(scheduleStart.getTime() + schedule.duration * 60000);
+    } else {
+      continue;
+    }
+
+    // Check overlap: (StartA < EndB) && (EndA > StartB)
+    const newRentalEnd = startTime + (durationMinutes * 60000);
+    const scheduleStartUTC = scheduleStart.getTime();
+    const scheduleEndUTC = scheduleEnd.getTime();
+    const overlap = (startTime < scheduleEndUTC) && (newRentalEnd > scheduleStartUTC);
+
+    if (overlap) {
+      const scheduleEndStr = schedule.scheduledEndTime ||
+        String(scheduleEnd.getHours()).padStart(2, '0') + ':' +
+        String(scheduleEnd.getMinutes()).padStart(2, '0');
+
+      // Cek apakah booking sudah masuk waktunya
+      const nowTimestamp = Date.now();
+      const isCurrentTimeInBooking = (nowTimestamp >= scheduleStartUTC) && (nowTimestamp <= scheduleEndUTC);
+
+      if (isCurrentTimeInBooking) {
+        // Booking sudah masuk waktu - user bisa membatalkan untuk walk-in customer
+        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' };
+        const bookingStartStr = new Date(scheduleStartUTC).toLocaleTimeString('id-ID', timeOptions);
+        const bookingEndStr = new Date(scheduleEndUTC).toLocaleTimeString('id-ID', timeOptions);
+
+        return res.status(409).json({
+          ok: false,
+          requiresCancellation: true,
+          conflictType: 'active_booking',
+          schedule: {
+            id: schedule.id,
+            scheduleId: schedule.scheduleId,
+            customer: schedule.customer,
+            phone: schedule.phone,
+            scheduledDate: schedule.scheduledDate,
+            scheduledTime: schedule.scheduledTime,
+            scheduledEndDate: schedule.scheduledEndDate || schedule.scheduledDate,
+            scheduledEndTime: scheduleEndStr,
+            date: schedule.scheduledDate,
+            startTime: schedule.scheduledTime,
+            endTime: scheduleEndStr,
+            startTimestamp: scheduleStartUTC,
+            endTimestamp: scheduleEndUTC,
+            station_name: schedule.station_name,
+            note: schedule.note,
+            status: schedule.status || 'pending',
+            duration: schedule.duration
+          },
+          message: `Stasiun memiliki booking aktif dari <strong>${schedule.customer}</strong> (<strong>${bookingStartStr}-${bookingEndStr}</strong>). Aktifkan stasiun akan membatalkan booking ini.`,
+          error: `Stasiun memiliki booking aktif dari ${schedule.customer} pada ${schedule.scheduledDate} pukul ${schedule.scheduledTime}-${scheduleEndStr}. Aktifkan stasiun akan membatalkan booking ini.`
+        });
+      } else {
+        // Booking di masa depan - tidak bisa aktivasi
+        return res.status(409).json({
+          ok: false,
+          error: `Tidak dapat mengaktifkan stasiun. Ada booking dari ${schedule.customer} pada ${schedule.scheduledDate} pukul ${schedule.scheduledTime}-${scheduleEndStr}. Silakan pilih waktu lain atau batalkan booking terlebih dahulu.`
+        });
+      }
+    }
+  }
+
+  // Update station with active session data
+  db.prepare(`UPDATE inventory_pairings 
+    SET active = 1, start_time = ?, current_customer = ?, current_duration = ?, current_note = ?, linked_schedule_id = ? 
+    WHERE id = ?`)
+    .run(startTime, customer, duration, note, linkedScheduleId, id);
+
+  // If linked to a schedule, update schedule status to 'running'
+  if (linkedScheduleId) {
+    try {
+      db.prepare('UPDATE schedules SET status = ?, station_id = ?, station_name = ? WHERE id = ?')
+        .run('running', id, station.name, linkedScheduleId);
+      console.log(`[Schedule] Linked schedule ${linkedScheduleId} started on station ${id}`);
+    } catch (e) {
+      console.error('[Schedule] Error updating schedule status:', e.message);
+    }
+  }
+
+  res.json({ 
+    ok: true, 
+    station: db.prepare('SELECT *, active as active, start_time as startTime, current_customer as customer, current_duration as duration, current_note as note, linked_schedule_id as linkedScheduleId FROM inventory_pairings WHERE id = ?').get(id)
+  });
+});
+
+// Stop a station session (similar to stopping a unit)
+app.post('/api/stations/:id/stop', requireAuth, (req, res) => {
+  const id = req.params.id;
+  const station = db.prepare('SELECT * FROM inventory_pairings WHERE id = ?').get(id);
+  if (!station) return res.status(404).json({ error: 'Stasiun tidak ditemukan' });
+  if (!station.active) return res.status(400).json({ error: 'Stasiun tidak aktif' });
+
+  const settings = getSettings();
+  const elMin = Math.floor((Date.now() - station.start_time) / 60000);
+  const cost = Math.round((elMin / 60) * settings.ratePerHour);
+  const { paid = cost, payment = 'cash' } = req.body;
+
+  const dateKey = getWIBDateISO();
+
+  const tx = {
+    id: generateRevenueId(),
+    station_id: id,
+    station_name: station.name,
+    customer: station.current_customer,
+    startTime: station.start_time,
+    endTime: Date.now(),
+    durationMin: elMin,
+    paid: paid,
+    payment: payment,
+    note: station.current_note,
+    date: dateKey
+  };
+
+  // Insert transaction with station_id/station_name
+  db.prepare(`INSERT INTO transactions 
+    (id, station_id, station_name, customer, startTime, endTime, durationMin, paid, payment, note, date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(tx.id, tx.station_id, tx.station_name, tx.customer, tx.startTime, tx.endTime, tx.durationMin, tx.paid, tx.payment, tx.note, tx.date);
+
+  // If linked to a schedule, update schedule status to 'completed'
+  if (station.linked_schedule_id) {
+    try {
+      db.prepare('UPDATE schedules SET status = ? WHERE id = ?')
+        .run('completed', station.linked_schedule_id);
+      console.log(`[Schedule] Linked schedule ${station.linked_schedule_id} marked as completed`);
+    } catch (e) {
+      console.error('[Schedule] Error updating schedule status on stop:', e.message);
+    }
+  }
+
+  // Reset station to inactive
+  db.prepare(`UPDATE inventory_pairings 
+    SET active = 0, start_time = NULL, current_customer = '', current_duration = 0, current_note = '', linked_schedule_id = NULL 
+    WHERE id = ?`).run(id);
+
+  // ═══ INVENTORY USAGE TRACKING ═══
+  const hoursUsed = elMin / 60;
+  if (hoursUsed > 0) {
+    try {
+      // Get all items in this pairing
+      const pairingItems = db.prepare(`
+        SELECT pi.item_id, pi.role
+        FROM inventory_pairing_items pi
+        JOIN inventory_items i ON pi.item_id = i.id
+        WHERE pi.pairing_id = ? AND i.is_active = 1
+      `).all(id);
+
+      // Record usage for each item
+      const today = getWIBDateISO();
+      pairingItems.forEach(item => {
+        const existing = db.prepare(`
+          SELECT id, hours_used FROM inventory_usage 
+          WHERE item_id = ? AND date = ? AND pairing_id = ?
+        `).get(item.item_id, today, id);
+
+        if (existing) {
+          db.prepare(`UPDATE inventory_usage SET hours_used = hours_used + ? WHERE id = ?`).run(hoursUsed, existing.id);
+        } else {
+          db.prepare(`INSERT INTO inventory_usage (item_id, date, hours_used, source, pairing_id) VALUES (?, ?, ?, 'auto', ?)`)
+            .run(item.item_id, today, hoursUsed, id);
+        }
+      });
+
+      console.log(`[Inventory] Tracked ${hoursUsed.toFixed(2)} hours for ${pairingItems.length} items in station ${id}`);
+    } catch (e) {
+      console.error('[Inventory] Error tracking usage:', e.message);
+    }
+  }
+
+  res.json({ ok: true, tx });
+});
+
 // ─── SCHEDULE-UNIT INTEGRATION ─────────────────────────────────
-// Start a unit from a schedule (booking → active unit)
+// Start a session from a schedule (booking → active transaction)
 app.post('/api/schedules/:id/start-unit', requireAuth, (req, res) => {
   const scheduleId = parseInt(req.params.id);
   const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
@@ -1378,31 +1777,44 @@ app.post('/api/schedules/:id/start-unit', requireAuth, (req, res) => {
   if (schedule.status === 'completed') return res.status(400).json({ error: 'Jadwal sudah selesai' });
   if (schedule.status === 'cancelled') return res.status(400).json({ error: 'Jadwal sudah dibatalkan' });
   
-  // Use provided unitId or schedule's unitId
-  const { unitId = schedule.unitId } = req.body;
-  if (!unitId) return res.status(400).json({ error: 'Pilih unit terlebih dahulu' });
+  // Use provided station_id or schedule's station_id
+  const { station_id = schedule.station_id } = req.body;
+  if (!station_id) return res.status(400).json({ error: 'Pilih stasiun terlebih dahulu' });
   
-  const unit = db.prepare('SELECT * FROM units WHERE id = ?').get(unitId);
-  if (!unit) return res.status(404).json({ error: 'Unit tidak ditemukan' });
-  if (unit.active) return res.status(400).json({ error: 'Unit sudah aktif' });
+  // Get station name
+  const station = db.prepare('SELECT * FROM inventory_pairings WHERE id = ?').get(station_id);
+  const stationName = station ? station.name : schedule.station_name || station_id;
   
   // Prepare note with [TX_ID] prefix (e.g., [PSJ00018])
   const txId = schedule.scheduleId || scheduleId;
   const bookingNote = schedule.note ? `[${txId}] - ${schedule.note}` : `[${txId}]`;
   const startTime = Date.now();
   
-  // Start the unit with schedule data
-  db.prepare('UPDATE units SET active = 1, startTime = ?, customer = ?, duration = ?, note = ?, linkedScheduleId = ? WHERE id = ?')
-    .run(startTime, schedule.customer, schedule.duration || 0, bookingNote, scheduleId, unitId);
+  // Create a transaction record for the active session
+  const txStmt = db.prepare(`
+    INSERT INTO transactions (unitId, unitName, customer, startTime, duration, paid, payment, note, date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const txResult = txStmt.run(
+    station_id,  // Use station_id as unitId for now (migration compatibility)
+    stationName,
+    schedule.customer,
+    startTime,
+    schedule.duration || 0,
+    0, // paid - will be set when completing
+    'cash',
+    bookingNote,
+    new Date().toISOString().split('T')[0]
+  );
   
-  // Update schedule status to running
-  db.prepare('UPDATE schedules SET status = ?, unitId = ?, unitName = ? WHERE id = ?')
-    .run('running', unitId, unit.name, scheduleId);
+  // Update schedule status to running with station info
+  db.prepare('UPDATE schedules SET status = ?, station_id = ?, station_name = ? WHERE id = ?')
+    .run('running', station_id, stationName, scheduleId);
   
   res.json({ 
     ok: true, 
-    message: 'Unit dimulai dari jadwal',
-    unit: db.prepare('SELECT * FROM units WHERE id = ?').get(unitId),
+    message: 'Sesi dimulai dari jadwal',
+    station: { id: station_id, name: stationName },
     schedule: db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId)
   });
 });
@@ -1745,6 +2157,8 @@ app.put('/api/transactions/:id', requireAuth, (req, res) => {
     'note': 'note',
     'unitId': 'unitId',
     'unitName': 'unitName',
+    'station_id': 'station_id',
+    'station_name': 'station_name',
     'timestamp': 'startTime',  // Maps to startTime
     'startTime': 'startTime',
     'endTime': 'endTime'
@@ -1811,6 +2225,17 @@ app.put('/api/transactions/:id', requireAuth, (req, res) => {
         const unit = db.prepare('SELECT name FROM units WHERE id = ?').get(unitId);
         if (unit && unit.name !== tx.unitName) {
           trackChange('unitName', 'unitName', unit.name);
+        }
+      }
+    } else if (field === 'station_id' && value !== undefined) {
+      const stationId = value; // station_id is TEXT, not INTEGER
+      if (stationId !== tx.station_id) {
+        trackChange('station_id', 'station_id', stationId);
+        // Lookup station name from inventory_pairings
+        const station = db.prepare('SELECT name FROM inventory_pairings WHERE id = ?').get(stationId);
+        const stationName = station ? station.name : (inputUpdates.station_name || tx.station_name || stationId);
+        if (stationName !== tx.station_name) {
+          trackChange('station_name', 'station_name', stationName);
         }
       }
     } else {
@@ -2195,12 +2620,12 @@ app.get('/api/schedules', requireAuth, (req, res) => {
 });
 
 app.post('/api/schedules', requireAuth, (req, res) => {
-  const { customer, phone, unitId, unitName, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status } = req.body;
+  const { customer, phone, station_id, station_name, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status } = req.body;
   const durationMinutes = parseInt(duration) || 0;
   
-  // Conflict detection: Check if unit is already booked for overlapping time
+  // Conflict detection: Check if station is already booked for overlapping time
   // Uses scheduledEndDate and scheduledEndTime if available, otherwise fall back to calculation
-  if (unitId && scheduledDate && scheduledTime) {
+  if (station_id && scheduledDate && scheduledTime) {
     let newStartDateTime, newEndDateTime;
 
     // Parse new booking dates/times with explicit timezone handling
@@ -2223,13 +2648,13 @@ app.post('/api/schedules', requireAuth, (req, res) => {
     // ===== CHECK 1: Conflict with existing pending/running schedules =====
     const existingSchedules = db.prepare(
       `SELECT * FROM schedules
-       WHERE unitId = ? AND status NOT IN ('cancelled', 'completed')
+       WHERE station_id = ? AND status NOT IN ('cancelled', 'completed')
        AND (
          (scheduledDate <= ? AND (scheduledEndDate >= ? OR scheduledDate = ?))
          OR
          (scheduledEndDate IS NULL AND scheduledDate >= ? AND scheduledDate <= ?)
        )`
-    ).all(unitId, scheduledEndDate || scheduledDate, scheduledDate, scheduledDate, scheduledDate, scheduledEndDate || scheduledDate);
+    ).all(station_id, scheduledEndDate || scheduledDate, scheduledDate, scheduledDate, scheduledDate, scheduledEndDate || scheduledDate);
 
     for (const existing of existingSchedules) {
       if (!existing.scheduledTime) continue;
@@ -2255,45 +2680,7 @@ app.post('/api/schedules', requireAuth, (req, res) => {
           String(existEndDateTime.getMinutes()).padStart(2, '0');
         return res.status(409).json({
           ok: false,
-          error: `Unit sudah dibooking oleh ${existing.customer} pukul ${existing.scheduledTime}-${existEndTimeStr}. Silakan pilih unit lain atau waktu berbeda.`
-        });
-      }
-    }
-
-    // ===== CHECK 2: Conflict with currently active unit =====
-    const unitIdInt = parseInt(unitId);
-    const activeUnit = db.prepare('SELECT * FROM units WHERE id = ? AND active = 1').get(unitIdInt);
-
-    if (activeUnit) {
-      // Calculate active rental times
-      const activeStartTime = parseInt(activeUnit.startTime); // Unix timestamp (UTC ms)
-      const activeDuration = parseInt(activeUnit.duration) || 0;
-
-      let activeEndTime;
-      if (activeDuration > 0) {
-        activeEndTime = activeStartTime + (activeDuration * 60000);
-      } else {
-        // No duration set - block any booking that starts before 24 hours from start
-        activeEndTime = activeStartTime + (24 * 60 * 60000);
-      }
-
-      // newStartDateTime already parsed with +07:00 timezone, getTime() returns UTC timestamp
-      const newStartTimestamp = newStartDateTime.getTime();
-      const newEndTimestamp = newEndDateTime.getTime();
-
-      // Check overlap: (StartA < EndB) && (EndA > StartB)
-      const overlap = (newStartTimestamp < activeEndTime) && (newEndTimestamp > activeStartTime);
-
-      if (overlap) {
-        // Format time in WIB timezone (Asia/Jakarta)
-        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' };
-        const activeStartStr = new Date(activeStartTime).toLocaleTimeString('id-ID', timeOptions);
-        const activeEndStr = activeDuration > 0
-          ? new Date(activeEndTime).toLocaleTimeString('id-ID', timeOptions)
-          : 'selesai';
-        return res.status(409).json({
-          ok: false,
-          error: `Unit sedang aktif oleh ${activeUnit.customer || 'pelanggan'} dari pukul ${activeStartStr}${activeDuration > 0 ? '-' + activeEndStr : ''}. Silakan pilih unit lain atau waktu berbeda.`
+          error: `Stasiun sudah dibooking oleh ${existing.customer} pukul ${existing.scheduledTime}-${existEndTimeStr}. Silakan pilih stasiun lain atau waktu berbeda.`
         });
       }
     }
@@ -2303,15 +2690,15 @@ app.post('/api/schedules', requireAuth, (req, res) => {
   const scheduleId = generateScheduleId();
 
   const stmt = db.prepare(`
-    INSERT INTO schedules (scheduleId, customer, phone, unitId, unitName, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status)
+    INSERT INTO schedules (scheduleId, customer, phone, station_id, station_name, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
     scheduleId,
     customer,
     phone || '',
-    unitId || null,
-    unitName || '',
+    station_id || null,
+    station_name || '',
     scheduledDate,
     scheduledTime || '',
     scheduledEndDate || scheduledDate,
@@ -2326,7 +2713,7 @@ app.post('/api/schedules', requireAuth, (req, res) => {
 
 app.put('/api/schedules/:id', requireAuth, (req, res) => {
   const scheduleId = req.params.id;
-  const { customer, phone, unitId, unitName, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status, reason, editReason, editedBy } = req.body;
+  const { customer, phone, station_id, station_name, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status, reason, editReason, editedBy } = req.body;
   const durationMinutes = parseInt(duration) || 0;
   const editReasonText = reason || editReason || '-';
   const editor = editedBy || 'admin';
@@ -2383,8 +2770,8 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
   // Use existing values if not provided (partial update support)
   const updateCustomer = customer !== undefined ? customer : existing.customer;
   const updatePhone = phone !== undefined ? phone : existing.phone;
-  const updateUnitId = unitId !== undefined ? (unitId || null) : existing.unitId;
-  const updateUnitName = unitName !== undefined ? unitName : existing.unitName;
+  const updateStationId = station_id !== undefined ? (station_id || null) : existing.station_id;
+  const updateStationName = station_name !== undefined ? station_name : existing.station_name;
   const updateScheduledDate = scheduledDate !== undefined ? scheduledDate : existing.scheduledDate;
   const updateScheduledTime = scheduledTime !== undefined ? scheduledTime : existing.scheduledTime;
   const updateScheduledEndDate = scheduledEndDate !== undefined ? scheduledEndDate : existing.scheduledEndDate;
@@ -2409,8 +2796,8 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
   // Track all field changes
   trackChange('customer', existing.customer, updateCustomer);
   trackChange('phone', existing.phone, updatePhone);
-  trackChange('unitId', existing.unitId, updateUnitId);
-  trackChange('unitName', existing.unitName, updateUnitName);
+  trackChange('station_id', existing.station_id, updateStationId);
+  trackChange('station_name', existing.station_name, updateStationName);
   trackChange('scheduledDate', existing.scheduledDate, updateScheduledDate);
   trackChange('scheduledTime', existing.scheduledTime, updateScheduledTime);
   trackChange('scheduledEndDate', existing.scheduledEndDate, updateScheduledEndDate);
@@ -2419,8 +2806,8 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
   trackChange('note', existing.note, updateNote);
   trackChange('status', existing.status, updateStatus);
   
-  // Conflict detection for updates: Check if unit is already booked for overlapping time (excluding current schedule)
-  if (updateUnitId && updateScheduledDate && updateScheduledTime) {
+  // Conflict detection for updates: Check if station is already booked for overlapping time (excluding current schedule)
+  if (updateStationId && updateScheduledDate && updateScheduledTime) {
     let newStartDateTime = new Date(`${updateScheduledDate}T${updateScheduledTime}`);
     let newEndDateTime;
     
@@ -2433,13 +2820,13 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
     if (newEndDateTime) {
       const existingSchedules = db.prepare(
         `SELECT * FROM schedules 
-         WHERE unitId = ? AND status NOT IN ('cancelled', 'completed') AND id != ?
+         WHERE station_id = ? AND status NOT IN ('cancelled', 'completed') AND id != ?
          AND (
            (scheduledDate <= ? AND (scheduledEndDate >= ? OR scheduledDate = ?))
            OR 
            (scheduledEndDate IS NULL AND scheduledDate >= ? AND scheduledDate <= ?)
          )`
-      ).all(updateUnitId, scheduleId, updateScheduledEndDate || updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledEndDate || updateScheduledDate);
+      ).all(updateStationId, scheduleId, updateScheduledEndDate || updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledDate, updateScheduledEndDate || updateScheduledDate);
       
       for (const exist of existingSchedules) {
         if (!exist.scheduledTime) continue;
@@ -2463,7 +2850,7 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
             String(existEndDateTime.getMinutes()).padStart(2, '0');
           return res.status(409).json({
             ok: false,
-            error: `Unit sudah dibooking oleh ${exist.customer} pukul ${exist.scheduledTime}-${existEndTimeStr}. Silakan pilih unit lain atau waktu berbeda.`
+            error: `Stasiun sudah dibooking oleh ${exist.customer} pukul ${exist.scheduledTime}-${existEndTimeStr}. Silakan pilih stasiun lain atau waktu berbeda.`
           });
         }
       }
@@ -2472,15 +2859,15 @@ app.put('/api/schedules/:id', requireAuth, (req, res) => {
   
   const stmt = db.prepare(`
     UPDATE schedules SET
-      customer = ?, phone = ?, unitId = ?, unitName = ?, scheduledDate = ?, scheduledTime = ?,
+      customer = ?, phone = ?, station_id = ?, station_name = ?, scheduledDate = ?, scheduledTime = ?,
       scheduledEndDate = ?, scheduledEndTime = ?, duration = ?, note = ?, status = ?
     WHERE id = ?
   `);
   stmt.run(
     updateCustomer,
     updatePhone || '',
-    updateUnitId,
-    updateUnitName || '',
+    updateStationId,
+    updateStationName || '',
     updateScheduledDate,
     updateScheduledTime || '',
     updateScheduledEndDate || updateScheduledDate,
@@ -2518,6 +2905,8 @@ app.get('/api/schedules/deleted', requireAuth, (req, res) => {
         json_extract(recordData, '$.phone') as phone,
         json_extract(recordData, '$.unitId') as unitId,
         json_extract(recordData, '$.unitName') as unitName,
+        json_extract(recordData, '$.station_id') as station_id,
+        json_extract(recordData, '$.station_name') as station_name,
         json_extract(recordData, '$.scheduledDate') as scheduledDate,
         json_extract(recordData, '$.scheduledTime') as scheduledTime,
         json_extract(recordData, '$.scheduledEndDate') as scheduledEndDate,
@@ -3003,16 +3392,59 @@ app.get('/api/pairings', requireAuth, (req, res) => {
   const { is_active } = req.query;
   let sql = 'SELECT * FROM inventory_pairings';
   const params = [];
-  
+
   if (is_active !== undefined) {
     sql += ' WHERE is_active = ?';
     params.push(is_active === 'true' ? 1 : 0);
   }
-  
+
   sql += ' ORDER BY id';
-  
+
   const pairings = db.prepare(sql).all(...params);
-  
+
+  // Helper function to validate station requirements
+  function validateStationItems(items) {
+    const counts = {
+      ps3: items.filter(i => i.category === 'ps3').length,
+      tv: items.filter(i => i.category === 'tv').length,
+      stik: items.filter(i => i.category === 'stik').length,
+      usb: items.filter(i => i.category === 'usb').length,
+      hdmi: items.filter(i => i.category === 'hdmi').length,
+      plug: items.filter(i => i.category === 'plug').length,
+      lainnya: items.filter(i => i.category === 'lainnya').length
+    };
+
+    const errors = [];
+
+    // Konsol (PS3) = 1 (wajib tepat 1)
+    if (counts.ps3 === 0) errors.push('Konsol PS3 belum terpasang (wajib 1)');
+    else if (counts.ps3 > 1) errors.push(`Konsol PS3 terpasang ${counts.ps3} (wajib tepat 1, lepas ${counts.ps3 - 1} konsol)`);
+
+    // TV = 1 (wajib tepat 1)
+    if (counts.tv === 0) errors.push('TV belum terpasang (wajib 1)');
+    else if (counts.tv > 1) errors.push(`TV terpasang ${counts.tv} (wajib tepat 1, lepas ${counts.tv - 1} TV)`);
+
+    // Stik >= 1 (minimal 1)
+    if (counts.stik === 0) errors.push('Stik belum terpasang (minimal 1)');
+
+    // Kabel Charger (USB) >= 1
+    if (counts.usb === 0) errors.push('Kabel Charger USB belum terpasang (minimal 1)');
+
+    // Kabel Plug = 1
+    if (counts.plug === 0) errors.push('Kabel Power/Plug belum terpasang (wajib 1)');
+    else if (counts.plug > 1) errors.push(`Kabel Power/Plug terpasang ${counts.plug} (wajib tepat 1, lepas ${counts.plug - 1})`);
+
+    // Kabel HDMI = 1
+    if (counts.hdmi === 0) errors.push('Kabel HDMI belum terpasang (wajib 1)');
+    else if (counts.hdmi > 1) errors.push(`Kabel HDMI terpasang ${counts.hdmi} (wajib tepat 1, lepas ${counts.hdmi - 1})`);
+
+    return {
+      isValid: errors.length === 0,
+      errors: errors,
+      counts: counts
+    };
+  }
+
   // Get items for each pairing
   const result = pairings.map(p => {
     const items = db.prepare(`
@@ -3022,13 +3454,25 @@ app.get('/api/pairings', requireAuth, (req, res) => {
       WHERE pi.pairing_id = ?
       ORDER BY pi.role
     `).all(p.id);
-    
+
     const totalValue = items.reduce((sum, i) => sum + (i.purchase_cost || 0), 0);
-    
-    return { 
-      ...p, 
+    const validation = validateStationItems(items);
+
+    return {
+      ...p,
       item_count: items.length,
       total_value: totalValue,
+      // Runtime tracking fields for Dashboard integration
+      active: p.active || 0,
+      startTime: p.start_time,
+      customer: p.current_customer,
+      duration: p.current_duration,
+      note: p.current_note,
+      linkedScheduleId: p.linked_schedule_id,
+      // Validation status
+      is_valid: validation.isValid,
+      validation_errors: validation.errors,
+      item_counts: validation.counts,
       items: items.map(i => ({
         item_id: i.item_id,
         item_name: i.name,
@@ -3038,7 +3482,7 @@ app.get('/api/pairings', requireAuth, (req, res) => {
       }))
     };
   });
-  
+
   res.json(result);
 });
 
@@ -3046,6 +3490,49 @@ app.get('/api/pairings', requireAuth, (req, res) => {
 app.get('/api/pairings/:id', requireAuth, (req, res) => {
   const pairing = db.prepare('SELECT * FROM inventory_pairings WHERE id = ?').get(req.params.id);
   if (!pairing) return res.status(404).json({ error: 'Pairing not found' });
+  
+  // Helper function to validate station requirements
+  function validateStationItems(items) {
+    const counts = {
+      ps3: items.filter(i => i.category === 'ps3').length,
+      tv: items.filter(i => i.category === 'tv').length,
+      stik: items.filter(i => i.category === 'stik').length,
+      usb: items.filter(i => i.category === 'usb').length,
+      hdmi: items.filter(i => i.category === 'hdmi').length,
+      plug: items.filter(i => i.category === 'plug').length,
+      lainnya: items.filter(i => i.category === 'lainnya').length
+    };
+
+    const errors = [];
+
+    // Konsol (PS3) = 1 (wajib tepat 1)
+    if (counts.ps3 === 0) errors.push('Konsol PS3 belum terpasang (wajib 1)');
+    else if (counts.ps3 > 1) errors.push(`Konsol PS3 terpasang ${counts.ps3} (wajib tepat 1, lepas ${counts.ps3 - 1} konsol)`);
+
+    // TV = 1 (wajib tepat 1)
+    if (counts.tv === 0) errors.push('TV belum terpasang (wajib 1)');
+    else if (counts.tv > 1) errors.push(`TV terpasang ${counts.tv} (wajib tepat 1, lepas ${counts.tv - 1} TV)`);
+
+    // Stik >= 1 (minimal 1)
+    if (counts.stik === 0) errors.push('Stik belum terpasang (minimal 1)');
+
+    // Kabel Charger (USB) >= 1
+    if (counts.usb === 0) errors.push('Kabel Charger USB belum terpasang (minimal 1)');
+
+    // Kabel Plug = 1
+    if (counts.plug === 0) errors.push('Kabel Power/Plug belum terpasang (wajib 1)');
+    else if (counts.plug > 1) errors.push(`Kabel Power/Plug terpasang ${counts.plug} (wajib tepat 1, lepas ${counts.plug - 1})`);
+
+    // Kabel HDMI = 1
+    if (counts.hdmi === 0) errors.push('Kabel HDMI belum terpasang (wajib 1)');
+    else if (counts.hdmi > 1) errors.push(`Kabel HDMI terpasang ${counts.hdmi} (wajib tepat 1, lepas ${counts.hdmi - 1})`);
+
+    return {
+      isValid: errors.length === 0,
+      errors: errors,
+      counts: counts
+    };
+  }
   
   // Get all items with their roles
   const items = db.prepare(`
@@ -3076,6 +3563,9 @@ app.get('/api/pairings/:id', requireAuth, (req, res) => {
   // Get revenue from this pairing (if linked to rental unit)
   const unitLink = db.prepare('SELECT unit_id FROM unit_pairings WHERE pairing_id = ? AND is_active = 1').get(req.params.id);
   
+  // Validation check
+  const validation = validateStationItems(items);
+  
   res.json({
     id: pairing.id,
     name: pairing.name,
@@ -3086,6 +3576,9 @@ app.get('/api/pairings/:id', requireAuth, (req, res) => {
     item_count: items.length,
     total_value: items.reduce((sum, i) => sum + (i.purchase_cost || 0), 0),
     total_maintenance: items.reduce((sum, i) => sum + (i.total_maintenance || 0), 0),
+    is_valid: validation.isValid,
+    validation_errors: validation.errors,
+    item_counts: validation.counts,
     items: items.map(i => ({
       item_id: i.item_id,
       item_name: i.name,

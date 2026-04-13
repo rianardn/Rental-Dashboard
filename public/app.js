@@ -279,6 +279,7 @@
       showLoading(true);
       try {
         await loadData();
+        await loadStations(); // Load stations for Dashboard integration
         renderAll();
         startPolling();
         startTimers(); // Start timer updates separately (1 second interval)
@@ -319,6 +320,7 @@
       pollTimer = setInterval(async () => {
         try {
           await loadData();
+          await loadStations(); // Keep stations in sync for Dashboard
           
           // Smart render: only re-render if data actually changed
           const currentTxHash = getDataHash(transactions);
@@ -344,12 +346,15 @@
     }
 
     function updateTimers() {
-      const timerDisplays = document.querySelectorAll('.timer-display[data-unit-id]');
+      // Update unit timers (legacy support)
+      const unitDisplays = document.querySelectorAll('.timer-display[data-unit-id]');
+      const stationDisplays = document.querySelectorAll('.timer-display[data-station-id]');
       const now = Date.now();
       const warnMs = settings.warnBefore * 60000;
       const FINAL_ALERT_SECONDS = 30;
 
-      timerDisplays.forEach(display => {
+      // Process unit displays (legacy)
+      unitDisplays.forEach(display => {
         const unitId = parseInt(display.dataset.unitId);
         const startTime = parseInt(display.dataset.startTime);
         const duration = parseInt(display.dataset.duration);
@@ -370,21 +375,59 @@
           const isExpired = remaining <= 0;
           const isFinal30Seconds = remaining <= (FINAL_ALERT_SECONDS * 1000) && remaining > 0;
 
-          // Update class for styling
           countdownEl.className = 'timer-countdown';
           if (isExpired) countdownEl.classList.add('expired');
           else if (isWarning) countdownEl.classList.add('warning');
 
           countdownEl.textContent = isExpired ? 'WAKTU HABIS' : formatTime(remaining);
 
-          // Play warning jingle only in LAST 30 SECONDS
-          if (isFinal30Seconds && !warnedUnits.has(unitId)) {
-            warnedUnits.add(unitId);
+          if (isFinal30Seconds && !warnedUnits.has('unit-' + unitId)) {
+            warnedUnits.add('unit-' + unitId);
             const unitIndex = units.findIndex(u => u.id === unitId);
             if (unitIndex >= 0) playWarningJingle(unitIndex);
           }
-          if (!isFinal30Seconds && warnedUnits.has(unitId)) {
-            warnedUnits.delete(unitId);
+          if (!isFinal30Seconds && warnedUnits.has('unit-' + unitId)) {
+            warnedUnits.delete('unit-' + unitId);
+          }
+        }
+      });
+
+      // Process station displays (new)
+      stationDisplays.forEach(display => {
+        const stationId = display.dataset.stationId;
+        const startTime = parseInt(display.dataset.startTime);
+        const duration = parseInt(display.dataset.duration);
+
+        if (!startTime) return;
+
+        const elapsed = now - startTime;
+        const countdownEl = display.querySelector('[data-timer-type="countdown"]');
+        const elapsedEl = display.querySelector('[data-timer-type="elapsed"]');
+
+        if (elapsedEl) {
+          elapsedEl.textContent = formatTime(elapsed);
+        }
+
+        if (countdownEl && duration > 0) {
+          const remaining = (duration * 60000) - elapsed;
+          const isWarning = remaining < warnMs && remaining > 0;
+          const isExpired = remaining <= 0;
+          const isFinal30Seconds = remaining <= (FINAL_ALERT_SECONDS * 1000) && remaining > 0;
+
+          countdownEl.className = 'timer-countdown';
+          if (isExpired) countdownEl.classList.add('expired');
+          else if (isWarning) countdownEl.classList.add('warning');
+
+          countdownEl.textContent = isExpired ? 'WAKTU HABIS' : formatTime(remaining);
+
+          // Play warning jingle for stations
+          if (isFinal30Seconds && !warnedUnits.has('station-' + stationId)) {
+            warnedUnits.add('station-' + stationId);
+            const stationIndex = stations.findIndex(s => s.id === stationId);
+            if (stationIndex >= 0) playWarningJingle(stationIndex % 4); // Cycle through 4 jingle patterns
+          }
+          if (!isFinal30Seconds && warnedUnits.has('station-' + stationId)) {
+            warnedUnits.delete('station-' + stationId);
           }
         }
       });
@@ -399,23 +442,129 @@
     }
 
     function renderDashboard() {
-      const activeUnits = units.filter(u => u.active);
-      document.getElementById('statActive').textContent = activeUnits.length;
-      document.getElementById('totalUnits').textContent = `${units.length} unit`;
-      
+      // Use stations array which is loaded from /api/pairings
+      const activeStations = stations.filter(s => s.active);
+      document.getElementById('statActive').textContent = activeStations.length;
+      document.getElementById('totalStations').textContent = `${stations.length} stasiun`;
+
       // Calculate today's income (WIB timezone)
       const today = getWIBDateISO();
       const todayIncome = transactions
         .filter(t => t.date === today)
         .reduce((sum, t) => sum + (t.paid || 0), 0);
       document.getElementById('statIncome').textContent = formatMoney(todayIncome);
+
+      // Render station cards
+      const container = document.getElementById('stationsGrid');
+      if (!container) return;
       
-      // Render unit cards
-      const container = document.getElementById('unitsList');
-      container.innerHTML = units.map(unit => renderUnitCard(unit)).join('');
+      if (stations.length === 0) {
+        container.innerHTML = '<p class="empty-state-p20">Belum ada stasiun. Buat stasiun di menu Manajemen > Inventori > Stasiun.</p>';
+        return;
+      }
       
-      // Render unit management list
-      renderDashboardUnitManagement();
+      container.innerHTML = stations.map(station => renderStationCard(station)).join('');
+    }
+
+    function renderStationCard(station) {
+      const isActive = station.active;
+      let timerHTML = '';
+
+      if (isActive) {
+        const elapsed = Date.now() - station.startTime;
+        const remaining = station.duration > 0 ? (station.duration * 60000) - elapsed : null;
+
+        if (remaining !== null) {
+          const warnMs = settings.warnBefore * 60000;
+          const isWarning = remaining < warnMs && remaining > 0;
+          const isExpired = remaining <= 0;
+
+          timerHTML = `
+            <div class="timer-display" data-station-id="${station.id}" data-start-time="${station.startTime}" data-duration="${station.duration}">
+              <div class="timer-countdown ${isWarning ? 'warning' : ''} ${isExpired ? 'expired' : ''}" data-timer-type="countdown">
+                ${isExpired ? 'WAKTU HABIS' : formatTime(remaining)}
+              </div>
+              <div class="timer-elapsed" data-timer-type="elapsed">${formatTime(elapsed)}</div>
+            </div>
+          `;
+        } else {
+          // Open session (no duration limit)
+          timerHTML = `
+            <div class="timer-display" data-station-id="${station.id}" data-start-time="${station.startTime}" data-duration="0">
+              <div class="timer-countdown infinite" data-timer-type="countdown">∞</div>
+              <div class="timer-elapsed" data-timer-type="elapsed">${formatTime(elapsed)}</div>
+            </div>
+          `;
+        }
+
+        // Calculate estimated revenue based on elapsed time
+        const elapsedMin = Math.floor(elapsed / 60000);
+        const estimatedRevenue = Math.round((elapsedMin / 60) * (settings.ratePerHour || 4000));
+
+        // Calculate end time
+        const startDate = new Date(station.startTime);
+        const endDate = station.duration > 0 ? new Date(station.startTime + station.duration * 60000) : null;
+        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' };
+        const endTimeStr = endDate ? endDate.toLocaleTimeString('id-ID', timeOptions) : '∞';
+
+        return `
+          <div class="unit-card active" data-station-id="${station.id}" style="border: 2px solid var(--ps3-red);">
+            <div class="unit-header">
+              <div class="unit-name">${station.name}</div>
+              <div class="unit-status-badge" style="background: var(--ps3-red); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">AKTIF</div>
+            </div>
+            <div class="unit-body">
+              <div class="customer-name">${station.customer || 'Walk-in'}</div>
+              ${timerHTML}
+              <div class="session-info" style="font-size: 0.75rem; color: var(--ps3-muted); margin-top: 8px;">
+                <div>Selesai: ${endTimeStr}</div>
+                <div>Estimasi: Rp${estimatedRevenue.toLocaleString()}</div>
+              </div>
+            </div>
+            <div class="unit-actions">
+              <button class="btn btn-stop" onclick="stopStation('${station.id}')">STOP</button>
+            </div>
+          </div>
+        `;
+      } else {
+        // Inactive station - check if valid
+        const isValid = station.is_valid;
+        
+        if (!isValid) {
+          // Invalid station - show errors and disable click
+          const errorList = station.validation_errors?.map(e => `• ${e}`).join('<br>') || 'Item belum lengkap';
+          return `
+            <div class="unit-card" data-station-id="${station.id}" style="cursor: not-allowed; opacity: 0.7; border: 2px solid var(--ps3-red);">
+              <div class="unit-header">
+                <div class="unit-name">${station.name}</div>
+                <div class="unit-status-badge" style="background: var(--ps3-red); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">BELUM SIAP</div>
+              </div>
+              <div class="unit-body" style="padding: 12px;">
+                <div style="font-size: 0.75rem; color: var(--ps3-red); margin-bottom: 8px;">
+                  <strong>Item belum terpasang:</strong>
+                </div>
+                <div style="font-size: 0.7rem; color: var(--ps3-text); line-height: 1.5;">
+                  ${errorList}
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        
+        // Valid inactive station
+        return `
+          <div class="unit-card" data-station-id="${station.id}" onclick="openStartStationModal('${station.id}')" style="cursor: pointer; opacity: 0.9;">
+            <div class="unit-header">
+              <div class="unit-name">${station.name}</div>
+              <div class="unit-status-badge" style="background: var(--ps3-surface); color: var(--ps3-muted); padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; border: 1px solid var(--ps3-border);">SIAP</div>
+            </div>
+            <div class="unit-body" style="text-align: center; padding: 20px 0;">
+              <div style="font-size: 2rem; margin-bottom: 8px;">🎮</div>
+              <div style="font-size: 0.85rem; color: var(--ps3-muted);">Klik untuk mulai</div>
+            </div>
+          </div>
+        `;
+      }
     }
     
     function renderDashboardUnitManagement() {
@@ -2386,6 +2535,194 @@
       }
     }
 
+    // ═════════════════ Station Operations (Dashboard Integration) ═════════════════
+    let currentStationId = null;
+
+    // Open modal to start a station session
+    function openStartStationModal(stationId) {
+      const station = stations.find(s => s.id === stationId);
+      if (!station) return;
+      if (station.active) {
+        showToast('Stasiun sudah aktif', 'error');
+        return;
+      }
+      
+      currentStationId = stationId;
+      document.getElementById('startStationName').textContent = station.name;
+      document.getElementById('startStationCustomer').value = '';
+      document.getElementById('startStationDuration').value = '';
+      document.getElementById('startStationNote').value = '';
+      openModal('modalStartStation');
+    }
+
+    // Confirm start station session
+    async function confirmStartStation() {
+      const customer = document.getElementById('startStationCustomer').value;
+      const duration = parseInt(document.getElementById('startStationDuration').value) || 0;
+      const note = document.getElementById('startStationNote').value;
+      
+      if (!customer.trim()) {
+        showToast('Nama pelanggan wajib diisi', 'error');
+        return;
+      }
+      
+      try {
+        await api('POST', `/stations/${currentStationId}/start`, { customer, duration, note });
+        closeModal('modalStartStation');
+        await loadStations();
+        renderDashboard();
+        showToast('Stasiun aktif!', 'success');
+      } catch (error) {
+        // Handle conflict with booking (similar to unit flow)
+        const errorData = error.data || {};
+        if (errorData.requiresCancellation && errorData.schedule) {
+          pendingStationActivationData = { customer, duration, note };
+          pendingStationConflictSchedule = errorData.schedule;
+          showStationActivationConflictModal(errorData.schedule, errorData.message || error.message);
+        } else {
+          showToast(error.message || errorData.error || 'Terjadi kesalahan', 'error');
+        }
+      }
+    }
+
+    // Show conflict modal for station activation
+    let pendingStationActivationData = null;
+    let pendingStationConflictSchedule = null;
+
+    function showStationActivationConflictModal(schedule, message) {
+      document.getElementById('stationActivationConflictMessage').innerHTML = message;
+      document.getElementById('stationActivationConflictCard').innerHTML = renderActivationConflictCard(schedule);
+      document.getElementById('confirmCancelStationBookingCheckbox').checked = false;
+      document.getElementById('confirmCancelStationBookingError').style.display = 'none';
+      closeModal('modalStartStation');
+      openModal('modalConfirmStationActivationWithCancel');
+    }
+
+    // Proceed to cancel booking for station activation
+    function proceedToCancelStationBooking() {
+      const confirmed = document.getElementById('confirmCancelStationBookingCheckbox').checked;
+      if (!confirmed) {
+        document.getElementById('confirmCancelStationBookingError').style.display = 'block';
+        return;
+      }
+      closeModal('modalConfirmStationActivationWithCancel');
+      if (pendingStationConflictSchedule) {
+        openCancelScheduleModalForStationActivation(pendingStationConflictSchedule);
+      }
+    }
+
+    // Cancel schedule for station activation
+    function openCancelScheduleModalForStationActivation(schedule) {
+      currentCancelScheduleId = schedule.id;
+      document.getElementById('cancelScheduleReason').value = '';
+      document.getElementById('cancelScheduleReasonError').style.display = 'none';
+      document.getElementById('cancelScheduleOverview').innerHTML = `
+        <div style="background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+          <div style="color: var(--ps3-red); font-weight: 700; font-size: 0.9rem;">
+            ⚠️ Booking akan dibatalkan untuk mengaktifkan stasiun
+          </div>
+        </div>
+        ${renderCancelScheduleCard(schedule)}
+      `;
+      openModal('modalCancelSchedule');
+    }
+
+    // Override confirmCancelSchedule to handle station activation continuation
+    const originalConfirmCancelScheduleStation = confirmCancelSchedule;
+    confirmCancelSchedule = async function() {
+      if (!currentCancelScheduleId) return;
+      
+      const reason = document.getElementById('cancelScheduleReason').value.trim();
+      if (!reason) {
+        document.getElementById('cancelScheduleReasonError').style.display = 'block';
+        document.getElementById('cancelScheduleReason').focus();
+        return;
+      }
+      
+      try {
+        await api('DELETE', `/schedules/${currentCancelScheduleId}`, { reason });
+        closeModal('modalCancelSchedule');
+        showToast('Jadwal dibatalkan', 'success');
+        
+        // Check if there's a pending station activation to continue
+        if (pendingStationActivationData && pendingStationConflictSchedule && 
+            currentCancelScheduleId === pendingStationConflictSchedule.id) {
+          continueStationActivationAfterCancellation();
+        } else {
+          await loadSchedules();
+          await loadDeletedSchedules();
+          renderSchedules();
+          filterCalendarSchedules();
+        }
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    };
+
+    // Continue station activation after cancellation
+    async function continueStationActivationAfterCancellation() {
+      if (!pendingStationActivationData || !currentStationId) return;
+      
+      const { customer, duration, note } = pendingStationActivationData;
+      
+      try {
+        showToast('Mengaktifkan stasiun...', 'info');
+        await api('POST', `/stations/${currentStationId}/start`, { customer, duration, note });
+        
+        pendingStationActivationData = null;
+        pendingStationConflictSchedule = null;
+        
+        await loadStations();
+        renderDashboard();
+        showToast('Stasiun berhasil diaktifkan!', 'success');
+      } catch (error) {
+        showToast(error.message || 'Gagal mengaktifkan stasiun', 'error');
+        pendingStationActivationData = null;
+        pendingStationConflictSchedule = null;
+      }
+    }
+
+    // Stop station session
+    async function stopStation(stationId) {
+      const station = stations.find(s => s.id === stationId);
+      if (!station || !station.active) {
+        showToast('Stasiun tidak aktif', 'error');
+        return;
+      }
+      
+      currentStationId = stationId;
+      document.getElementById('stopStationName').textContent = station.name;
+      
+      const elapsed = Math.floor((Date.now() - station.startTime) / 60000);
+      const cost = Math.round((elapsed / 60) * settings.ratePerHour);
+      
+      document.getElementById('stopStationDuration').textContent = `${elapsed} menit`;
+      document.getElementById('stopStationCost').value = cost;
+      document.getElementById('stopStationPaid').value = cost;
+      document.getElementById('stopStationPayment').value = 'cash';
+      
+      openModal('modalStopStation');
+    }
+
+    // Confirm stop station
+    async function confirmStopStation() {
+      const paid = parseInt(document.getElementById('stopStationPaid').value) || 0;
+      const payment = document.getElementById('stopStationPayment').value;
+      
+      try {
+        await api('POST', `/stations/${currentStationId}/stop`, { paid, payment });
+        warnedUnits.delete('station-' + currentStationId);
+        closeModal('modalStopStation');
+        await loadStations();
+        renderDashboard();
+        await loadTransactions();
+        renderReports();
+        showToast('Sewa selesai!', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
     // ═════════════════ Expense Category Management ═════════════════
     const EXPENSE_SUB_CATEGORIES = {
       'Servis/Perawatan': [
@@ -2650,88 +2987,6 @@
         document.querySelector('.header-title').innerHTML = business.replace(/(.+?)\s*(\S+)$/, '$1 <span>$2</span>') || business;
         
         showToast('Pengaturan disimpan', 'success');
-      } catch (error) {
-        showToast(error.message, 'error');
-      }
-    }
-
-    async function addUnit() {
-      const name = document.getElementById('newUnitName').value;
-      if (!name) {
-        showToast('Nama unit wajib diisi', 'error');
-        return;
-      }
-      
-      try {
-        await api('POST', '/units', { name });
-        document.getElementById('newUnitName').value = '';
-        await loadData();
-        renderDashboard();
-        showToast('Unit ditambahkan', 'success');
-      } catch (error) {
-        showToast(error.message, 'error');
-      }
-    }
-    
-    async function addUnitFromManagement() {
-      const nameInput = document.getElementById('newMgmtUnitName');
-      const name = nameInput.value.trim();
-      
-      if (!name) {
-        showToast('Nama unit wajib diisi', 'error');
-        return;
-      }
-      
-      try {
-        await api('POST', '/units', { name });
-        nameInput.value = '';
-        await loadData();
-        renderManagementUnits();
-        renderDashboard(); // Refresh dashboard too
-        showToast('Unit ditambahkan', 'success');
-      } catch (error) {
-        showToast(error.message, 'error');
-      }
-    }
-    
-    async function deleteUnit(unitId) {
-      const unit = units.find(u => u.id === unitId);
-      if (!unit) return;
-      
-      if (unit.active) {
-        showToast('Tidak dapat menghapus unit yang sedang aktif', 'error');
-        return;
-      }
-      
-      if (!confirm(`Hapus unit "${unit.name}"?`)) return;
-      
-      try {
-        await api('DELETE', `/units/${unitId}`);
-        await loadData();
-        renderDashboard();
-        // Also refresh management page if we're on it
-        if (document.getElementById('pageManagement').classList.contains('active')) {
-          renderManagementUnits();
-        }
-        showToast('Unit dihapus', 'success');
-      } catch (error) {
-        showToast(error.message, 'error');
-      }
-    }
-    
-    async function renameUnit(unitId, currentName) {
-      const newName = prompt(`Ganti nama unit "${currentName}" menjadi:`, currentName);
-      if (!newName || newName.trim() === '' || newName === currentName) return;
-      
-      try {
-        await api('PUT', `/units/${unitId}`, { name: newName.trim() });
-        await loadData();
-        renderDashboard();
-        // Also refresh management page if we're on it
-        if (document.getElementById('pageManagement').classList.contains('active')) {
-          renderManagementUnits();
-        }
-        showToast('Nama unit diperbarui', 'success');
       } catch (error) {
         showToast(error.message, 'error');
       }
@@ -3714,8 +3969,7 @@
         renderInventory();
         renderCapitalSummary();
         renderCapitalHistory();
-        renderManagementUnits();
-        populateScheduleUnitSelect();
+        populateScheduleStationSelect();
         
         // Set default dates
         const today = new Date().toISOString().split('T')[0];
@@ -3726,7 +3980,7 @@
       }
     }
 
-    function openAddScheduleModal() {
+    async function openAddScheduleModal() {
       // Get current time in WIB (UTC+7)
       const now = new Date();
       const wibOffset = 7 * 60 * 60 * 1000; // 7 hours in milliseconds
@@ -3749,8 +4003,8 @@
       document.getElementById('scheduleDurationCustom').style.display = 'none';
       document.getElementById('customDurationLabel').style.color = 'var(--ps3-muted)';
       
-      // Ensure unit select is populated
-      populateScheduleUnitSelect();
+      // Ensure station select is populated
+      await populateScheduleStationSelect();
       // Open modal
       openModal('modalAddSchedule');
     }
@@ -3836,7 +4090,7 @@
       return notes.filter(note => note.toLowerCase().includes(q)).slice(0, 10);
     }
 
-    function showHistorySuggestions(inputId, suggestionsId, suggestions, onSelect) {
+    function showHistorySuggestions(inputId, suggestionsId, suggestions, onSelect, query = '') {
       const input = document.getElementById(inputId);
       const dropdown = document.getElementById(suggestionsId);
       if (!dropdown || !input) return;
@@ -3847,7 +4101,7 @@
       }
 
       dropdown.innerHTML = suggestions.map(s => `
-        <div class="suggestion-item" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--ps3-border);" onmousedown="event.preventDefault(); ${onSelect}('${s.replace(/'/g, "\\'")}')">${escapeHtml(s)}</div>
+        <div class="suggestion-item" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--ps3-border);" onmousedown="event.preventDefault(); ${onSelect}('${s.replace(/'/g, "\\'")}')">${highlightMatch(s, query)}</div>
       `).join('');
       dropdown.style.display = 'block';
     }
@@ -3860,7 +4114,7 @@
     function onHistorySearchInput() {
       const query = document.getElementById('historySearchInput').value;
       const suggestions = getHistoryIdSuggestions(query);
-      showHistorySuggestions('historySearchInput', 'historyIdSuggestions', suggestions, 'selectHistoryId');
+      showHistorySuggestions('historySearchInput', 'historyIdSuggestions', suggestions, 'selectHistoryId', query);
       debouncedSearchHistory();
     }
 
@@ -3874,14 +4128,14 @@
       const query = document.getElementById('historySearchInput').value;
       if (query.length >= 2) {
         const suggestions = getHistoryIdSuggestions(query);
-        showHistorySuggestions('historySearchInput', 'historyIdSuggestions', suggestions, 'selectHistoryId');
+        showHistorySuggestions('historySearchInput', 'historyIdSuggestions', suggestions, 'selectHistoryId', query);
       }
     }
 
     function onHistoryCustomerInput() {
       const query = document.getElementById('historyFilterCustomer').value;
       const suggestions = getHistoryCustomerSuggestions(query);
-      showHistorySuggestions('historyFilterCustomer', 'historyCustomerSuggestions', suggestions, 'selectHistoryCustomer');
+      showHistorySuggestions('historyFilterCustomer', 'historyCustomerSuggestions', suggestions, 'selectHistoryCustomer', query);
       debouncedSearchHistory();
     }
 
@@ -3895,14 +4149,14 @@
       const query = document.getElementById('historyFilterCustomer').value;
       if (query.length >= 2) {
         const suggestions = getHistoryCustomerSuggestions(query);
-        showHistorySuggestions('historyFilterCustomer', 'historyCustomerSuggestions', suggestions, 'selectHistoryCustomer');
+        showHistorySuggestions('historyFilterCustomer', 'historyCustomerSuggestions', suggestions, 'selectHistoryCustomer', query);
       }
     }
 
     function onHistoryNoteInput() {
       const query = document.getElementById('historyFilterNote').value;
       const suggestions = getHistoryNoteSuggestions(query);
-      showHistorySuggestions('historyFilterNote', 'historyNoteSuggestions', suggestions, 'selectHistoryNote');
+      showHistorySuggestions('historyFilterNote', 'historyNoteSuggestions', suggestions, 'selectHistoryNote', query);
       debouncedSearchHistory();
     }
 
@@ -3916,7 +4170,7 @@
       const query = document.getElementById('historyFilterNote').value;
       if (query.length >= 2) {
         const suggestions = getHistoryNoteSuggestions(query);
-        showHistorySuggestions('historyFilterNote', 'historyNoteSuggestions', suggestions, 'selectHistoryNote');
+        showHistorySuggestions('historyFilterNote', 'historyNoteSuggestions', suggestions, 'selectHistoryNote', query);
       }
     }
 
@@ -3949,7 +4203,7 @@
       return reasons.filter(reason => reason.toLowerCase().includes(q)).slice(0, 10);
     }
 
-    function showTrashScheduleSuggestions(inputId, suggestionsId, suggestions, onSelect) {
+    function showTrashScheduleSuggestions(inputId, suggestionsId, suggestions, onSelect, query = '') {
       const input = document.getElementById(inputId);
       const dropdown = document.getElementById(suggestionsId);
       if (!dropdown || !input) return;
@@ -3960,7 +4214,7 @@
       }
 
       dropdown.innerHTML = suggestions.map(s => `
-        <div class="suggestion-item" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--ps3-border);" onmousedown="event.preventDefault(); ${onSelect}('${s.replace(/'/g, "\\'")}')">${escapeHtml(s)}</div>
+        <div class="suggestion-item" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--ps3-border);" onmousedown="event.preventDefault(); ${onSelect}('${s.replace(/'/g, "\\'")}')">${highlightMatch(s, query)}</div>
       `).join('');
       dropdown.style.display = 'block';
     }
@@ -3973,7 +4227,7 @@
     function onTrashScheduleSearchInput() {
       const query = document.getElementById('trashScheduleSearchInput').value;
       const suggestions = getTrashScheduleIdSuggestions(query);
-      showTrashScheduleSuggestions('trashScheduleSearchInput', 'trashScheduleIdSuggestions', suggestions, 'selectTrashScheduleId');
+      showTrashScheduleSuggestions('trashScheduleSearchInput', 'trashScheduleIdSuggestions', suggestions, 'selectTrashScheduleId', query);
       debouncedSearchTrashSchedule();
     }
 
@@ -3987,14 +4241,14 @@
       const query = document.getElementById('trashScheduleSearchInput').value;
       if (query.length >= 2) {
         const suggestions = getTrashScheduleIdSuggestions(query);
-        showTrashScheduleSuggestions('trashScheduleSearchInput', 'trashScheduleIdSuggestions', suggestions, 'selectTrashScheduleId');
+        showTrashScheduleSuggestions('trashScheduleSearchInput', 'trashScheduleIdSuggestions', suggestions, 'selectTrashScheduleId', query);
       }
     }
 
     function onTrashScheduleCustomerInput() {
       const query = document.getElementById('trashScheduleFilterCustomer').value;
       const suggestions = getTrashScheduleCustomerSuggestions(query);
-      showTrashScheduleSuggestions('trashScheduleFilterCustomer', 'trashScheduleCustomerSuggestions', suggestions, 'selectTrashScheduleCustomer');
+      showTrashScheduleSuggestions('trashScheduleFilterCustomer', 'trashScheduleCustomerSuggestions', suggestions, 'selectTrashScheduleCustomer', query);
       debouncedSearchTrashSchedule();
     }
 
@@ -4008,14 +4262,14 @@
       const query = document.getElementById('trashScheduleFilterCustomer').value;
       if (query.length >= 2) {
         const suggestions = getTrashScheduleCustomerSuggestions(query);
-        showTrashScheduleSuggestions('trashScheduleFilterCustomer', 'trashScheduleCustomerSuggestions', suggestions, 'selectTrashScheduleCustomer');
+        showTrashScheduleSuggestions('trashScheduleFilterCustomer', 'trashScheduleCustomerSuggestions', suggestions, 'selectTrashScheduleCustomer', query);
       }
     }
 
     function onTrashScheduleNoteInput() {
       const query = document.getElementById('trashScheduleFilterNote').value;
       const suggestions = getTrashScheduleNoteSuggestions(query);
-      showTrashScheduleSuggestions('trashScheduleFilterNote', 'trashScheduleNoteSuggestions', suggestions, 'selectTrashScheduleNote');
+      showTrashScheduleSuggestions('trashScheduleFilterNote', 'trashScheduleNoteSuggestions', suggestions, 'selectTrashScheduleNote', query);
       debouncedSearchTrashSchedule();
     }
 
@@ -4029,14 +4283,14 @@
       const query = document.getElementById('trashScheduleFilterNote').value;
       if (query.length >= 2) {
         const suggestions = getTrashScheduleNoteSuggestions(query);
-        showTrashScheduleSuggestions('trashScheduleFilterNote', 'trashScheduleNoteSuggestions', suggestions, 'selectTrashScheduleNote');
+        showTrashScheduleSuggestions('trashScheduleFilterNote', 'trashScheduleNoteSuggestions', suggestions, 'selectTrashScheduleNote', query);
       }
     }
 
     function onTrashScheduleReasonInput() {
       const query = document.getElementById('trashScheduleFilterReason').value;
       const suggestions = getTrashScheduleReasonSuggestions(query);
-      showTrashScheduleSuggestions('trashScheduleFilterReason', 'trashScheduleReasonSuggestions', suggestions, 'selectTrashScheduleReason');
+      showTrashScheduleSuggestions('trashScheduleFilterReason', 'trashScheduleReasonSuggestions', suggestions, 'selectTrashScheduleReason', query);
       debouncedSearchTrashSchedule();
     }
 
@@ -4050,7 +4304,7 @@
       const query = document.getElementById('trashScheduleFilterReason').value;
       if (query.length >= 2) {
         const suggestions = getTrashScheduleReasonSuggestions(query);
-        showTrashScheduleSuggestions('trashScheduleFilterReason', 'trashScheduleReasonSuggestions', suggestions, 'selectTrashScheduleReason');
+        showTrashScheduleSuggestions('trashScheduleFilterReason', 'trashScheduleReasonSuggestions', suggestions, 'selectTrashScheduleReason', query);
       }
     }
 
@@ -4474,7 +4728,7 @@
                 </div>
                 ${item.phone ? `<div class="fs-8 text-muted mt-2">📞 ${item.phone}</div>` : ''}
               </div>
-              <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: #8B0000; color: #fff; font-weight: 600; white-space: nowrap;">🗑️ Dihapus</span>
+              <span style="font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; background: #8B0000; color: #fff; font-weight: 600; white-space: nowrap;">🗑️ Dibatalkan</span>
             </div>
             <div class="text-85 text-muted mb-2px">
               ${formattedDate}
@@ -4485,7 +4739,7 @@
             ${item.unitName ? `<div class="label-xs-muted" class="mb-4">🎮 ${escapeHtml(item.unitName)}</div>` : ''}
             ${item.note ? `<div class="fs-8 text-muted italic mt-4">💬 ${escapeHtml(item.note)}</div>` : ''}
             <div style="font-size: 0.75rem; color: var(--ps3-red); margin-top: 6px; padding: 4px 8px; background: rgba(230, 0, 18, 0.1); border-radius: 4px; border: 1px solid rgba(230, 0, 18, 0.3);">
-              🗑️ Dihapus: ${deletedDate}${item.deleteReason ? ` - ${escapeHtml(item.deleteReason)}` : ''}
+              🗑️ Dibatalkan: ${deletedDate}${item.deleteReason ? ` - ${escapeHtml(item.deleteReason)}` : ''}
             </div>
           </div>
         `;
@@ -4675,7 +4929,7 @@
     // ═════════════════ Transaction Edit Functions ═════════════════
     let currentEditTransactionId = null;
 
-    function openEditModal(transactionId) {
+    async function openEditModal(transactionId) {
       // Mobile-friendly debug - show toast immediately
       showToast('Membuka edit... ID: ' + transactionId, 'info');
 
@@ -4730,18 +4984,28 @@
       // Calculate and set end time
       editTxUpdateEndTime();
 
-      // Populate unit dropdown
-      const unitSelect = document.getElementById('editUnitId');
-      unitSelect.innerHTML = '<option value="">Pilih Unit</option>';
-      if (units && units.length > 0) {
-        units.forEach(unit => {
+      // Populate station dropdown
+      const stationSelect = document.getElementById('editUnitId');
+      stationSelect.innerHTML = '<option value="">Pilih Stasiun</option>';
+      
+      // Load stations if not loaded
+      if (stations.length === 0) {
+        try {
+          stations = await api('GET', '/pairings');
+        } catch (error) {
+          console.error('Failed to load stations:', error);
+        }
+      }
+      
+      if (stations && stations.length > 0) {
+        stations.forEach(station => {
           const option = document.createElement('option');
-          option.value = unit.id;
-          option.textContent = unit.name;
-          if (unit.id == transaction.unitId) {
+          option.value = station.id;
+          option.textContent = station.name;
+          if (station.id == transaction.station_id) {
             option.selected = true;
           }
-          unitSelect.appendChild(option);
+          stationSelect.appendChild(option);
         });
       }
 
@@ -4866,9 +5130,9 @@
         updates.duration = parseInt(document.getElementById('editDuration').value) || 0;
       }
       if (document.getElementById('editCheckUnit').checked) {
-        const unitId = document.getElementById('editUnitId').value;
-        if (unitId) {
-          updates.unitId = parseInt(unitId);
+        const stationId = document.getElementById('editUnitId').value;
+        if (stationId) {
+          updates.station_id = stationId;
         }
       }
       if (document.getElementById('editCheckPaid').checked) {
@@ -6881,16 +7145,25 @@
     let inventory = [];
     let capitalData = { capital: [], expenses: [], summary: { totalCapital: 0, totalSpent: 0, remaining: 0 } };
 
-    // Populate unit select for schedules
-    function populateScheduleUnitSelect() {
+    // Populate station select for schedules
+    async function populateScheduleStationSelect() {
       const select = document.getElementById('scheduleUnit');
       if (!select) return;
       
-      select.innerHTML = '<option value="">Pilih unit...</option>';
-      units.forEach(unit => {
+      // Load stations if not loaded
+      if (stations.length === 0) {
+        try {
+          stations = await api('GET', '/pairings');
+        } catch (error) {
+          console.error('Failed to load stations:', error);
+        }
+      }
+      
+      select.innerHTML = '<option value="">Pilih stasiun...</option>';
+      stations.forEach(station => {
         const option = document.createElement('option');
-        option.value = unit.id;
-        option.textContent = unit.name;
+        option.value = station.id;
+        option.textContent = station.name;
         select.appendChild(option);
       });
     }
@@ -7037,7 +7310,7 @@
       const time = document.getElementById('scheduleTime').value;
       const endDate = document.getElementById('scheduleEndDate').value;
       const endTime = document.getElementById('scheduleEndTime').value;
-      const unitId = document.getElementById('scheduleUnit').value;
+      const stationId = document.getElementById('scheduleUnit').value;
       const durationSelect = document.getElementById('scheduleDuration').value;
       const durationCustom = document.getElementById('scheduleDurationCustom').value;
       const note = document.getElementById('scheduleNote').value.trim();
@@ -7068,8 +7341,8 @@
         document.getElementById('scheduleEndTime').focus();
         return;
       }
-      if (!unitId) {
-        showToast('Unit wajib dipilih', 'error');
+      if (!stationId) {
+        showToast('Stasiun wajib dipilih', 'error');
         document.getElementById('scheduleUnit').focus();
         return;
       }
@@ -7081,14 +7354,14 @@
         return;
       }
       
-      const unitName = units.find(u => u.id == unitId)?.name || '';
+      const stationName = stations.find(s => s.id === stationId)?.name || '';
       
       try {
         await api('POST', '/schedules', {
           customer,
           phone,
-          unitId: unitId || null,
-          unitName,
+          station_id: stationId || null,
+          station_name: stationName,
           scheduledDate: date,
           scheduledTime: time,
           scheduledEndDate: endDate,
@@ -7206,7 +7479,47 @@
       // Use global clock for consistent time calculations
       const now = globalClock.now || new Date();
       const today = now.toISOString().split('T')[0];
-      const isPast = s.scheduledDate < today;
+      const isToday = s.scheduledDate === today;
+      
+      // Helper: get overdue time (for pending missed)
+      function getOverdueTime() {
+        const scheduled = new Date(s.scheduledDate + 'T' + (s.scheduledTime || '00:00'));
+        const diffMs = now - scheduled;
+        if (diffMs <= 0) return null;
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        return hours > 0 || minutes > 0;
+      }
+      
+      // Helper: get overtime (for running schedules)
+      function hasOvertime() {
+        if (s.unitId && Array.isArray(units)) {
+          const unit = units.find(u => u.id == s.unitId && u.active);
+          if (unit && unit.startTime && unit.duration) {
+            const endTime = new Date(unit.startTime + (unit.duration * 60000));
+            return now > endTime;
+          }
+        }
+        // Fallback: gunakan data jadwal
+        if (s.scheduledEndTime) {
+          const endTime = new Date(s.scheduledDate + 'T' + s.scheduledEndTime);
+          return now > endTime;
+        } else if (s.scheduledTime && s.duration) {
+          const endTime = new Date(s.scheduledDate + 'T' + s.scheduledTime);
+          endTime.setMinutes(endTime.getMinutes() + parseInt(s.duration));
+          return now > endTime;
+        }
+        return false;
+      }
+      
+      // Helper: get minutes until start
+      function getMinutesUntil() {
+        if (!s.scheduledTime) return null;
+        const startTime = new Date(s.scheduledDate + 'T' + s.scheduledTime);
+        const diffMs = startTime - now;
+        if (diffMs <= 0) return null;
+        return Math.floor(diffMs / (1000 * 60));
+      }
       
       // 5. Deleted -> Red (using badge shade for consistency)
       if (s.status === 'deleted') {
@@ -7218,18 +7531,43 @@
         return { bg: 'rgba(220, 38, 38, 0.15)', border: 'var(--ps3-red-badge)' };
       }
       
-      // 3. Completed -> Gray
+      // 3. Completed -> Dark Green (match badge)
       if (s.status === 'completed') {
-        return { bg: 'rgba(128, 128, 128, 0.2)', border: '#888' };
+        return { bg: 'rgba(34, 139, 34, 0.15)', border: 'var(--ps3-green-dark)' };
       }
       
-      // 2. Running -> Green (highlight remains green even if overtime)
+      // 2. Running -> Check overtime first
       if (s.status === 'running') {
+        if (hasOvertime()) {
+          // Running overtime -> Red (match badge)
+          return { bg: 'rgba(220, 38, 38, 0.15)', border: 'var(--ps3-red-badge)' };
+        }
+        // Running on time -> Green (match badge)
         return { bg: 'rgba(74, 222, 128, 0.15)', border: 'var(--ps3-green)' };
       }
       
-      // 1. Pending (including missed/terlewat) -> White/transparent
-      // User must manually click "Mulai" to change to running
+      // 1. Pending (including missed/terlewat)
+      if (s.status === 'pending') {
+        const startTime = new Date(s.scheduledDate + 'T' + (s.scheduledTime || '00:00'));
+        
+        // Pending + Start time passed (Missed) -> Red (match badge)
+        if (now > startTime && getOverdueTime()) {
+          return { bg: 'rgba(220, 38, 38, 0.15)', border: 'var(--ps3-red-badge)' };
+        }
+        
+        // Pending + Within 5 minutes -> Orange (match badge)
+        if (isToday) {
+          const minutesUntil = getMinutesUntil();
+          if (minutesUntil !== null && minutesUntil <= 5 && minutesUntil > 0) {
+            return { bg: 'rgba(255, 165, 0, 0.15)', border: 'var(--ps3-orange)' };
+          }
+        }
+        
+        // Pending + Normal -> Yellow (match badge)
+        return { bg: 'rgba(255, 255, 0, 0.15)', border: 'var(--ps3-yellow)' };
+      }
+      
+      // Fallback
       return { bg: 'var(--ps3-surface)', border: 'var(--ps3-border)' };
     }
 
@@ -7291,9 +7629,9 @@
         return `${minutes} menit`;
       }
       
-      // 5. Deleted -> Red badge (distinct shade), "🗑 Dihapus"
+      // 5. Deleted -> Red badge (distinct shade), "🗑 Dibatalkan"
       if (s.status === 'deleted') {
-        return { text: '🗑️ Dihapus', bg: 'var(--ps3-red-badge)', color: '#fff' };
+        return { text: '🗑️ Dibatalkan', bg: 'var(--ps3-red-badge)', color: '#fff' };
       }
       
       // 4. Cancelled -> Red badge (distinct shade), "❌ Dibatalkan"
@@ -8365,46 +8703,48 @@
           return;
         }
 
-        // Check if schedule has a unit assigned
-        if (!schedule.unitId) {
-          // Show modal to select unit
+        // Check if schedule has a station assigned
+        if (!schedule.station_id) {
+          // Show modal to select station
           openScheduleUnitModal(schedule);
           return;
         }
-
-        // Check if unit is already active
-        const unit = units.find(u => u.id === schedule.unitId);
-        if (unit && unit.active) {
-          showToast('Unit sudah aktif dengan penyewa lain', 'error');
-          return;
-        }
         
-        // Start the unit with schedule data
-        await api('POST', `/schedules/${id}/start-unit`, { unitId: schedule.unitId });
+        // Start the session with schedule data and station
+        await api('POST', `/schedules/${id}/start-unit`, { station_id: schedule.station_id });
         await loadData();
         await loadSchedules();
         renderAll();
         renderSchedules();
         filterCalendarSchedules();
-        showToast('Jadwal dimulai! Unit aktif dengan data booking.', 'success');
+        showToast('Jadwal dimulai! Stasiun aktif dengan data booking.', 'success');
       } catch (error) {
         showToast(error.message, 'error');
       }
     }
     
-    // Modal for selecting unit when starting a schedule without assigned unit
+    // Modal for selecting station when starting a schedule without assigned station
     let currentScheduleForUnit = null;
     
-    function openScheduleUnitModal(schedule) {
+    async function openScheduleUnitModal(schedule) {
       currentScheduleForUnit = schedule;
       const modal = document.getElementById('modalScheduleUnit');
-      const unitSelect = document.getElementById('scheduleUnitSelect');
+      const stationSelect = document.getElementById('scheduleUnitSelect');
       
-      // Populate available units (non-active only)
-      const availableUnits = units.filter(u => !u.active);
-      unitSelect.innerHTML = availableUnits.map(u => 
-        `<option value="${u.id}">${u.name}</option>`
-      ).join('');
+      // Load stations if not loaded
+      if (stations.length === 0) {
+        try {
+          stations = await api('GET', '/pairings');
+        } catch (error) {
+          console.error('Failed to load stations:', error);
+        }
+      }
+      
+      // Populate available stations (for now, show all - active status tracked differently)
+      stationSelect.innerHTML = '<option value="">-- Pilih Stasiun --</option>' + 
+        stations.map(s => 
+          `<option value="${s.id}">${s.name}</option>`
+        ).join('');
       
       // Add info text
       document.getElementById('scheduleUnitCustomer').textContent = schedule.customer;
@@ -8416,14 +8756,14 @@
     async function confirmScheduleUnitSelection() {
       if (!currentScheduleForUnit) return;
       
-      const unitId = document.getElementById('scheduleUnitSelect').value;
-      if (!unitId) {
-        showToast('Pilih unit terlebih dahulu', 'error');
+      const stationId = document.getElementById('scheduleUnitSelect').value;
+      if (!stationId) {
+        showToast('Pilih stasiun terlebih dahulu', 'error');
         return;
       }
       
       try {
-        await api('POST', `/schedules/${currentScheduleForUnit.id}/start-unit`, { unitId: parseInt(unitId) });
+        await api('POST', `/schedules/${currentScheduleForUnit.id}/start-unit`, { station_id: stationId });
         closeModal('modalScheduleUnit');
         currentScheduleForUnit = null;
         await loadData();
@@ -8440,7 +8780,7 @@
     // ═════════════════ Schedule Edit Functions ═════════════════
     let currentEditScheduleId = null;
 
-    function openEditScheduleModal(scheduleId) {
+    async function openEditScheduleModal(scheduleId) {
       showToast('Membuka edit jadwal...', 'info');
       
       currentEditScheduleId = scheduleId;
@@ -8499,12 +8839,22 @@
       document.getElementById('editScheduleNote').value = schedule.note || '';
       document.getElementById('editScheduleReason').value = '';
 
-      // Populate unit dropdown
-      const unitSelect = document.getElementById('editScheduleUnit');
-      unitSelect.innerHTML = '<option value="">-- Pilih Unit --</option>';
-      units.forEach(u => {
-        const selected = u.id == schedule.unitId ? 'selected' : '';
-        unitSelect.innerHTML += `<option value="${u.id}" ${selected}>${u.name}</option>`;
+      // Populate station dropdown
+      const stationSelect = document.getElementById('editScheduleUnit');
+      stationSelect.innerHTML = '<option value="">-- Pilih Stasiun --</option>';
+      
+      // Load stations if not loaded
+      if (stations.length === 0) {
+        try {
+          stations = await api('GET', '/pairings');
+        } catch (error) {
+          console.error('Failed to load stations:', error);
+        }
+      }
+      
+      stations.forEach(s => {
+        const selected = s.id == schedule.station_id ? 'selected' : '';
+        stationSelect.innerHTML += `<option value="${s.id}" ${selected}>${s.name}</option>`;
       });
 
       // Load edit history
@@ -8693,7 +9043,7 @@
         }
       }
       if (document.getElementById('editScheduleCheckUnit').checked) {
-        updates.unitId = document.getElementById('editScheduleUnit').value;
+        updates.station_id = document.getElementById('editScheduleUnit').value;
       }
       if (document.getElementById('editScheduleCheckNote').checked) {
         updates.note = document.getElementById('editScheduleNote').value.trim();
@@ -9342,8 +9692,16 @@
         return;
       }
 
-      container.innerHTML = stations.map(s => `
-        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 10px; cursor: pointer;"
+      container.innerHTML = stations.map(s => {
+        const isValid = s.is_valid;
+        const statusBadge = isValid 
+          ? `<span style="background: rgba(0,200,0,0.2); color: #0c0; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem;">✓ SIAP</span>`
+          : `<span style="background: rgba(230,0,18,0.2); color: var(--ps3-red); padding: 2px 8px; border-radius: 4px; font-size: 0.7rem;">✗ BELUM SIAP</span>`;
+        
+        const borderStyle = isValid ? '' : 'border: 1px solid var(--ps3-red);';
+        
+        return `
+        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 10px; cursor: pointer; ${borderStyle}"
              onclick="openStationDetail('${s.id}')">
           <div class="flex-between-center">
             <div>
@@ -9356,8 +9714,16 @@
             </div>
           </div>
           ${s.description ? `<div style="font-size: 0.75rem; color: var(--ps3-muted); margin-top: 6px;">${s.description}</div>` : ''}
+          <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.7rem; color: var(--ps3-muted);">
+              ${s.validation_errors && s.validation_errors.length > 0 
+                ? `<span style="color: var(--ps3-red);">${s.validation_errors.length} item kurang</span>` 
+                : '<span style="color: #0c0;">Semua item terpasang</span>'}
+            </span>
+            ${statusBadge}
+          </div>
         </div>
-      `).join('');
+      `}).join('');
     }
 
     async function addStation() {
@@ -9392,6 +9758,17 @@
         document.getElementById('stationDetailId').value = station.id;
         document.getElementById('stationDetailTitle').textContent = `🏢 ${station.name}`;
 
+        const validationStatus = station.is_valid
+          ? `<span style="color: #0c0;">✓ Stasiun Siap Digunakan</span>`
+          : `<span style="color: var(--ps3-red);">✗ Stasiun Belum Siap</span>`;
+        
+        const validationErrors = !station.is_valid && station.validation_errors 
+          ? `<div style="margin-top: 10px; background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 6px; padding: 10px;">
+               <div style="font-size: 0.75rem; color: var(--ps3-red); margin-bottom: 6px;"><strong>Item yang kurang:</strong></div>
+               ${station.validation_errors.map(e => `<div style="font-size: 0.7rem; color: var(--ps3-text); margin-bottom: 3px;">• ${e}</div>`).join('')}
+             </div>`
+          : '';
+
         document.getElementById('stationDetailInfo').innerHTML = `
           <div style="font-size: 0.8rem;">
             <div class="text-muted-7">ID Stasiun</div>
@@ -9401,6 +9778,10 @@
               <span style="color: var(--ps3-silver);">${station.item_count || 0} item</span>
               <span class="text-green">Rp${(station.total_value || 0).toLocaleString()}</span>
             </div>
+            <div style="margin-top: 8px; padding: 6px 10px; background: var(--ps3-surface); border-radius: 6px; border: 1px solid var(--ps3-border);">
+              <strong>Status:</strong> ${validationStatus}
+            </div>
+            ${validationErrors}
           </div>
         `;
 
@@ -10016,49 +10397,7 @@
       }
     }
 
-    // Management Unit List (for the new Management page)
-    function renderManagementUnits() {
-      const container = document.getElementById('mgmtUnitList');
-      if (!container) return;
-      
-      if (units.length === 0) {
-        container.innerHTML = '<p class="empty-state-p15">Belum ada unit</p>';
-        return;
-      }
-      
-      container.innerHTML = `
-        <div class="grid-auto-200">
-          ${units.map(unit => `
-            <div style="background: ${unit.active ? 'rgba(0,170,0,0.1)' : 'var(--ps3-surface)'}; 
-                        border: 1px solid ${unit.active ? 'var(--ps3-green)' : 'var(--ps3-border)'}; 
-                        border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <div class="fw-600">${unit.name}</div>
-                <div class="text-75 text-muted">
-                  ${unit.active ? '🟢 Sedang aktif' : '⚫ Tersedia'}
-                </div>
-              </div>
-              <div style="display: flex; gap: 6px;">
-                <button onclick="renameUnit(${unit.id}, '${unit.name.replace(/'/g, "\\'")}')" 
-                        style="background: var(--ps3-border); color: var(--ps3-text); border: none; 
-                               padding: 6px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer;"
-                        ${unit.active ? 'disabled' : ''} title="${unit.active ? 'Tidak bisa rename saat aktif' : 'Rename'}">
-                  ✏️
-                </button>
-                <button onclick="deleteUnit(${unit.id})" 
-                        style="background: var(--ps3-red); color: #fff; border: none; 
-                               padding: 6px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer;"
-                        ${unit.active ? 'disabled' : ''} title="${unit.active ? 'Tidak bisa hapus saat aktif' : 'Hapus'}">
-                  🗑️
-                </button>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `;
-    }
-
-    // Extend loadData to include management data
+    // ═════════════════ SCHEDULE EXPORT FUNCTIONS ═════════════════
     const originalLoadData = loadData;
     loadData = async function() {
       await originalLoadData();

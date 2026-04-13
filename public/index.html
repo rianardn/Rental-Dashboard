@@ -68,7 +68,7 @@
       <div class="stats-grid">
         <div class="stat-card">
           <div id="statActive" class="stat-value">0</div>
-          <div class="stat-label">Unit Aktif</div>
+          <div class="stat-label">Stasiun Aktif</div>
         </div>
         <div class="stat-card">
           <div id="statIncome" class="stat-value income">Rp0</div>
@@ -76,12 +76,12 @@
         </div>
       </div>
 
-      <!-- Available Units Section (pindah ke atas) -->
+      <!-- Available Stations Section -->
       <div class="section-title">
-        <span>Unit Tersedia</span>
-        <span id="totalUnits">0 unit</span>
+        <span>Stasiun Tersedia</span>
+        <span id="totalStations">0 stasiun</span>
       </div>
-      <div id="unitsList" class="mb-20"></div>
+      <div id="stationsGrid" class="mb-20"></div>
 
     </div>
 
@@ -422,21 +422,6 @@
         </div>
       </div>
 
-      <!-- Unit Management Section (Moved from Dashboard/Settings) -->
-      <div class="card mt-20">
-        <div class="section-title">🎮 Manajemen Unit</div>
-        <p class="text-8 text-muted mb-15">Tambah, hapus, atau ubah nama unit PS</p>
-        
-        <div class="form-group">
-          <label>Nama Unit Baru</label>
-          <input type="text" id="newMgmtUnitName" placeholder="Contoh: PS3 Slim 1">
-        </div>
-        <button class="btn" onclick="addUnitFromManagement()">Tambah Unit</button>
-        
-        <div id="mgmtUnitList" class="mt-20">
-          <p class="empty-state-p15">Memuat daftar unit...</p>
-        </div>
-      </div>
     </div>
 
     <!-- Settings Page -->
@@ -967,6 +952,110 @@
     </div>
   </div>
 
+  <!-- ═════════════════ MODAL: START STATION SESSION ═════════════════ -->
+  <div id="modalStartStation" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Mulai Sewa - <span id="startStationName"></span></h3>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nama Pelanggan</label>
+          <input type="text" id="startStationCustomer" placeholder="Nama pelanggan">
+        </div>
+        <div class="form-group">
+          <label>Durasi Sewa (menit)</label>
+          <input type="number" id="startStationDuration" placeholder="Contoh: 60 untuk 1 jam" min="1">
+          <small>Kosongkan untuk sewa terbuka (tanpa batas waktu)</small>
+        </div>
+        <div class="form-group">
+          <label>Catatan (opsional)</label>
+          <input type="text" id="startStationNote" placeholder="Catatan khusus...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modalStartStation')">Batal</button>
+        <button class="btn-confirm" onclick="confirmStartStation()">Mulai Sewa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════ MODAL: KONFIRMASI AKTIVASI STASIUN DENGAN PEMBATALAN ═════════════════ -->
+  <div id="modalConfirmStationActivationWithCancel" class="modal z-3000">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header" style="background: linear-gradient(135deg, var(--ps3-red) 0%, #b30000 100%);">
+        <div class="modal-title">⚠️ Booking Aktif Terdeteksi</div>
+        <button class="modal-close" onclick="closeModal('modalConfirmStationActivationWithCancel')">×</button>
+      </div>
+      <div style="padding: 24px;">
+        <div style="background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <div style="color: var(--ps3-red); font-weight: 700; font-size: 1rem; margin-bottom: 8px;">
+            ⏰ Booking Sudah Masuk Waktu
+          </div>
+          <div id="stationActivationConflictMessage" style="color: var(--ps3-text); font-size: 0.9rem; line-height: 1.5;">
+            Stasiun memiliki booking aktif yang sudah memasuki waktunya.
+          </div>
+        </div>
+        <div id="stationActivationConflictCard" style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        </div>
+        <div style="margin-bottom: 24px;">
+          <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer;">
+            <input type="checkbox" id="confirmCancelStationBookingCheckbox" class="checkbox-ps3-sm">
+            <span style="color: var(--ps3-text); font-size: 0.9rem; line-height: 1.5;">
+              <strong>Saya mengerti dan ingin melanjutkan.</strong> Booking di atas akan dibatalkan dan stasiun akan diaktifkan untuk pelanggan walk-in.
+            </span>
+          </label>
+          <div id="confirmCancelStationBookingError" style="color: var(--ps3-red); font-size: 0.8rem; margin-top: 8px; margin-left: 32px; display: none;">
+            ⚠️ Centang kotak di atas untuk melanjutkan
+          </div>
+        </div>
+        <div class="flex gap-12">
+          <button onclick="closeModal('modalConfirmStationActivationWithCancel')" style="flex: 1; padding: 14px; border-radius: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: var(--ps3-surface); color: var(--ps3-text); border: 1px solid var(--ps3-border); cursor: pointer;">
+            Batal
+          </button>
+          <button onclick="proceedToCancelStationBooking()" style="flex: 1; padding: 14px; border-radius: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: var(--ps3-red); color: white; border: none; cursor: pointer;">
+            Lanjutkan →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════ MODAL: STOP STATION SESSION ═════════════════ -->
+  <div id="modalStopStation" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Akhiri Sewa - <span id="stopStationName"></span></h3>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Total Waktu</label>
+          <div id="stopStationDuration" style="font-family: var(--font-display); font-size: 1.2rem; padding: 14px; background: var(--ps3-surface); border-radius: 8px;"></div>
+        </div>
+        <div class="form-group">
+          <label>Biaya Sewa (Rp)</label>
+          <input type="number" id="stopStationCost" readonly>
+        </div>
+        <div class="form-group">
+          <label>Total Dibayar (Rp)</label>
+          <input type="number" id="stopStationPaid" placeholder="Masukkan jumlah pembayaran">
+        </div>
+        <div class="form-group">
+          <label>Metode Pembayaran</label>
+          <select id="stopStationPayment">
+            <option value="cash">Tunai (Cash)</option>
+            <option value="transfer">Transfer</option>
+            <option value="qris">QRIS</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modalStopStation')">Batal</button>
+        <button class="btn-confirm" onclick="confirmStopStation()">Akhiri & Bayar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═════════════════ MODAL: COMPLETE RUNNING SCHEDULE ═════════════════ -->
   <div id="modalCompleteSchedule" class="modal z-3500">
     <div class="modal-content">
@@ -1024,12 +1113,12 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Pilih Unit Tersedia</label>
+          <label>Pilih Stasiun Tersedia</label>
           <select id="scheduleUnitSelect" class="input-ps3">
-            <option value="">-- Pilih Unit --</option>
+            <option value="">-- Pilih Stasiun --</option>
           </select>
           <small style="display: block; margin-top: 8px; color: var(--ps3-muted); font-size: 0.75rem;">
-            ℹ️ Hanya unit yang tidak aktif yang ditampilkan
+            ℹ️ Hanya stasiun yang tidak aktif yang ditampilkan
           </small>
         </div>
         <div style="background: rgba(230,0,18,0.1); border-left: 3px solid var(--ps3-red); padding: 10px 12px; border-radius: 0 6px 6px 0; margin-top: 12px;">
@@ -1151,9 +1240,9 @@
         </div>
 
         <div id="editFieldUnit" class="hidden-mb16">
-          <label class="form-group-label">Unit PS</label>
+          <label class="form-group-label">Stasiun</label>
           <select id="editUnitId" class="input-inherit">
-            <option value="">Pilih Unit</option>
+            <option value="">Pilih Stasiun</option>
           </select>
         </div>
 
@@ -2128,9 +2217,9 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Unit <span class="text-red">*</span></label>
+          <label>Stasiun <span class="text-red">*</span></label>
           <select id="scheduleUnit" required>
-            <option value="">Pilih unit...</option>
+            <option value="">Pilih stasiun...</option>
           </select>
         </div>
 
