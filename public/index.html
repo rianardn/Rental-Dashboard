@@ -5070,7 +5070,7 @@
           <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
             ${formatScheduleTime(normalizedSchedule)}
           </div>
-          ${s.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${escapeHtml(s.unitName)}</div>` : ''}
+          ${s.unitName ? `<div class="label-xs-muted" style="margin-bottom: 4px;">🎮 ${escapeHtml(s.unitName)}</div>` : ''}
           ${s.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${escapeHtml(s.note)}</div>` : ''}
         </div>
       `;
@@ -6677,7 +6677,7 @@
               <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
                 ${formattedTime}
               </div>
-              ${item.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${escapeHtml(item.unitName)}</div>` : ''}
+              ${item.unitName ? `<div class="label-xs-muted" style="margin-bottom: 4px;">🎮 ${escapeHtml(item.unitName)}</div>` : ''}
               ${item.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${escapeHtml(item.note)}</div>` : ''}
               <div style="font-size: 0.75rem; color: var(--ps3-green-dark); margin-top: 6px; padding: 4px 8px; background: rgba(34, 197, 94, 0.1); border-radius: 4px; border: 1px solid rgba(34, 197, 94, 0.3);">
                 ✅ Diselesaikan: Transaksi tercatat otomatis
@@ -6764,7 +6764,7 @@
               <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
                 ${formattedTime}
               </div>
-              ${item.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${escapeHtml(item.unitName)} ${item.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem;">● AKTIF</span>' : ''}</div>` : ''}
+              ${item.unitName ? `<div class="label-xs-muted" style="margin-bottom: 4px;">🎮 ${escapeHtml(item.unitName)} ${item.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem;">● AKTIF</span>' : ''}</div>` : ''}
               ${item.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${escapeHtml(item.note)}</div>` : ''}
               <div style="font-size: 0.75rem; color: var(--ps3-red); margin-top: 6px; padding: 4px 8px; background: rgba(230, 0, 18, 0.1); border-radius: 4px; border: 1px solid rgba(230, 0, 18, 0.3);">
                 🗑️ Dihapus: ${deletedDate}
@@ -9677,7 +9677,7 @@
             <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
               ${formatScheduleTime(s)}
             </div>
-            ${s.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${s.unitName} ${s.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem;">● AKTIF</span>' : ''}</div>` : ''}
+            ${s.unitName ? `<div class="label-xs-muted" style="margin-bottom: 4px;">🎮 ${s.unitName} ${s.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem;">● AKTIF</span>' : ''}</div>` : ''}
             ${s.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${s.note}</div>` : ''}
             ${s.status === 'running' ? `<div style="font-size: 0.75rem; color: var(--ps3-green); margin-top: 6px; padding: 4px 8px; background: rgba(119,221,119,0.1); border-radius: 4px; border: 1px solid rgba(119,221,119,0.3);">▶️ Sedang berjalan di unit</div>` : ''}
             <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
@@ -10274,7 +10274,7 @@
               <div style="font-size: 0.85rem; color: var(--ps3-text); font-weight: 600; margin-bottom: 6px;">
                 ${formatScheduleTime(s)}
               </div>
-              ${s.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${s.unitName} ${s.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem;">● AKTIF</span>' : ''}</div>` : ''}
+              ${s.unitName ? `<div class="label-xs-muted" style="margin-bottom: 4px;">🎮 ${s.unitName} ${s.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem;">● AKTIF</span>' : ''}</div>` : ''}
               ${s.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${s.note}</div>` : ''}
               ${s.status === 'running' ? `<div style="font-size: 0.75rem; color: var(--ps3-green); margin-top: 6px; padding: 4px 8px; background: rgba(119,221,119,0.1); border-radius: 4px; border: 1px solid rgba(119,221,119,0.3);">▶️ Sedang berjalan di unit</div>` : ''}
               <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
@@ -10526,7 +10526,7 @@
           </div>
 
           <!-- Unit & Note -->
-          ${s.unitName ? `<div style="font-size: 0.85rem; color: var(--ps3-muted); margin-bottom: 4px;">🎮 ${escapeHtml(s.unitName)}</div>` : ''}
+          ${s.unitName ? `<div class="label-xs-muted" style="margin-bottom: 4px;">🎮 ${escapeHtml(s.unitName)}</div>` : ''}
           ${s.note ? `<div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${escapeHtml(s.note)}</div>` : ''}
         </div>
       `;
