@@ -3971,6 +3971,101 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════
+       MODAL: Edit Item Inventori
+  ═══════════════════════════════════════════════════════════════ -->
+  <div id="modalEditItem" class="modal" style="z-index: 3100;">
+    <div class="modal-content" style="max-width: 500px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div class="modal-title">✏️ Edit Item</div>
+        <button class="modal-close" onclick="closeModal('modalEditItem')">×</button>
+      </div>
+
+      <form id="editItemForm" onsubmit="event.preventDefault(); saveEditItem();" style="padding: 20px;">
+        <input type="hidden" id="editItemId">
+
+        <!-- Nama Item -->
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">📛 Nama Item *</label>
+          <input type="text" id="editItemName" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+        </div>
+
+        <!-- Kategori & Kondisi -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+          <div>
+            <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">📂 Kategori *</label>
+            <select id="editItemCategory" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+              <option value="konsol">🎮 Konsol PS3</option>
+              <option value="tv">📺 TV/Monitor</option>
+              <option value="stik">🕹️ Stik Controller</option>
+              <option value="kabel_usb">🔌 Kabel USB/Charger</option>
+              <option value="kabel_hdmi">🔌 Kabel HDMI</option>
+              <option value="kabel_power">🔌 Kabel Power/Plug</option>
+              <option value="lainnya">📦 Lainnya</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">🔧 Kondisi *</label>
+            <select id="editItemCondition" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+              <option value="baik">🟢 Baik</option>
+              <option value="rusak">🔴 Rusak</option>
+              <option value="perbaikan">🟡 Dalam Perbaikan</option>
+              <option value="rusak_total">⚫ Rusak Total</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Subkategori -->
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">🏷️ Subkategori/Model</label>
+          <input type="text" id="editItemSubcategory" placeholder="Contoh: Original, Fat, Slim, etc." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+        </div>
+
+        <!-- Lokasi -->
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">📍 Lokasi Saat Ini</label>
+          <input type="text" id="editItemLocation" placeholder="Contoh: Ruang A, Gudang, etc." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+        </div>
+
+        <!-- Tanggal Beli & Harga -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+          <div>
+            <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">📅 Tanggal Beli</label>
+            <input type="date" id="editItemPurchaseDate" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">💰 Harga Beli (Rp)</label>
+            <input type="number" id="editItemPurchaseCost" placeholder="0" min="0" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+          </div>
+        </div>
+
+        <!-- Vendor & Garansi -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+          <div>
+            <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">🏪 Vendor/Toko</label>
+            <input type="text" id="editItemVendor" placeholder="Nama toko/penjual" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">🛡️ Info Garansi</label>
+            <input type="text" id="editItemWarranty" placeholder="Contoh: 1 tahun" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem;">
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-size: 0.75rem; color: var(--ps3-silver); margin-bottom: 5px;">📝 Catatan</label>
+          <textarea id="editItemNotes" rows="3" placeholder="Catatan tambahan tentang item..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-card); color: var(--ps3-text); font-size: 0.9rem; resize: vertical;"></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn-cancel" onclick="closeModal('modalEditItem')" style="flex: 1; padding: 12px; border-radius: 10px;">Batal</button>
+          <button type="submit" class="btn-confirm" style="flex: 1; padding: 12px; border-radius: 10px; background: linear-gradient(135deg, #2ecc71, #27ae60);">💾 Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
        MODAL: Tambah Perawatan
   ═══════════════════════════════════════════════════════════════ -->
   <div id="modalAddMaintenance" class="modal" style="z-index: 3100;">
@@ -13029,7 +13124,65 @@
     }
 
     function openEditItemModal() {
-      showToast('Fitur edit akan segera hadir', 'info');
+      if (!currentItemDetail) {
+        showToast('Tidak ada item yang dipilih', 'error');
+        return;
+      }
+
+      const item = currentItemDetail;
+
+      // Populate form fields
+      document.getElementById('editItemId').value = item.id;
+      document.getElementById('editItemName').value = item.name || '';
+      document.getElementById('editItemCategory').value = item.category || 'lainnya';
+      document.getElementById('editItemCondition').value = item.condition || 'baik';
+      document.getElementById('editItemSubcategory').value = item.subcategory || '';
+      document.getElementById('editItemLocation').value = item.current_location || '';
+      document.getElementById('editItemPurchaseDate').value = item.purchase_date || '';
+      document.getElementById('editItemPurchaseCost').value = item.purchase_cost || 0;
+      document.getElementById('editItemVendor').value = item.vendor || '';
+      document.getElementById('editItemWarranty').value = item.warranty_info || '';
+      document.getElementById('editItemNotes').value = item.notes || '';
+
+      // Close detail modal and open edit modal
+      closeModal('modalItemDetail');
+      openModal('modalEditItem');
+    }
+
+    async function saveEditItem() {
+      const itemId = document.getElementById('editItemId').value;
+      const data = {
+        name: document.getElementById('editItemName').value,
+        category: document.getElementById('editItemCategory').value,
+        subcategory: document.getElementById('editItemSubcategory').value,
+        condition: document.getElementById('editItemCondition').value,
+        current_location: document.getElementById('editItemLocation').value,
+        purchase_date: document.getElementById('editItemPurchaseDate').value,
+        purchase_cost: parseInt(document.getElementById('editItemPurchaseCost').value) || 0,
+        vendor: document.getElementById('editItemVendor').value,
+        warranty_info: document.getElementById('editItemWarranty').value,
+        notes: document.getElementById('editItemNotes').value
+      };
+
+      // Validate required fields
+      if (!data.name || !data.category || !data.condition) {
+        showToast('Nama, Kategori, dan Kondisi wajib diisi', 'error');
+        return;
+      }
+
+      try {
+        await api('PUT', `/inventory/${itemId}`, data);
+        showToast('Item berhasil diperbarui', 'success');
+        closeModal('modalEditItem');
+
+        // Refresh inventory list
+        renderInventory();
+
+        // Reopen detail modal with updated data
+        openItemDetail(itemId);
+      } catch (error) {
+        showToast(error.message || 'Gagal memperbarui item', 'error');
+      }
     }
 
     // Station Functions
