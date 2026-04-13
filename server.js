@@ -3569,7 +3569,8 @@ app.get('/api/pairings/:id', requireAuth, (req, res) => {
   }
   
   // Get all items with their roles
-  const items = db.prepare(`
+  console.log(`[DEBUG] Fetching items for pairing_id: ${req.params.id}`);
+  const itemsQuery = db.prepare(`
     SELECT pi.*, i.name, i.category, i.condition, i.purchase_cost,
            (SELECT COALESCE(SUM(hours_used), 0) FROM inventory_usage WHERE item_id = i.id AND date >= date('now', '-30 days')) as usage_30d,
            (SELECT COALESCE(SUM(cost), 0) FROM inventory_maintenance WHERE item_id = i.id) as total_maintenance
@@ -3577,7 +3578,13 @@ app.get('/api/pairings/:id', requireAuth, (req, res) => {
     JOIN inventory_items i ON pi.item_id = i.id
     WHERE pi.pairing_id = ?
     ORDER BY pi.role
-  `).all(req.params.id);
+  `);
+  const items = itemsQuery.all(req.params.id);
+  console.log(`[DEBUG] Found ${items.length} items for pairing ${req.params.id}:`, items.map(i => ({ item_id: i.item_id, name: i.name })));
+  
+  // Also check raw pairing items without join
+  const rawItems = db.prepare('SELECT * FROM inventory_pairing_items WHERE pairing_id = ?').all(req.params.id);
+  console.log(`[DEBUG] Raw pairing items (no join): ${rawItems.length}`, rawItems.map(i => i.item_id));
   
   // Calculate total usage for pairing (from konsol usage)
   const konsolItem = items.find(i => i.role === 'konsol');
