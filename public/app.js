@@ -4012,28 +4012,61 @@
       const now = new Date();
       const wibOffset = 7 * 60 * 60 * 1000; // 7 hours in milliseconds
       const wibTime = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + wibOffset);
-      
+
       // Format date as YYYY-MM-DD in WIB
       const today = wibTime.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
       document.getElementById('scheduleDate').value = today;
       document.getElementById('scheduleEndDate').value = today;
-      
+
       // Format time as HH:MM in WIB
       const startTime = wibTime.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta', hour12: false, hour: '2-digit', minute: '2-digit' });
       const endWibTime = new Date(wibTime.getTime() + 60 * 60000);
       const endTime = endWibTime.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta', hour12: false, hour: '2-digit', minute: '2-digit' });
       document.getElementById('scheduleTime').value = startTime;
       document.getElementById('scheduleEndTime').value = endTime;
-      
+
       // Set default duration to 60 minutes
       document.getElementById('scheduleDuration').value = '60';
       document.getElementById('scheduleDurationCustom').style.display = 'none';
       document.getElementById('customDurationLabel').style.color = 'var(--ps3-muted)';
-      
-      // Ensure station select is populated
+
+      // Ensure station select is populated with only "SIAP" stations
       await populateScheduleStationSelect();
       // Open modal
       openModal('modalAddSchedule');
+    }
+
+    // Populate station dropdown for Add Schedule modal - only show "SIAP" stations
+    async function populateScheduleStationSelect() {
+      const stationSelect = document.getElementById('scheduleUnit');
+
+      // ALWAYS load fresh stations data from API (not cache)
+      try {
+        showLoading(true);
+        stations = await api('GET', '/pairings');
+        showLoading(false);
+      } catch (error) {
+        showLoading(false);
+        console.error('Failed to load stations:', error);
+        showToast('Gagal memuat data stasiun', 'error');
+        return;
+      }
+
+      // Filter only "SIAP" stations (is_valid = true)
+      const readyStations = stations.filter(s => s.is_valid === true || s.is_valid === 1);
+
+      // Populate dropdown
+      let options = '<option value="">Pilih stasiun...</option>';
+      readyStations.forEach(s => {
+        options += `<option value="${s.id}">${s.name}</option>`;
+      });
+
+      // If no ready stations, show warning option
+      if (readyStations.length === 0) {
+        options = '<option value="">Tidak ada stasiun SIAP</option>';
+      }
+
+      stationSelect.innerHTML = options;
     }
 
     function openModal(id, front = false) {
@@ -7073,8 +7106,11 @@
     // Format Unix timestamp (ms) to WIB timezone display (matching the clock in top-right)
     function formatDateWIB(timestampMs) {
       if (!timestampMs) return '−';
+      // Convert to number if it's a string (e.g., date string)
+      const ts = typeof timestampMs === 'string' ? new Date(timestampMs).getTime() : Number(timestampMs);
+      if (isNaN(ts)) return '−';
       // WIB is UTC+7
-      const wibTime = new Date(timestampMs + (7 * 60 * 60 * 1000));
+      const wibTime = new Date(ts + (7 * 60 * 60 * 1000));
       const day = wibTime.getUTCDate();
       const month = wibTime.toLocaleString('id-ID', { month: 'short', timeZone: 'UTC' });
       const year = wibTime.getUTCFullYear();
@@ -7085,7 +7121,10 @@
 
     function formatDateOnlyWIB(timestampMs) {
       if (!timestampMs) return '−';
-      const wibTime = new Date(timestampMs + (7 * 60 * 60 * 1000));
+      // Convert to number if it's a string (e.g., date string)
+      const ts = typeof timestampMs === 'string' ? new Date(timestampMs).getTime() : Number(timestampMs);
+      if (isNaN(ts)) return '−';
+      const wibTime = new Date(ts + (7 * 60 * 60 * 1000));
       const day = wibTime.getUTCDate();
       const month = wibTime.toLocaleString('id-ID', { month: 'short', timeZone: 'UTC' });
       const year = wibTime.getUTCFullYear();
@@ -7094,7 +7133,10 @@
 
     function formatTimeOnlyWIB(timestampMs) {
       if (!timestampMs) return '−';
-      const wibTime = new Date(timestampMs + (7 * 60 * 60 * 1000));
+      // Convert to number if it's a string (e.g., date string)
+      const ts = typeof timestampMs === 'string' ? new Date(timestampMs).getTime() : Number(timestampMs);
+      if (isNaN(ts)) return '−';
+      const wibTime = new Date(ts + (7 * 60 * 60 * 1000));
       const hours = String(wibTime.getUTCHours()).padStart(2, '0');
       const minutes = String(wibTime.getUTCMinutes()).padStart(2, '0');
       return `${hours}:${minutes} WIB`;
@@ -7171,29 +7213,6 @@
     let schedules = [];
     let inventory = [];
     let capitalData = { capital: [], expenses: [], summary: { totalCapital: 0, totalSpent: 0, remaining: 0 } };
-
-    // Populate station select for schedules
-    async function populateScheduleStationSelect() {
-      const select = document.getElementById('scheduleUnit');
-      if (!select) return;
-      
-      // Load stations if not loaded
-      if (stations.length === 0) {
-        try {
-          stations = await api('GET', '/pairings');
-        } catch (error) {
-          console.error('Failed to load stations:', error);
-        }
-      }
-      
-      select.innerHTML = '<option value="">Pilih stasiun...</option>';
-      stations.forEach(station => {
-        const option = document.createElement('option');
-        option.value = station.id;
-        option.textContent = station.name;
-        select.appendChild(option);
-      });
-    }
 
     // Schedule Functions
     function handleScheduleDurationChange(select) {
