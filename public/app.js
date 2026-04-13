@@ -846,6 +846,7 @@
       amountMax: '',
       dateFrom: '',
       dateTo: '',
+      note: '',
       sortBy: 'date',
       sortOrder: 'desc',
       page: 0,
@@ -903,6 +904,7 @@
         amountMax: '',
         dateFrom: dateFrom,
         dateTo: dateTo,
+        note: '',
         sortBy: 'date',
         sortOrder: 'desc',
         page: 0,
@@ -1117,6 +1119,7 @@
       document.getElementById('txFilterAmountMax').value = txSearchState.amountMax;
       document.getElementById('txFilterDateFrom').value = txSearchState.dateFrom;
       document.getElementById('txFilterDateTo').value = txSearchState.dateTo;
+      document.getElementById('txFilterNote').value = txSearchState.note;
       document.getElementById('txSortBy').value = txSearchState.sortBy;
       document.getElementById('txSortOrder').value = txSearchState.sortOrder;
     }
@@ -1148,6 +1151,7 @@
       txSearchState.amountMax = document.getElementById('txFilterAmountMax').value;
       txSearchState.dateFrom = document.getElementById('txFilterDateFrom').value;
       txSearchState.dateTo = document.getElementById('txFilterDateTo').value;
+      txSearchState.note = document.getElementById('txFilterNote').value.trim();
       txSearchState.sortBy = document.getElementById('txSortBy').value;
       txSearchState.sortOrder = document.getElementById('txSortOrder').value;
     }
@@ -1160,6 +1164,7 @@
       if (txSearchState.payment) count++;
       if (txSearchState.amountMin || txSearchState.amountMax) count++;
       if (txSearchState.dateFrom || txSearchState.dateTo) count++;
+      if (txSearchState.note) count++;
       return count;
     }
 
@@ -1186,6 +1191,7 @@
         amountMax: '',
         dateFrom: '',
         dateTo: '',
+        note: '',
         sortBy: 'date',
         sortOrder: 'desc',
         page: 0,
@@ -1229,6 +1235,7 @@
       if (txSearchState.amountMax) params.set('amountMax', txSearchState.amountMax);
       if (txSearchState.dateFrom) params.set('dateFrom', txSearchState.dateFrom);
       if (txSearchState.dateTo) params.set('dateTo', txSearchState.dateTo);
+      if (txSearchState.note) params.set('note', txSearchState.note);
       params.set('sortBy', txSearchState.sortBy);
       params.set('sortOrder', txSearchState.sortOrder);
 

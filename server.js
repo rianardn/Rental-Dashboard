@@ -1474,6 +1474,7 @@ app.get('/api/transactions', requireAuth, (req, res) => {
     dateFrom,
     dateTo,
     payment,
+    note,
     sortBy = 'date',
     sortOrder = 'desc',
     limit = 100,
@@ -1525,6 +1526,12 @@ app.get('/api/transactions', requireAuth, (req, res) => {
   if (payment && payment.trim()) {
     conditions.push("payment = ? COLLATE NOCASE");
     params.push(payment.trim());
+  }
+
+  // Note filter (partial match, case-insensitive)
+  if (note && note.trim()) {
+    conditions.push("note LIKE ? COLLATE NOCASE");
+    params.push(`%${note.trim()}%`);
   }
 
   // Build WHERE clause

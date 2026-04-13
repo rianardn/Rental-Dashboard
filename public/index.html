@@ -1909,6 +1909,12 @@
                   <input type="date" id="txFilterDateTo" onchange="searchTransactions()">
                 </div>
               </div>
+
+              <!-- Note Filter -->
+              <div class="filter-field grid-full">
+                <label>📝 Catatan</label>
+                <input type="text" id="txFilterNote" placeholder="Cari dalam catatan..." oninput="debouncedSearchTransactions()">
+              </div>
             </div>
 
             <!-- Sort Options (Optimized for Mobile) -->
