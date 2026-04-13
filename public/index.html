@@ -1098,18 +1098,18 @@
         <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--ps3-muted);">Masukkan nilai baru:</p>
 
         <div id="editFieldCustomer" style="display: none; margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Nama Penyewa</label>
+          <label class="form-group-label">Nama Penyewa</label>
           <input type="text" id="editCustomer" class="input-inherit">
         </div>
 
         <div id="editFieldPhone" style="display: none; margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Nomor Telepon</label>
+          <label class="form-group-label">Nomor Telepon</label>
           <input type="text" id="editPhone" placeholder="08xxxxxxxxxx" class="input-inherit">
         </div>
 
         <!-- Unified Date/Time/Duration Section -->
         <div id="editFieldDateTime" style="display: none; margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 10px; font-size: 0.85rem; color: var(--ps3-silver); font-weight: 600;">📅 Tanggal & Waktu Penyewaan</label>
+          <label class="heading-section" style="display: block; margin-bottom: 10px;">📅 Tanggal & Waktu Penyewaan</label>
 
           <!-- Row 1: Start Date & Start Time -->
           <div class="form-row">
@@ -1146,19 +1146,19 @@
 
         <!-- Duration (legacy, for when only duration is selected without datetime) -->
         <div id="editFieldDuration" style="display: none; margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Durasi (menit)</label>
+          <label class="form-group-label">Durasi (menit)</label>
           <input type="number" id="editDuration" min="15" step="15" class="input-inherit">
         </div>
 
         <div id="editFieldUnit" style="display: none; margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Unit PS</label>
+          <label class="form-group-label">Unit PS</label>
           <select id="editUnitId" class="input-inherit">
             <option value="">Pilih Unit</option>
           </select>
         </div>
 
         <div id="editFieldPaid" style="display: none; margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Jumlah Pendapatan (Rp)</label>
+          <label class="form-group-label">Jumlah Pendapatan (Rp)</label>
           <input type="number" id="editPaid" class="input-inherit">
         </div>
 
@@ -1172,12 +1172,12 @@
         </div>
 
         <div id="editFieldNote" style="display: none; margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-silver);">Catatan</label>
+          <label class="form-group-label">Catatan</label>
           <textarea id="editNote" rows="3" class="textarea-ps3"></textarea>
         </div>
 
         <div style="margin-bottom: 16px;">
-          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--ps3-red);">Alasan Edit *</label>
+          <label class="form-group-label" style="color: var(--ps3-red);">Alasan Edit *</label>
           <input type="text" id="editReason" placeholder="Contoh: Koreksi harga, Perubahan durasi, dll." class="input-danger">
         </div>
 
