@@ -4070,27 +4070,132 @@
           <p style="text-align: center; color: var(--ps3-muted); padding: 15px;">Belum ada item</p>
         </div>
 
-        <!-- Add Item to Station -->
+        <!-- Add Items by Category -->
         <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 15px;">
-          <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 8px; color: var(--ps3-silver);">➕ Tambah Item ke Stasiun</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-            <select id="stationAddItemId" style="background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
-              <option value="">Pilih item...</option>
-            </select>
-            <select id="stationAddItemRole" style="background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
-              <option value="">Pilih role...</option>
-              <option value="konsol">🎮 Konsol</option>
-              <option value="tv">📺 TV</option>
-              <option value="stik1">🕹️ Stik 1</option>
-              <option value="stik2">🕹️ Stik 2</option>
-              <option value="stik3">🕹️ Stik 3</option>
-              <option value="stik4">🕹️ Stik 4</option>
-              <option value="kabel_hdmi">🔌 HDMI</option>
-              <option value="kabel_power">🔌 Power</option>
-              <option value="lainnya">📦 Lainnya</option>
-            </select>
+          <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 12px; color: var(--ps3-silver);">➕ Tambah Item per Kategori</div>
+
+          <!-- 🎮 Konsol (Wajib 1, Fixed) -->
+          <div style="margin-bottom: 12px; padding: 10px; background: rgba(230,0,18,0.1); border-radius: 8px; border-left: 3px solid var(--ps3-red);">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 0.75rem; font-weight: 600;">
+              <span>🎮</span>
+              <span>Konsol</span>
+              <span style="color: var(--ps3-red); font-size: 0.65rem;">(Wajib 1)</span>
+            </div>
+            <div id="konsolRows">
+              <div class="category-row" data-category="konsol">
+                <select class="konsol-select" style="width: 100%; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+                  <option value="">Pilih Konsol...</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <button class="btn" onclick="addItemToStation()" style="width: 100%; font-size: 0.75rem; padding: 10px;">Tambahkan ke Stasiun</button>
+
+          <!-- 📺 TV (Wajib 1, Fixed) -->
+          <div style="margin-bottom: 12px; padding: 10px; background: rgba(0,170,255,0.1); border-radius: 8px; border-left: 3px solid #00aaff;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 0.75rem; font-weight: 600;">
+              <span>📺</span>
+              <span>TV/Monitor</span>
+              <span style="color: var(--ps3-red); font-size: 0.65rem;">(Wajib 1)</span>
+            </div>
+            <div id="tvRows">
+              <div class="category-row" data-category="tv">
+                <select class="tv-select" style="width: 100%; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+                  <option value="">Pilih TV...</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🕹️ Stik (Min 1, Bisa Tambah) -->
+          <div style="margin-bottom: 12px; padding: 10px; background: rgba(0,255,100,0.1); border-radius: 8px; border-left: 3px solid #00ff64;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600;">
+                <span>🕹️</span>
+                <span>Stik/Controller</span>
+                <span style="color: var(--ps3-yellow); font-size: 0.65rem;">(Min 1, Bisa Lebih)</span>
+              </div>
+              <button onclick="addCategoryRow('stik')" style="background: var(--ps3-green); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">+ Tambah</button>
+            </div>
+            <div id="stikRows">
+              <div class="category-row" data-category="stik" style="display: flex; gap: 8px; margin-bottom: 6px;">
+                <select class="stik-select" style="flex: 1; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+                  <option value="">Pilih Stik...</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🔌 Kabel Charger/USB (Min 1, Bisa Tambah) -->
+          <div style="margin-bottom: 12px; padding: 10px; background: rgba(255,165,0,0.1); border-radius: 8px; border-left: 3px solid var(--ps3-yellow);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600;">
+                <span>🔌</span>
+                <span>Kabel Charger/USB</span>
+                <span style="color: var(--ps3-yellow); font-size: 0.65rem;">(Min 1, Bisa Lebih)</span>
+              </div>
+              <button onclick="addCategoryRow('charger')" style="background: var(--ps3-green); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">+ Tambah</button>
+            </div>
+            <div id="chargerRows">
+              <div class="category-row" data-category="charger" style="display: flex; gap: 8px; margin-bottom: 6px;">
+                <select class="charger-select" style="flex: 1; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+                  <option value="">Pilih Charger/USB...</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🔌 HDMI (Wajib 1, Fixed) -->
+          <div style="margin-bottom: 12px; padding: 10px; background: rgba(128,0,255,0.1); border-radius: 8px; border-left: 3px solid #8000ff;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 0.75rem; font-weight: 600;">
+              <span>🔌</span>
+              <span>Kabel HDMI</span>
+              <span style="color: var(--ps3-red); font-size: 0.65rem;">(Wajib 1)</span>
+            </div>
+            <div id="hdmiRows">
+              <div class="category-row" data-category="hdmi">
+                <select class="hdmi-select" style="width: 100%; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+                  <option value="">Pilih HDMI...</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🔌 Plug/Power (Wajib 1, Fixed) -->
+          <div style="margin-bottom: 12px; padding: 10px; background: rgba(192,192,192,0.15); border-radius: 8px; border-left: 3px solid var(--ps3-silver);">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 0.75rem; font-weight: 600;">
+              <span>⚡</span>
+              <span>Kabel Power/Plug</span>
+              <span style="color: var(--ps3-red); font-size: 0.65rem;">(Wajib 1)</span>
+            </div>
+            <div id="plugRows">
+              <div class="category-row" data-category="plug">
+                <select class="plug-select" style="width: 100%; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+                  <option value="">Pilih Power...</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 📦 Lainnya (Opsional 0, Bisa Tambah) -->
+          <div style="margin-bottom: 12px; padding: 10px; background: rgba(100,100,100,0.1); border-radius: 8px; border-left: 3px solid #646464;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600;">
+                <span>📦</span>
+                <span>Lainnya</span>
+                <span style="color: var(--ps3-muted); font-size: 0.65rem;">(Opsional)</span>
+              </div>
+              <button onclick="addCategoryRow('lainnya')" style="background: var(--ps3-green); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">+ Tambah</button>
+            </div>
+            <div id="lainnyaRows">
+              <!-- Empty by default -->
+            </div>
+          </div>
+
+          <!-- Validation Message -->
+          <div id="categoryValidationMsg" style="display: none; background: rgba(255,0,0,0.1); border: 1px solid var(--ps3-red); border-radius: 6px; padding: 8px; margin-bottom: 10px; font-size: 0.75rem; color: var(--ps3-red);"></div>
+
+          <!-- Save Button -->
+          <button class="btn-confirm" onclick="saveCategoryItemsToStation()" style="width: 100%; padding: 12px; border-radius: 10px; font-size: 0.85rem;">💾 Simpan Semua Item</button>
         </div>
 
         <!-- Quick Swap -->
@@ -13026,11 +13131,12 @@
           `).join('');
         }
 
-        // Populate add item dropdown with available items
+        // Populate category dropdowns with available items (not already in this station)
         const availableItems = inventory.filter(i => i.is_active !== 0 && !items.find(si => si.item_id === i.id));
-        const addItemSelect = document.getElementById('stationAddItemId');
-        addItemSelect.innerHTML = '<option value="">Pilih item...</option>' +
-          availableItems.map(i => `<option value="${i.id}">${i.id} - ${i.name}</option>`).join('');
+        populateCategoryDropdowns(availableItems);
+
+        // Clear any existing dynamic rows (reset to default state)
+        resetCategoryRows();
 
         // Populate swap dropdowns
         const swapItemSelect = document.getElementById('swapItemId');
@@ -13042,25 +13148,229 @@
         swapTargetSelect.innerHTML = '<option value="">Ke stasiun...</option>' +
           targetStations.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
 
+        // Hide validation message
+        document.getElementById('categoryValidationMsg').style.display = 'none';
+
         openModal('modalStationDetail');
       } catch (error) {
         showToast('Gagal memuat detail stasiun', 'error');
       }
     }
 
-    async function addItemToStation() {
-      const stationId = document.getElementById('stationDetailId').value;
-      const itemId = document.getElementById('stationAddItemId').value;
-      const role = document.getElementById('stationAddItemRole').value;
+    // Category-based item management functions
+    function populateCategoryDropdowns(availableItems) {
+      // Filter items by category
+      const konsolItems = availableItems.filter(i => i.id.startsWith('PS3-'));
+      const tvItems = availableItems.filter(i => i.id.startsWith('TV-'));
+      const stikItems = availableItems.filter(i => i.id.startsWith('STK-'));
+      const chargerItems = availableItems.filter(i => i.id.startsWith('USB-'));
+      const hdmiItems = availableItems.filter(i => i.id.startsWith('HDMI-'));
+      const plugItems = availableItems.filter(i => i.id.startsWith('PLUG-'));
+      const lainnyaItems = availableItems.filter(i => i.id.startsWith('LAIN-'));
 
-      if (!itemId || !role) {
-        showToast('Pilih item dan role', 'error');
+      // Populate each dropdown
+      populateSelect('.konsol-select', konsolItems, 'Pilih Konsol...');
+      populateSelect('.tv-select', tvItems, 'Pilih TV...');
+      populateSelect('.stik-select', stikItems, 'Pilih Stik...');
+      populateSelect('.charger-select', chargerItems, 'Pilih Charger/USB...');
+      populateSelect('.hdmi-select', hdmiItems, 'Pilih HDMI...');
+      populateSelect('.plug-select', plugItems, 'Pilih Power...');
+      populateSelect('.lainnya-select', lainnyaItems, 'Pilih Item...');
+    }
+
+    function populateSelect(selector, items, placeholder) {
+      const selects = document.querySelectorAll(selector);
+      const options = `<option value="">${placeholder}</option>` +
+        items.map(i => `<option value="${i.id}">${i.id} - ${i.name}</option>`).join('');
+      selects.forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = options;
+        select.value = currentValue;
+      });
+    }
+
+    function resetCategoryRows() {
+      // Reset Stik to 1 row
+      const stikRows = document.getElementById('stikRows');
+      stikRows.innerHTML = `
+        <div class="category-row" data-category="stik" style="display: flex; gap: 8px; margin-bottom: 6px;">
+          <select class="stik-select" style="flex: 1; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+            <option value="">Pilih Stik...</option>
+          </select>
+        </div>
+      `;
+
+      // Reset Charger to 1 row
+      const chargerRows = document.getElementById('chargerRows');
+      chargerRows.innerHTML = `
+        <div class="category-row" data-category="charger" style="display: flex; gap: 8px; margin-bottom: 6px;">
+          <select class="charger-select" style="flex: 1; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+            <option value="">Pilih Charger/USB...</option>
+          </select>
+        </div>
+      `;
+
+      // Reset Lainnya to empty
+      const lainnyaRows = document.getElementById('lainnyaRows');
+      lainnyaRows.innerHTML = '';
+
+      // Fixed categories stay with 1 row (Konsol, TV, HDMI, Plug)
+    }
+
+    function addCategoryRow(category) {
+      const container = document.getElementById(category + 'Rows');
+      const row = document.createElement('div');
+      row.className = 'category-row';
+      row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 6px;';
+      row.dataset.category = category;
+
+      const selectClass = category === 'stik' ? 'stik-select' :
+                         category === 'charger' ? 'charger-select' :
+                         category === 'lainnya' ? 'lainnya-select' : '';
+
+      const placeholder = category === 'stik' ? 'Pilih Stik...' :
+                         category === 'charger' ? 'Pilih Charger/USB...' :
+                         category === 'lainnya' ? 'Pilih Item...' : 'Pilih...';
+
+      // Get available items for this category
+      const availableItems = inventory.filter(i => {
+        if (!i.is_active) return false;
+        if (category === 'stik') return i.id.startsWith('STK-');
+        if (category === 'charger') return i.id.startsWith('USB-');
+        if (category === 'lainnya') return i.id.startsWith('LAIN-');
+        return false;
+      });
+
+      // Filter out already selected items in other rows
+      const selectedInCategory = Array.from(document.querySelectorAll('.' + selectClass))
+        .map(s => s.value).filter(v => v);
+      const filteredItems = availableItems.filter(i => !selectedInCategory.includes(i.id));
+
+      const options = `<option value="">${placeholder}</option>` +
+        filteredItems.map(i => `<option value="${i.id}">${i.id} - ${i.name}</option>`).join('');
+
+      row.innerHTML = `
+        <select class="${selectClass}" style="flex: 1; background: var(--ps3-card); color: var(--ps3-text); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 8px; font-size: 0.75rem;">
+          ${options}
+        </select>
+        <button onclick="removeCategoryRow(this)" style="background: var(--ps3-red); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">−</button>
+      `;
+
+      container.appendChild(row);
+    }
+
+    function removeCategoryRow(button) {
+      const row = button.closest('.category-row');
+      if (row) {
+        const category = row.dataset.category;
+        const container = document.getElementById(category + 'Rows');
+        const rows = container.querySelectorAll('.category-row');
+
+        // Check minimum requirements
+        if (category === 'stik' && rows.length <= 1) {
+          showToast('Stik minimal 1', 'error');
+          return;
+        }
+        if (category === 'charger' && rows.length <= 1) {
+          showToast('Kabel Charger minimal 1', 'error');
+          return;
+        }
+        // Lainnya can be 0
+
+        row.remove();
+      }
+    }
+
+    function validateCategoryForm() {
+      const errors = [];
+
+      // Check required fields (exactly 1)
+      const konsol = document.querySelector('.konsol-select')?.value;
+      const tv = document.querySelector('.tv-select')?.value;
+      const hdmi = document.querySelector('.hdmi-select')?.value;
+      const plug = document.querySelector('.plug-select')?.value;
+
+      if (!konsol) errors.push('Konsol wajib diisi (1 unit)');
+      if (!tv) errors.push('TV wajib diisi (1 unit)');
+      if (!hdmi) errors.push('Kabel HDMI wajib diisi (1 unit)');
+      if (!plug) errors.push('Kabel Power wajib diisi (1 unit)');
+
+      // Check minimum requirements
+      const stikValues = Array.from(document.querySelectorAll('.stik-select')).map(s => s.value).filter(v => v);
+      const chargerValues = Array.from(document.querySelectorAll('.charger-select')).map(s => s.value).filter(v => v);
+
+      if (stikValues.length < 1) errors.push('Stik minimal 1 unit');
+      if (chargerValues.length < 1) errors.push('Kabel Charger minimal 1 unit');
+
+      return errors;
+    }
+
+    async function saveCategoryItemsToStation() {
+      const stationId = document.getElementById('stationDetailId').value;
+
+      // Validate
+      const errors = validateCategoryForm();
+      if (errors.length > 0) {
+        const msgDiv = document.getElementById('categoryValidationMsg');
+        msgDiv.innerHTML = errors.map(e => `• ${e}`).join('<br>');
+        msgDiv.style.display = 'block';
         return;
       }
 
+      document.getElementById('categoryValidationMsg').style.display = 'none';
+
+      // Collect all selected items
+      const itemsToAdd = [];
+
+      // Konsol (1 unit, role: konsol)
+      const konsol = document.querySelector('.konsol-select')?.value;
+      if (konsol) itemsToAdd.push({ item_id: konsol, role: 'konsol' });
+
+      // TV (1 unit, role: tv)
+      const tv = document.querySelector('.tv-select')?.value;
+      if (tv) itemsToAdd.push({ item_id: tv, role: 'tv' });
+
+      // Stik (1-N units, roles: stik1, stik2, etc.)
+      const stikValues = Array.from(document.querySelectorAll('.stik-select')).map(s => s.value).filter(v => v);
+      stikValues.forEach((stikId, index) => {
+        itemsToAdd.push({ item_id: stikId, role: `stik${index + 1}` });
+      });
+
+      // Charger (1-N units, roles: charger1, charger2, etc.)
+      const chargerValues = Array.from(document.querySelectorAll('.charger-select')).map(s => s.value).filter(v => v);
+      chargerValues.forEach((chargerId, index) => {
+        itemsToAdd.push({ item_id: chargerId, role: `charger${index + 1}` });
+      });
+
+      // HDMI (1 unit, role: hdmi)
+      const hdmi = document.querySelector('.hdmi-select')?.value;
+      if (hdmi) itemsToAdd.push({ item_id: hdmi, role: 'hdmi' });
+
+      // Plug (1 unit, role: power)
+      const plug = document.querySelector('.plug-select')?.value;
+      if (plug) itemsToAdd.push({ item_id: plug, role: 'power' });
+
+      // Lainnya (0-N units, roles: lainnya1, lainnya2, etc.)
+      const lainnyaValues = Array.from(document.querySelectorAll('.lainnya-select')).map(s => s.value).filter(v => v);
+      lainnyaValues.forEach((lainnyaId, index) => {
+        itemsToAdd.push({ item_id: lainnyaId, role: `lainnya${index + 1}` });
+      });
+
+      if (itemsToAdd.length === 0) {
+        showToast('Pilih minimal 1 item', 'error');
+        return;
+      }
+
+      // Send all items
+      showToast('⏳ Menyimpan item ke stasiun...', 'info');
+
       try {
-        await api('POST', `/pairings/${stationId}/items`, { item_id: itemId, role });
-        showToast('Item ditambahkan ke stasiun', 'success');
+        // Add items one by one (parallel)
+        await Promise.all(itemsToAdd.map(item =>
+          api('POST', `/pairings/${stationId}/items`, item)
+        ));
+
+        showToast(`${itemsToAdd.length} item berhasil ditambahkan ke stasiun`, 'success');
         openStationDetail(stationId);
       } catch (error) {
         showToast(error.message, 'error');
