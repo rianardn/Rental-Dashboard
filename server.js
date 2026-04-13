@@ -62,12 +62,14 @@ function generateScheduleId() {
 // Generate inventory item ID based on category
 function generateInventoryId(category) {
   const prefixMap = {
-    'ps3': 'PS3',
+    'konsol': 'PS3',
     'tv': 'TV',
     'stik': 'STK',
-    'usb': 'USB',
-    'hdmi': 'HDMI',
-    'plug': 'PLUG',
+    'kabel_usb': 'USB',
+    'kabel_hdmi': 'HDMI',
+    'kabel_power': 'PLUG',
+    'furniture': 'FURN',
+    'aksesoris': 'AKS',
     'lainnya': 'LAIN'
   };
   const prefix = prefixMap[category?.toLowerCase()] || 'LAIN';
