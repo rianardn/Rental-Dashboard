@@ -544,60 +544,66 @@
         let bookingBadgeHTML = '';
         let bookingInfoHTML = '';
         if (isBooking) {
-          bookingBadgeHTML = `<div class="unit-status-badge" style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 600;">BOOKING</div>`;
+          bookingBadgeHTML = `<div class="unit-status-badge" style="background: linear-gradient(145deg, #16a34a, #22c55e); color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; box-shadow: 0 2px 8px rgba(34,197,94,0.4);">📅 BOOKING</div>`;
 
           // Build note with TX ID badge prefix
           const noteDisplay = station.note || '-';
           const noteWithTx = txId
-            ? `<span style="background: #22c55e; color: white; padding: 1px 4px; border-radius: 3px; font-size: 0.65rem; font-weight: 600; margin-right: 4px;">[${txId}]</span> ${noteDisplay}`
-            : noteDisplay;
+            ? `<span style="background: linear-gradient(145deg, #16a34a, #22c55e); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-right: 6px; box-shadow: 0 2px 6px rgba(34,197,94,0.3);">${txId}</span> <span style="color: var(--ps3-muted);">${noteDisplay}</span>`
+            : `<span style="color: var(--ps3-muted);">${noteDisplay}</span>`;
 
           bookingInfoHTML = `
-            <div class="booking-info" style="font-size: 0.75rem; color: var(--ps3-text); margin-top: 8px; line-height: 1.5;">
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--ps3-muted);">Penyewa:</span>
-                <span style="font-weight: 500;">${station.customer || '-'}</span>
+            <div class="booking-info" style="font-size: 0.8rem; color: var(--ps3-text); margin-top: 12px; padding: 12px; background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); border-radius: 10px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed rgba(34,197,94,0.2);">
+                <span style="color: var(--ps3-muted);">👤 Penyewa</span>
+                <span style="font-weight: 600; color: var(--ps3-text);">${station.customer || '-'}</span>
               </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--ps3-muted);">Durasi:</span>
-                <span>${station.duration > 0 ? station.duration + ' menit' : 'Open'}</span>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--ps3-muted);">⏱️ Durasi</span>
+                <span style="font-weight: 500;">${station.duration > 0 ? station.duration + ' menit' : 'Open'}</span>
               </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--ps3-muted);">Mulai:</span>
-                <span>${startTimeStr}</span>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: var(--ps3-muted);">🕐 Mulai</span>
+                <span style="font-weight: 500; font-family: var(--font-display);">${startTimeStr}</span>
               </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--ps3-muted);">Berakhir:</span>
-                <span>${endTimeStr}</span>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed rgba(34,197,94,0.2);">
+                <span style="color: var(--ps3-muted);">🏁 Berakhir</span>
+                <span style="font-weight: 500; font-family: var(--font-display); color: #22c55e;">${endTimeStr}</span>
               </div>
-              <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--ps3-border);">
-                <span style="color: var(--ps3-muted);">Catatan: </span>${noteWithTx}
+              <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+                <span style="color: var(--ps3-muted);">📝</span>${noteWithTx}
               </div>
             </div>
           `;
         }
 
         return `
-          <div class="unit-card active" data-station-id="${station.id}" style="border: 2px solid #22c55e;">
+          <div class="unit-card active ${isBooking ? 'booking' : ''}" data-station-id="${station.id}" style="border: 2px solid #22c55e;">
             <div class="unit-header">
               <div class="unit-name">${station.name}</div>
-              <div style="display: flex; gap: 4px; align-items: center;">
+              <div style="display: flex; gap: 6px; align-items: center;">
                 ${bookingBadgeHTML}
-                <div class="unit-status-badge" style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">AKTIF</div>
+                <div class="unit-status-badge" style="background: #22c55e; color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; box-shadow: 0 2px 8px rgba(34,197,94,0.4);">AKTIF</div>
               </div>
             </div>
             <div class="unit-body">
-              <div class="customer-name">${station.customer || 'Walk-in'}</div>
+              <div class="customer-name" style="font-size: 1rem; font-weight: 600; color: var(--ps3-text); margin-bottom: 8px;">${station.customer || 'Walk-in'}</div>
               ${timerHTML}
               ${isBooking ? bookingInfoHTML : `
-                <div class="session-info" style="font-size: 0.75rem; color: var(--ps3-muted); margin-top: 8px;">
-                  <div>Selesai: ${endTimeStr}</div>
-                  <div>Estimasi: Rp${estimatedRevenue.toLocaleString()}</div>
+                <div class="session-info" style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>Selesai:</span>
+                    <span style="color: var(--ps3-text); font-weight: 500;">${endTimeStr}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>Estimasi:</span>
+                    <span style="color: #22c55e; font-weight: 600;">Rp${estimatedRevenue.toLocaleString()}</span>
+                  </div>
                 </div>
               `}
             </div>
-            <div class="unit-actions">
-              <button class="btn btn-stop" onclick="stopStation('${station.id}')">STOP</button>
+            <div class="unit-actions" style="margin-top: 12px;">
+              <button class="btn btn-stop" onclick="stopStation('${station.id}')" style="background: linear-gradient(145deg, #dc2626, #b91c1c); box-shadow: 0 4px 15px rgba(220,38,38,0.3);">STOP</button>
             </div>
           </div>
         `;
