@@ -1811,17 +1811,16 @@ app.post('/api/schedules/:id/start-unit', requireAuth, (req, res) => {
   db.prepare('UPDATE schedules SET status = ?, unitId = ?, unitName = ? WHERE id = ?')
     .run('running', unitId, unitName, scheduleId);
   
-  // Also activate the linked unit in Dashboard (if unit_pairings mapping exists)
+  // Also activate the station in Dashboard (update inventory_pairings)
   try {
-    const unitMapping = db.prepare('SELECT unit_id FROM unit_pairings WHERE pairing_id = ? AND is_active = 1').get(unitId);
-    if (unitMapping) {
-      db.prepare('UPDATE units SET active = 1, startTime = ?, customer = ?, duration = ?, note = ?, linkedScheduleId = ? WHERE id = ?')
-        .run(startTime, schedule.customer, schedule.duration || 0, bookingNote, scheduleId, unitMapping.unit_id);
-      console.log(`[Schedule-Unit] Activated unit ${unitMapping.unit_id} for schedule ${scheduleId}`);
-    }
+    db.prepare(`UPDATE inventory_pairings 
+      SET active = 1, start_time = ?, current_customer = ?, current_duration = ?, current_note = ?, linked_schedule_id = ? 
+      WHERE id = ?`)
+      .run(startTime, schedule.customer, schedule.duration || 0, bookingNote, scheduleId, unitId);
+    console.log(`[Schedule-Station] Activated station ${unitId} for schedule ${scheduleId}`);
   } catch (e) {
-    console.error('[Schedule-Unit] Error activating unit:', e.message);
-    // Non-fatal: schedule is still running even if unit activation fails
+    console.error('[Schedule-Station] Error activating station:', e.message);
+    // Non-fatal: schedule is still running even if station activation fails
   }
   
   res.json({ 
@@ -1838,27 +1837,28 @@ app.post('/api/schedules/:id/complete', requireAuth, (req, res) => {
   const schedule = db.prepare('SELECT * FROM schedules WHERE id = ?').get(scheduleId);
   if (!schedule) return res.status(404).json({ error: 'Jadwal tidak ditemukan' });
   
-  // If schedule is running and has a linked unit, stop the unit first
+  // If schedule is running and has a linked station, stop the station first
   if (schedule.status === 'running' && schedule.unitId) {
-    const unit = db.prepare('SELECT * FROM units WHERE id = ?').get(schedule.unitId);
-    if (unit && unit.active && unit.linkedScheduleId === scheduleId) {
+    // Get station data from inventory_pairings
+    const station = db.prepare('SELECT * FROM inventory_pairings WHERE id = ?').get(schedule.unitId);
+    if (station && station.active && station.linked_schedule_id === scheduleId) {
       const settings = getSettings();
-      const elMin = Math.floor((Date.now() - unit.startTime) / 60000);
+      const elMin = Math.floor((Date.now() - station.start_time) / 60000);
       const cost = Math.round((elMin / 60) * settings.ratePerHour);
       const { paid = cost, payment = 'cash' } = req.body;
       const dateKey = getWIBDateISO();
       
       const tx = {
         id: generateRevenueId(),
-        unitId: unit.id,
-        unitName: unit.name,
-        customer: unit.customer,
-        startTime: unit.startTime,
+        unitId: station.id,
+        unitName: station.name,
+        customer: station.current_customer,
+        startTime: station.start_time,
         endTime: Date.now(),
         durationMin: elMin,
         paid: paid,
         payment: payment,
-        note: unit.note,
+        note: station.current_note,
         date: dateKey
       };
       
@@ -1867,8 +1867,13 @@ app.post('/api/schedules/:id/complete', requireAuth, (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .run(tx.id, tx.unitId, tx.unitName, tx.customer, tx.startTime, tx.endTime, tx.durationMin, tx.paid, tx.payment, tx.note, tx.date);
       
-      db.prepare("UPDATE units SET active = 0, startTime = NULL, customer = '', duration = 0, note = '', linkedScheduleId = NULL WHERE id = ?")
+      // Reset station in inventory_pairings
+      db.prepare(`UPDATE inventory_pairings 
+        SET active = 0, start_time = NULL, current_customer = NULL, current_duration = 0, current_note = NULL, linked_schedule_id = NULL 
+        WHERE id = ?`)
         .run(schedule.unitId);
+      
+      console.log(`[Schedule-Station] Deactivated station ${schedule.unitId} for schedule ${scheduleId}`);
     }
   }
   
