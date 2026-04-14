@@ -8760,6 +8760,8 @@
         await api('POST', `/schedules/${id}/start-unit`, { unitId: schedule.unitId });
         await loadData();
         await loadSchedules();
+        // Refresh stations for Dashboard integration
+        stations = await api('GET', '/pairings');
         renderAll();
         renderSchedules();
         filterCalendarSchedules();
@@ -8814,6 +8816,8 @@
         currentScheduleForUnit = null;
         await loadData();
         await loadSchedules();
+        // Refresh stations for Dashboard integration
+        stations = await api('GET', '/pairings');
         renderAll();
         renderSchedules();
         filterCalendarSchedules();
