@@ -199,11 +199,21 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
 
-    .header-left {
+    .header-nav {
       display: flex;
       align-items: center;
-      gap: 12px;
-      width: 140px; /* Fixed width for balance */
+    }
+
+    .menu-toggle {
+      background: none;
+      border: none;
+      color: var(--ps3-text);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .header-brand {
@@ -211,7 +221,10 @@
       align-items: center;
       justify-content: center;
       gap: 12px;
-      flex: 1; /* Take remaining space */
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
     }
 
     .header-icon {
@@ -231,7 +244,7 @@
       font-family: var(--font-display);
       font-size: 1rem;
       letter-spacing: 0.08em;
-      white-space: nowrap; /* Prevent wrapping */
+      white-space: nowrap;
     }
 
     .header-title span {
@@ -243,15 +256,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      width: 140px; /* Fixed width for balance */
-      justify-content: flex-end;
-    }
-
-    /* Desktop: hide left section but keep width for balance */
-    @media (min-width: 768px) {
-      .header-left {
-        visibility: hidden; /* Hide but keep space */
-      }
+      z-index: 2;
     }
 
     #clock {
