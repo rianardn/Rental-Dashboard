@@ -1811,6 +1811,19 @@ app.post('/api/schedules/:id/start-unit', requireAuth, (req, res) => {
   db.prepare('UPDATE schedules SET status = ?, unitId = ?, unitName = ? WHERE id = ?')
     .run('running', unitId, unitName, scheduleId);
   
+  // Also activate the linked unit in Dashboard (if unit_pairings mapping exists)
+  try {
+    const unitMapping = db.prepare('SELECT unit_id FROM unit_pairings WHERE pairing_id = ? AND is_active = 1').get(unitId);
+    if (unitMapping) {
+      db.prepare('UPDATE units SET active = 1, startTime = ?, customer = ?, duration = ?, note = ?, linkedScheduleId = ? WHERE id = ?')
+        .run(startTime, schedule.customer, schedule.duration || 0, bookingNote, scheduleId, unitMapping.unit_id);
+      console.log(`[Schedule-Unit] Activated unit ${unitMapping.unit_id} for schedule ${scheduleId}`);
+    }
+  } catch (e) {
+    console.error('[Schedule-Unit] Error activating unit:', e.message);
+    // Non-fatal: schedule is still running even if unit activation fails
+  }
+  
   res.json({ 
     ok: true, 
     message: 'Sesi dimulai dari jadwal',
