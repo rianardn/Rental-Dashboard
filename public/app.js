@@ -5834,13 +5834,10 @@
               </div>
             </div>
 
-            <!-- Action Buttons: Kembalikan & Hapus Permanen -->
+            <!-- Action Button: Kembalikan -->
             <div class="flex-gap-8">
               <button onclick="restoreIncomeFromTrash(${log.id})" style="flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--ps3-green-dark); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
                 ♻️ Kembalikan
-              </button>
-              <button onclick="deleteIncomePermanently(${log.id}, '${log.recordId}')" style="flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--ps3-red); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
-                🗑️ Hapus
               </button>
             </div>
           </div>
@@ -5998,37 +5995,6 @@
         renderReports();
       } catch (error) {
         showToast('Gagal mengembalikan transaksi: ' + error.message, 'error');
-      }
-    }
-
-    // Permanent delete function for income
-    async function deleteIncomePermanently(logId, recordId) {
-      if (!logId) {
-        showToast('ID log tidak valid', 'error');
-        return;
-      }
-
-      // Show confirmation dialog
-      if (!confirm(`⚠️ PERINGATAN:\n\nTransaksi ${recordId} akan dihapus PERMANEN dan tidak bisa dikembalikan.\n\nYakin ingin melanjutkan?`)) {
-        return;
-      }
-
-      try {
-        const res = await api('POST', `/deletion-logs/${logId}/permanent-delete`, {});
-
-        if (!res.ok) {
-          throw new Error(res.error || 'Gagal menghapus permanen');
-        }
-
-        // Remove deleted item from cache and re-render
-        cachedTrashTransactions = cachedTrashTransactions.filter(log => log.id !== logId);
-        setupTrashAutocomplete();
-
-        showToast(`Transaksi ${res.deletedId} dihapus permanen`, 'success');
-        renderTrashIncomeList();
-        renderReports();
-      } catch (error) {
-        showToast('Gagal menghapus permanen: ' + error.message, 'error');
       }
     }
 
@@ -6415,13 +6381,10 @@
               </div>
             </div>
 
-            <!-- Action Buttons: Kembalikan & Hapus Permanen -->
+            <!-- Action Button: Kembalikan -->
             <div class="flex-gap-8">
               <button onclick="restoreExpenseFromTrash(${log.id})" style="flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--ps3-green-dark); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
                 ♻️ Kembalikan
-              </button>
-              <button onclick="deleteExpensePermanently(${log.id}, '${log.recordId}')" style="flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--ps3-red); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
-                🗑️ Hapus
               </button>
             </div>
           </div>
@@ -6639,37 +6602,6 @@
         renderReports();
       } catch (error) {
         showToast('Gagal mengembalikan pengeluaran: ' + error.message, 'error');
-      }
-    }
-
-    // Permanent delete function for expenses
-    async function deleteExpensePermanently(logId, recordId) {
-      if (!logId) {
-        showToast('ID log tidak valid', 'error');
-        return;
-      }
-
-      // Show confirmation dialog
-      if (!confirm(`⚠️ PERINGATAN:\n\nPengeluaran ${recordId} akan dihapus PERMANEN dan tidak bisa dikembalikan.\n\nYakin ingin melanjutkan?`)) {
-        return;
-      }
-
-      try {
-        const res = await api('POST', `/deletion-logs/${logId}/permanent-delete`, {});
-
-        if (!res.ok) {
-          throw new Error(res.error || 'Gagal menghapus permanen');
-        }
-
-        // Remove deleted item from cache and re-render
-        cachedTrashExpenses = cachedTrashExpenses.filter(log => log.id !== logId);
-        setupTrashExpenseAutocomplete();
-
-        showToast(`Pengeluaran ${res.deletedId} dihapus permanen`, 'success');
-        renderTrashExpenseList();
-        renderReports();
-      } catch (error) {
-        showToast('Gagal menghapus permanen: ' + error.message, 'error');
       }
     }
 

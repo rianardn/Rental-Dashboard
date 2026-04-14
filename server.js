@@ -2120,35 +2120,6 @@ app.post('/api/deletion-logs/:id/restore', requireAuth, (req, res) => {
   }
 });
 
-// POST permanently delete from deletion_logs (trash) - removes forever
-app.post('/api/deletion-logs/:id/permanent-delete', requireAuth, (req, res) => {
-  const logId = req.params.id;
-  
-  // Get the deletion log entry before deleting
-  const logEntry = db.prepare('SELECT * FROM deletion_logs WHERE id = ?').get(logId);
-  if (!logEntry) {
-    return res.status(404).json({ error: 'Data tidak ditemukan di tempat sampah' });
-  }
-  
-  const { recordType, recordId } = logEntry;
-  
-  try {
-    // Permanently delete from deletion_logs
-    db.prepare('DELETE FROM deletion_logs WHERE id = ?').run(logId);
-    
-    res.json({ 
-      ok: true, 
-      message: `${recordType === 'transaction' ? 'Transaksi' : 'Pengeluaran'} ${recordId} dihapus permanen`,
-      deletedId: recordId,
-      recordType
-    });
-    
-  } catch (error) {
-    console.error('[Permanent Delete Error]', error.message);
-    res.status(500).json({ error: 'Gagal menghapus permanen: ' + error.message });
-  }
-});
-
 app.put('/api/transactions/:id', requireAuth, (req, res) => {
   const id = req.params.id;
   const tx = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
