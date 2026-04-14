@@ -1397,6 +1397,166 @@
       color: #fff;
     }
 
+    /* ═══════════════════════════════════════════════════════════════
+       MANAGEMENT PAGE TABS - Main & Sub Tabs
+    ═══════════════════════════════════════════════════════════════ */
+    .management-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      background: var(--ps3-surface);
+      border: 1px solid var(--ps3-border);
+      border-radius: 12px;
+      padding: 6px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .management-tab {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 80px;
+      padding: 12px 16px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--ps3-muted);
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .management-tab:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--ps3-text);
+    }
+
+    .management-tab.active {
+      background: var(--ps3-red);
+      border-color: var(--ps3-red);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(230, 0, 18, 0.3);
+    }
+
+    .management-tab .tab-icon {
+      font-size: 1rem;
+    }
+
+    .management-tab-content {
+      display: none;
+    }
+
+    .management-tab-content.active {
+      display: block;
+      animation: fadeIn 0.25s ease;
+    }
+
+    /* Sub-tabs for Inventory */
+    .sub-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 15px;
+      border-bottom: 1px solid var(--ps3-border);
+      padding-bottom: 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .sub-tab {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      flex: 1;
+      min-width: 70px;
+      padding: 10px 12px;
+      background: var(--ps3-surface);
+      border: 1px solid var(--ps3-border);
+      border-radius: 8px;
+      color: var(--ps3-muted);
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .sub-tab:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--ps3-chrome);
+      color: var(--ps3-text);
+    }
+
+    .sub-tab.active {
+      background: var(--ps3-red);
+      border-color: var(--ps3-red);
+      color: #fff;
+    }
+
+    .sub-tab .tab-icon {
+      font-size: 0.9rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+      .management-tab {
+        padding: 10px 12px;
+        font-size: 0.75rem;
+        gap: 4px;
+      }
+
+      .management-tab .tab-icon {
+        font-size: 0.9rem;
+      }
+
+      .sub-tab {
+        padding: 8px 10px;
+        font-size: 0.7rem;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .management-tabs {
+        gap: 4px;
+        padding: 4px;
+      }
+
+      .management-tab {
+        padding: 8px 10px;
+        font-size: 0.7rem;
+        min-width: 60px;
+      }
+
+      .management-tab .tab-icon {
+        font-size: 0.85rem;
+      }
+
+      .management-tab .tab-text {
+        display: none;
+      }
+
+      .sub-tab {
+        padding: 6px 8px;
+        font-size: 0.65rem;
+      }
+
+      .sub-tab .tab-text {
+        display: none;
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Transaction List */
     .transaction-item {
       background: var(--ps3-surface);

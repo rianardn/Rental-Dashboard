@@ -4192,13 +4192,28 @@
       }
       
       if (pageId === 'pageManagement') {
-        // Load management page data
-        renderSchedules();
-        renderInventory();
-        renderCapitalSummary();
-        renderCapitalHistory();
-        populateScheduleStationSelect();
-        
+        // Restore last active tab
+        restoreManagementTab();
+
+        // Get current active tab
+        const activeTab = localStorage.getItem('managementActiveTab') || 'schedule';
+
+        // Load data based on active tab
+        if (activeTab === 'schedule') {
+          renderSchedules();
+          populateScheduleStationSelect();
+        } else if (activeTab === 'inventory') {
+          renderInventory();
+          // Ensure items sub-tab is active by default
+          const itemsTabActive = document.getElementById('tabInventoryItems')?.classList.contains('active');
+          if (!itemsTabActive) {
+            switchInventoryTab('items');
+          }
+        } else if (activeTab === 'capital') {
+          renderCapitalSummary();
+          renderCapitalHistory();
+        }
+
         // Set default dates
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('scheduleDate').value = today;
@@ -9669,21 +9684,84 @@
       return labels[category] || category;
     }
 
-    // Tab Switching
+    // ═══════════════════════════════════════════════════════════════
+    // MAIN TAB SWITCHING - Management Page
+    // ═══════════════════════════════════════════════════════════════
+    function switchMainTab(tab) {
+      // Hide all main tab contents
+      document.getElementById('mainTabSchedule').style.display = 'none';
+      document.getElementById('mainTabSchedule').classList.remove('active');
+      document.getElementById('mainTabInventory').style.display = 'none';
+      document.getElementById('mainTabInventory').classList.remove('active');
+      document.getElementById('mainTabCapital').style.display = 'none';
+      document.getElementById('mainTabCapital').classList.remove('active');
+
+      // Reset all main tab buttons
+      document.getElementById('tabMainSchedule').classList.remove('active');
+      document.getElementById('tabMainInventory').classList.remove('active');
+      document.getElementById('tabMainCapital').classList.remove('active');
+
+      // Show selected tab and activate button
+      const tabContent = document.getElementById(`mainTab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+      const tabButton = document.getElementById(`tabMain${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+
+      if (tabContent) {
+        tabContent.style.display = 'block';
+        tabContent.classList.add('active');
+      }
+      if (tabButton) {
+        tabButton.classList.add('active');
+      }
+
+      // Load data based on tab
+      if (tab === 'schedule') {
+        renderSchedules();
+      } else if (tab === 'inventory') {
+        renderInventory();
+        // Default to items sub-tab if not already active
+        const itemsTab = document.getElementById('inventoryTabItems');
+        if (itemsTab && itemsTab.style.display !== 'block') {
+          switchInventoryTab('items');
+        }
+      } else if (tab === 'capital') {
+        renderCapitalSummary();
+        renderCapitalHistory();
+      }
+
+      // Save preference to localStorage
+      localStorage.setItem('managementActiveTab', tab);
+    }
+
+    // Restore last active tab when page loads
+    function restoreManagementTab() {
+      const savedTab = localStorage.getItem('managementActiveTab');
+      if (savedTab && ['schedule', 'inventory', 'capital'].includes(savedTab)) {
+        switchMainTab(savedTab);
+      }
+    }
+
+    // Sub-tab Switching (Inventory)
     function switchInventoryTab(tab) {
       // Hide all tabs
       document.getElementById('inventoryTabItems').style.display = 'none';
       document.getElementById('inventoryTabStations').style.display = 'none';
       document.getElementById('inventoryTabAnalytics').style.display = 'none';
 
-      // Reset button styles
-      document.getElementById('tabInventoryItems').style.background = 'var(--ps3-surface)';
-      document.getElementById('tabInventoryStations').style.background = 'var(--ps3-surface)';
-      document.getElementById('tabInventoryAnalytics').style.background = 'var(--ps3-surface)';
+      // Reset button styles - remove active class from all sub-tabs
+      document.getElementById('tabInventoryItems').classList.remove('active');
+      document.getElementById('tabInventoryStations').classList.remove('active');
+      document.getElementById('tabInventoryAnalytics').classList.remove('active');
 
-      // Show selected tab and highlight button
-      document.getElementById(`inventoryTab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).style.display = 'block';
-      document.getElementById(`tabInventory${tab.charAt(0).toUpperCase() + tab.slice(1)}`).style.background = '';
+      // Show selected tab and activate button
+      const tabContent = document.getElementById(`inventoryTab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+      const tabButton = document.getElementById(`tabInventory${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+
+      if (tabContent) {
+        tabContent.style.display = 'block';
+      }
+      if (tabButton) {
+        tabButton.classList.add('active');
+      }
 
       // Load data if needed
       if (tab === 'stations') loadStations();

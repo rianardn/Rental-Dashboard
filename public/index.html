@@ -9,7 +9,7 @@
   <title id="pageTitle">PS3 Rental Manager</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=20250415-46">
+  <link rel="stylesheet" href="style.css?v=20250415-47">
 </head>
 <body>
   <!-- ═════════════════ LOGIN SCREEN ═════════════════ -->
@@ -231,193 +231,211 @@
       </div>
     </div>
 
-    <!-- Management Page -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         MANAGEMENT PAGE - Tab-based Architecture
+    ═══════════════════════════════════════════════════════════════ -->
     <div id="pageManagement" class="page">
-      <!-- Jadwal Section - Daftar Jadwal dengan tombol Tambah -->
-      <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-          <div class="section-title" style="margin: 0;">📅 Daftar Jadwal</div>
-        </div>
-        <p class="text-8 text-muted mb-15">Kelola booking penyewa yang akan datang</p>
-        
-        <div id="scheduleList" class="max-h-400 scroll-y">
-          <p class="empty-state-p20">Belum ada jadwal booking</p>
-        </div>
-        
-        <!-- Tombol Lihat Semua di LUAR area scroll -->
-        <div id="scheduleViewAllContainer" class="mt-15 pt-15 border-top">
-          <!-- Tombol akan di-render oleh JavaScript -->
-        </div>
-        
-        <!-- Baris 1: Tambah Jadwal (full width) -->
-        <button class="btn btn-red" style="width: 100%; padding: 16px 28px; font-size: 0.95rem; font-weight: 600; margin-top: 20px; margin-bottom: 10px;" onclick="openAddScheduleModal()">
-          <span style="margin-right: 6px;">➕</span> Tambah Jadwal
+      <!-- Main Tab Navigation: Jadwal | Inventori | Modal -->
+      <div class="management-tabs">
+        <button id="tabMainSchedule" class="management-tab active" onclick="switchMainTab('schedule')">
+          <span class="tab-icon">📅</span>
+          <span class="tab-text">Jadwal</span>
         </button>
-        
-        <!-- Baris 2: Riwayat (Kiri) + Sampah (Kanan) -->
-        <div style="display: flex; justify-content: space-between; gap: 10px; width: 100%; margin-top: 5px;">
-          <button class="btn" style="flex: 1; padding: 12px 20px; font-size: 0.8rem; background: var(--ps3-green-dark); border-color: var(--ps3-green); color: #fff;" onclick="openHistoryModal()">
-            <span class="mr-4">📜</span> Riwayat
-          </button>
-          <button class="btn" style="flex: 1; padding: 12px 20px; font-size: 0.8rem; background: #333; border-color: #555; color: #aaa;" onclick="openTrashModal()">
-            <span class="mr-4">🗑️</span> Sampah
-          </button>
-        </div>
-        
-        <!-- Baris 3: Ekspor Jadwal (full width) -->
-        <button class="btn" style="width: 100%; padding: 12px 20px; font-size: 0.8rem; background: #1a1a3a; border-color: #4a4a8a; color: #a0a0ff; margin-top: 10px;" onclick="openExportScheduleModal()">
-          <span class="mr-4">📤</span> Ekspor Jadwal
+        <button id="tabMainInventory" class="management-tab" onclick="switchMainTab('inventory')">
+          <span class="tab-icon">📦</span>
+          <span class="tab-text">Inventori</span>
+        </button>
+        <button id="tabMainCapital" class="management-tab" onclick="switchMainTab('capital')">
+          <span class="tab-icon">💰</span>
+          <span class="tab-text">Modal</span>
         </button>
       </div>
 
       <!-- ═══════════════════════════════════════════════════════════════
-           INVENTORY MANAGEMENT SYSTEM - Full Featured
+           TAB: JADWAL
       ═══════════════════════════════════════════════════════════════ -->
-      <div class="card mt-20">
-        <div class="section-title">📦 Sistem Manajemen Inventori</div>
-        <p class="text-8 text-muted mb-15">Kelola aset, stasiun, dan tracking perawatan</p>
-
-        <!-- Tab Navigation -->
-        <div style="display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 1px solid var(--ps3-border); padding-bottom: 10px;">
-          <button id="tabInventoryItems" class="btn" onclick="switchInventoryTab('items')" style="flex: 1; font-size: 0.75rem; padding: 10px;">
-            📦 Items
+      <div id="mainTabSchedule" class="management-tab-content active">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+            <div class="section-title" style="margin: 0;">📅 Daftar Jadwal</div>
+          </div>
+          <p class="text-8 text-muted mb-15">Kelola booking penyewa yang akan datang</p>
+          
+          <div id="scheduleList" class="max-h-400 scroll-y">
+            <p class="empty-state-p20">Belum ada jadwal booking</p>
+          </div>
+          
+          <div id="scheduleViewAllContainer" class="mt-15 pt-15 border-top"></div>
+          
+          <button class="btn btn-red" style="width: 100%; padding: 16px 28px; font-size: 0.95rem; font-weight: 600; margin-top: 20px; margin-bottom: 10px;" onclick="openAddScheduleModal()">
+            <span style="margin-right: 6px;">➕</span> Tambah Jadwal
           </button>
-          <button id="tabInventoryStations" class="btn" onclick="switchInventoryTab('stations')" style="flex: 1; font-size: 0.75rem; padding: 10px; background: var(--ps3-surface);">
-            🏢 Stasiun
-          </button>
-          <button id="tabInventoryAnalytics" class="btn" onclick="switchInventoryTab('analytics')" style="flex: 1; font-size: 0.75rem; padding: 10px; background: var(--ps3-surface);">
-            📊 Analytics
+          
+          <div style="display: flex; justify-content: space-between; gap: 10px; width: 100%; margin-top: 5px;">
+            <button class="btn" style="flex: 1; padding: 12px 20px; font-size: 0.8rem; background: var(--ps3-green-dark); border-color: var(--ps3-green); color: #fff;" onclick="openHistoryModal()">
+              <span class="mr-4">📜</span> Riwayat
+            </button>
+            <button class="btn" style="flex: 1; padding: 12px 20px; font-size: 0.8rem; background: #333; border-color: #555; color: #aaa;" onclick="openTrashModal()">
+              <span class="mr-4">🗑️</span> Sampah
+            </button>
+          </div>
+          
+          <button class="btn" style="width: 100%; padding: 12px 20px; font-size: 0.8rem; background: #1a1a3a; border-color: #4a4a8a; color: #a0a0ff; margin-top: 10px;" onclick="openExportScheduleModal()">
+            <span class="mr-4">📤</span> Ekspor Jadwal
           </button>
         </div>
+      </div>
 
-        <!-- Tab: Items -->
-        <div id="inventoryTabItems">
-          <!-- Filters -->
-          <div class="form-row-8">
-            <select id="inventoryFilterCategory" onchange="renderInventory()" class="input-sm">
-              <option value="">Semua Kategori</option>
-              <option value="konsol">🎮 Konsol</option>
-              <option value="tv">📺 TV</option>
-              <option value="stik">🕹️ Stik</option>
-              <option value="kabel_usb">🔌 USB</option>
-              <option value="kabel_hdmi">🔌 HDMI</option>
-              <option value="kabel_power">🔌 Plug</option>
-              <option value="lainnya">📦 Lainnya</option>
-            </select>
-            <select id="inventoryFilterCondition" onchange="renderInventory()" class="input-sm">
-              <option value="">Semua Kondisi</option>
-              <option value="baik">🟢 Baik</option>
-              <option value="rusak">🔴 Rusak</option>
-              <option value="perbaikan">🟡 Perbaikan</option>
-              <option value="rusak_total">⚫ Rusak Total</option>
-            </select>
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB: INVENTORI (with sub-tabs: Items | Stations | Analytics)
+      ═══════════════════════════════════════════════════════════════ -->
+      <div id="mainTabInventory" class="management-tab-content" style="display: none;">
+        <div class="card">
+          <div class="section-title">📦 Sistem Manajemen Inventori</div>
+          <p class="text-8 text-muted mb-15">Kelola aset, stasiun, dan tracking perawatan</p>
+
+          <!-- Sub-tab Navigation -->
+          <div class="sub-tabs">
+            <button id="tabInventoryItems" class="sub-tab active" onclick="switchInventoryTab('items')">
+              <span class="tab-icon">📦</span>
+              <span class="tab-text">Items</span>
+            </button>
+            <button id="tabInventoryStations" class="sub-tab" onclick="switchInventoryTab('stations')">
+              <span class="tab-icon">🏢</span>
+              <span class="tab-text">Stasiun</span>
+            </button>
+            <button id="tabInventoryAnalytics" class="sub-tab" onclick="switchInventoryTab('analytics')">
+              <span class="tab-icon">📊</span>
+              <span class="tab-text">Analytics</span>
+            </button>
           </div>
 
-          <!-- Stats Summary -->
-          <div id="inventoryStats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;">
-            <div class="card-surface">
-              <div id="statTotalItems" style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-silver);">0</div>
-              <div class="fs-65 text-muted">Total Items</div>
+          <!-- Sub-tab: Items -->
+          <div id="inventoryTabItems">
+            <div class="form-row-8">
+              <select id="inventoryFilterCategory" onchange="renderInventory()" class="input-sm">
+                <option value="">Semua Kategori</option>
+                <option value="konsol">🎮 Konsol</option>
+                <option value="tv">📺 TV</option>
+                <option value="stik">🕹️ Stik</option>
+                <option value="kabel_usb">🔌 USB</option>
+                <option value="kabel_hdmi">🔌 HDMI</option>
+                <option value="kabel_power">🔌 Plug</option>
+                <option value="lainnya">📦 Lainnya</option>
+              </select>
+              <select id="inventoryFilterCondition" onchange="renderInventory()" class="input-sm">
+                <option value="">Semua Kondisi</option>
+                <option value="baik">🟢 Baik</option>
+                <option value="rusak">🔴 Rusak</option>
+                <option value="perbaikan">🟡 Perbaikan</option>
+                <option value="rusak_total">⚫ Rusak Total</option>
+              </select>
             </div>
-            <div class="card-surface">
-              <div id="statTotalValue" style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-green);">Rp0</div>
-              <div class="fs-65 text-muted">Nilai Aset</div>
+
+            <div id="inventoryStats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;">
+              <div class="card-surface">
+                <div id="statTotalItems" style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-silver);">0</div>
+                <div class="fs-65 text-muted">Total Items</div>
+              </div>
+              <div class="card-surface">
+                <div id="statTotalValue" style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-green);">Rp0</div>
+                <div class="fs-65 text-muted">Nilai Aset</div>
+              </div>
+              <div class="card-surface">
+                <div id="statNeedMaintenance" style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-yellow);">0</div>
+                <div class="fs-65 text-muted">Butuh Perawatan</div>
+              </div>
             </div>
-            <div class="card-surface">
-              <div id="statNeedMaintenance" style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-yellow);">0</div>
-              <div class="fs-65 text-muted">Butuh Perawatan</div>
+
+            <div id="inventoryList" class="max-h-400 scroll-y mb-15">
+              <p class="empty-state-p20">Belum ada item inventori</p>
             </div>
+
+            <button class="btn w-full" onclick="openModal('modalAddInventory')">➕ Tambah Item Inventori</button>
           </div>
 
-          <!-- Inventory List -->
-          <div id="inventoryList" class="max-h-400 scroll-y mb-15">
-            <p class="empty-state-p20">Belum ada item inventori</p>
+          <!-- Sub-tab: Stations -->
+          <div id="inventoryTabStations" style="display: none;">
+            <div id="stationsList" style="max-height: 350px; overflow-y: auto; margin-bottom: 15px;">
+              <p class="empty-state-p20">Belum ada stasiun</p>
+            </div>
+            <button class="btn w-full" onclick="openModal('modalAddStation')">➕ Buat Stasiun Baru</button>
           </div>
 
-          <button class="btn w-full" onclick="openModal('modalAddInventory')">➕ Tambah Item Inventori</button>
-        </div>
-
-        <!-- Tab: Stations -->
-        <div id="inventoryTabStations" style="display: none;">
-          <div id="stationsList" style="max-height: 350px; overflow-y: auto; margin-bottom: 15px;">
-            <p class="empty-state-p20">Belum ada stasiun</p>
-          </div>
-          <button class="btn w-full" onclick="openModal('modalAddStation')">➕ Buat Stasiun Baru</button>
-        </div>
-
-        <!-- Tab: Analytics -->
-        <div id="inventoryTabAnalytics" style="display: none;">
-          <div id="inventoryAnalytics" class="max-h-400 scroll-y">
-            <p class="empty-state-p20">Memuat analytics...</p>
+          <!-- Sub-tab: Analytics -->
+          <div id="inventoryTabAnalytics" style="display: none;">
+            <div id="inventoryAnalytics" class="max-h-400 scroll-y">
+              <p class="empty-state-p20">Memuat analytics...</p>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Initial Capital Section -->
-      <div class="card mt-20">
-        <div class="section-title">💰 Modal Awal & Investasi</div>
-        <p class="text-8 text-muted mb-15">Catat modal awal dan proyeksi balik modal</p>
-        
-        <!-- Capital Input -->
-        <div style="background: rgba(0,170,0,0.1); border: 1px solid var(--ps3-green); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-          <div class="section-title text-green">➕ Tambah Modal</div>
-          <div class="form-group">
-            <label>Jumlah Modal (Rp)</label>
-            <input type="number" id="capitalAmount" placeholder="5000000" min="0">
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB: MODAL
+      ═══════════════════════════════════════════════════════════════ -->
+      <div id="mainTabCapital" class="management-tab-content" style="display: none;">
+        <div class="card">
+          <div class="section-title">💰 Modal Awal & Investasi</div>
+          <p class="text-8 text-muted mb-15">Catat modal awal dan proyeksi balik modal</p>
+          
+          <div style="background: rgba(0,170,0,0.1); border: 1px solid var(--ps3-green); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+            <div class="section-title text-green">➕ Tambah Modal</div>
+            <div class="form-group">
+              <label>Jumlah Modal (Rp)</label>
+              <input type="number" id="capitalAmount" placeholder="5000000" min="0">
+            </div>
+            <div class="form-group">
+              <label>Deskripsi/Sumber</label>
+              <input type="text" id="capitalDesc" placeholder="Contoh: Modal dari tabungan pribadi">
+            </div>
+            <div class="form-group">
+              <label>Tanggal</label>
+              <input type="date" id="capitalDate">
+            </div>
+            <button class="btn" style="background: linear-gradient(135deg, #00aa00, #00cc00, #00aa00);" onclick="addCapital()">Catat Modal</button>
           </div>
-          <div class="form-group">
-            <label>Deskripsi/Sumber</label>
-            <input type="text" id="capitalDesc" placeholder="Contoh: Modal dari tabungan pribadi">
+          
+          <div style="background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+            <div class="section-title text-red">➖ Pengeluaran Investasi</div>
+            <div class="form-group">
+              <label>Nama Item/Investasi</label>
+              <input type="text" id="capitalExpenseItem" placeholder="Contoh: Beli PS3 bekas">
+            </div>
+            <div class="form-group">
+              <label>Kategori</label>
+              <select id="capitalExpenseCategory">
+                <option value="">Pilih kategori...</option>
+                <option value="console">Pembelian Console</option>
+                <option value="tv">Pembelian TV/Monitor</option>
+                <option value="furniture">Furniture/Renovasi</option>
+                <option value="accessories">Aksesoris</option>
+                <option value="other">Lainnya</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Jumlah (Rp)</label>
+              <input type="number" id="capitalExpenseAmount" placeholder="2500000" min="0">
+            </div>
+            <div class="form-group">
+              <label>Tanggal</label>
+              <input type="date" id="capitalExpenseDate">
+            </div>
+            <button class="btn btn-red" onclick="addCapitalExpense()">Catat Pengeluaran</button>
           </div>
-          <div class="form-group">
-            <label>Tanggal</label>
-            <input type="date" id="capitalDate">
+          
+          <div id="roiSummary" style="background: rgba(192,192,192,0.1); border: 1px solid var(--ps3-silver); border-radius: 12px; padding: 15px;">
+            <div class="section-title">📊 Proyeksi Balik Modal</div>
+            <div id="roiContent">
+              <p class="empty-state-p20">Belum ada data untuk proyeksi</p>
+            </div>
           </div>
-          <button class="btn" style="background: linear-gradient(135deg, #00aa00, #00cc00, #00aa00);" onclick="addCapital()">Catat Modal</button>
-        </div>
-        
-        <!-- Capital Expenses -->
-        <div style="background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-          <div class="section-title text-red">➖ Pengeluaran Investasi</div>
-          <div class="form-group">
-            <label>Nama Item/Investasi</label>
-            <input type="text" id="capitalExpenseItem" placeholder="Contoh: Beli PS3 bekas">
-          </div>
-          <div class="form-group">
-            <label>Kategori</label>
-            <select id="capitalExpenseCategory">
-              <option value="">Pilih kategori...</option>
-              <option value="console">Pembelian Console</option>
-              <option value="tv">Pembelian TV/Monitor</option>
-              <option value="furniture">Furniture/Renovasi</option>
-              <option value="accessories">Aksesoris</option>
-              <option value="other">Lainnya</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Jumlah (Rp)</label>
-            <input type="number" id="capitalExpenseAmount" placeholder="2500000" min="0">
-          </div>
-          <div class="form-group">
-            <label>Tanggal</label>
-            <input type="date" id="capitalExpenseDate">
-          </div>
-          <button class="btn btn-red" onclick="addCapitalExpense()">Catat Pengeluaran</button>
-        </div>
-        
-        <!-- ROI Summary -->
-        <div id="roiSummary" style="background: rgba(192,192,192,0.1); border: 1px solid var(--ps3-silver); border-radius: 12px; padding: 15px;">
-          <div class="section-title">📊 Proyeksi Balik Modal</div>
-          <div id="roiContent">
-            <p class="empty-state-p20">Belum ada data untuk proyeksi</p>
-          </div>
-        </div>
-        
-        <!-- Capital History -->
-        <div class="mt-20">
-          <div class="section-title">Riwayat Modal & Investasi</div>
-          <div id="capitalHistory" style="max-height: 200px; overflow-y: auto;">
-            <p class="empty-state-p15">Belum ada data modal</p>
+          
+          <div class="mt-20">
+            <div class="section-title">Riwayat Modal & Investasi</div>
+            <div id="capitalHistory" style="max-height: 200px; overflow-y: auto;">
+              <p class="empty-state-p15">Belum ada data modal</p>
+            </div>
           </div>
         </div>
       </div>
