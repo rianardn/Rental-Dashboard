@@ -528,25 +528,73 @@
         const elapsedMin = Math.floor(elapsed / 60000);
         const estimatedRevenue = Math.round((elapsedMin / 60) * (settings.ratePerHour || 4000));
 
-        // Calculate end time
+        // Calculate start and end time
         const startDate = new Date(station.startTime);
         const endDate = station.duration > 0 ? new Date(station.startTime + station.duration * 60000) : null;
         const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' };
+        const startTimeStr = startDate.toLocaleTimeString('id-ID', timeOptions);
         const endTimeStr = endDate ? endDate.toLocaleTimeString('id-ID', timeOptions) : '∞';
 
+        // Check if this is a booking-based session (from schedule)
+        const isBooking = station.linkedScheduleId != null;
+        const schedule = isBooking ? schedules.find(s => s.id == station.linkedScheduleId) : null;
+        const txId = schedule?.txId || '';
+
+        // Build booking info HTML
+        let bookingBadgeHTML = '';
+        let bookingInfoHTML = '';
+        if (isBooking) {
+          bookingBadgeHTML = `<div class="unit-status-badge" style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 600;">BOOKING</div>`;
+
+          // Build note with TX ID badge prefix
+          const noteDisplay = station.note || '-';
+          const noteWithTx = txId
+            ? `<span style="background: #22c55e; color: white; padding: 1px 4px; border-radius: 3px; font-size: 0.65rem; font-weight: 600; margin-right: 4px;">[${txId}]</span> ${noteDisplay}`
+            : noteDisplay;
+
+          bookingInfoHTML = `
+            <div class="booking-info" style="font-size: 0.75rem; color: var(--ps3-text); margin-top: 8px; line-height: 1.5;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--ps3-muted);">Penyewa:</span>
+                <span style="font-weight: 500;">${station.customer || '-'}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--ps3-muted);">Durasi:</span>
+                <span>${station.duration > 0 ? station.duration + ' menit' : 'Open'}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--ps3-muted);">Mulai:</span>
+                <span>${startTimeStr}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--ps3-muted);">Berakhir:</span>
+                <span>${endTimeStr}</span>
+              </div>
+              <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--ps3-border);">
+                <span style="color: var(--ps3-muted);">Catatan: </span>${noteWithTx}
+              </div>
+            </div>
+          `;
+        }
+
         return `
-          <div class="unit-card active" data-station-id="${station.id}" style="border: 2px solid var(--ps3-red);">
+          <div class="unit-card active" data-station-id="${station.id}" style="border: 2px solid #22c55e;">
             <div class="unit-header">
               <div class="unit-name">${station.name}</div>
-              <div class="unit-status-badge" style="background: var(--ps3-red); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">AKTIF</div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                ${bookingBadgeHTML}
+                <div class="unit-status-badge" style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">AKTIF</div>
+              </div>
             </div>
             <div class="unit-body">
               <div class="customer-name">${station.customer || 'Walk-in'}</div>
               ${timerHTML}
-              <div class="session-info" style="font-size: 0.75rem; color: var(--ps3-muted); margin-top: 8px;">
-                <div>Selesai: ${endTimeStr}</div>
-                <div>Estimasi: Rp${estimatedRevenue.toLocaleString()}</div>
-              </div>
+              ${isBooking ? bookingInfoHTML : `
+                <div class="session-info" style="font-size: 0.75rem; color: var(--ps3-muted); margin-top: 8px;">
+                  <div>Selesai: ${endTimeStr}</div>
+                  <div>Estimasi: Rp${estimatedRevenue.toLocaleString()}</div>
+                </div>
+              `}
             </div>
             <div class="unit-actions">
               <button class="btn btn-stop" onclick="stopStation('${station.id}')">STOP</button>
