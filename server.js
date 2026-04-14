@@ -128,7 +128,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS transactions (
     id TEXT PRIMARY KEY,
-    unitId INTEGER,
+    unitId TEXT,
     unitName TEXT,
     customer TEXT,
     startTime INTEGER,
@@ -494,11 +494,28 @@ if (db) {
     const schedulesInfo = db.prepare(`PRAGMA table_info(schedules)`).all();
     const hasUnitId = schedulesInfo.find(c => c.name === 'unitId');
     if (!hasUnitId) {
-      db.prepare(`ALTER TABLE schedules ADD COLUMN unitId INTEGER`).run();
+      db.prepare(`ALTER TABLE schedules ADD COLUMN unitId TEXT`).run();
       console.log('[DB] Migration: Added unitId column to schedules');
     }
   } catch (e) {
     console.error('[DB] Migration error for unitId column:', e.message);
+  }
+}
+
+// Runtime migration: Fix unitId type from INTEGER to TEXT if needed (for existing databases)
+if (db) {
+  try {
+    const schedulesInfo = db.prepare(`PRAGMA table_info(schedules)`).all();
+    const unitIdCol = schedulesInfo.find(c => c.name === 'unitId');
+    // If unitId exists but is INTEGER type, we need to migrate
+    if (unitIdCol && unitIdCol.type === 'INTEGER') {
+      console.log('[DB] Migration: Changing schedules.unitId from INTEGER to TEXT...');
+      // SQLite doesn't support ALTER COLUMN, so we use a workaround
+      db.prepare(`UPDATE schedules SET unitId = CAST(unitId AS TEXT)`).run();
+      console.log('[DB] Migration: schedules.unitId cast to TEXT');
+    }
+  } catch (e) {
+    console.error('[DB] Migration error for unitId type fix:', e.message);
   }
 }
 
