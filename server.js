@@ -697,6 +697,13 @@ if (db) {
       console.log('[DB] Migration: Added linked_schedule_id column to inventory_pairings');
     }
     
+    // Add notes column if not exists (for deletion reason tracking)
+    const hasNotes = pairingsInfo.find(c => c.name === 'notes');
+    if (!hasNotes) {
+      db.prepare(`ALTER TABLE inventory_pairings ADD COLUMN notes TEXT`).run();
+      console.log('[DB] Migration: Added notes column to inventory_pairings');
+    }
+    
     console.log('[DB] Migration: Station runtime tracking columns ready');
   } catch (e) {
     console.error('[DB] Migration error for station runtime columns:', e.message);
@@ -3711,6 +3718,7 @@ app.delete('/api/pairings/:id/items/:item_id', requireAuth, (req, res) => {
 // Delete pairing/station (soft delete - set is_active=0)
 app.delete('/api/pairings/:id', requireAuth, (req, res) => {
   const { id } = req.params;
+  const { reason } = req.body; // Alasan penghapusan dari user
   const now = Date.now();
   
   // Check if station exists
@@ -3726,21 +3734,90 @@ app.delete('/api/pairings/:id', requireAuth, (req, res) => {
   
   // Unpair all items from this station (log and delete)
   const items = db.prepare('SELECT item_id FROM inventory_pairing_items WHERE pairing_id = ?').all(id);
+  const deleteReason = reason ? `Stasiun dihapus: ${reason}` : 'Stasiun dihapus, item dilepas';
+  
   for (const item of items) {
     db.prepare('INSERT INTO inventory_pairing_history (item_id, old_pairing_id, change_date, reason) VALUES (?, ?, ?, ?)')
-      .run(item.item_id, id, now, 'Stasiun dihapus, item dilepas');
+      .run(item.item_id, id, now, deleteReason);
   }
   
   // Delete all item pairings
   db.prepare('DELETE FROM inventory_pairing_items WHERE pairing_id = ?').run(id);
   
-  // Soft delete: set is_active = 0
-  db.prepare('UPDATE inventory_pairings SET is_active = 0, updated_at = ? WHERE id = ?').run(now, id);
+  // Soft delete: set is_active = 0 and store deletion reason
+  db.prepare('UPDATE inventory_pairings SET is_active = 0, updated_at = ?, notes = COALESCE(notes, \'\') || ? WHERE id = ?')
+    .run(now, `\n[DELETED ${new Date(now).toISOString()}] Reason: ${reason || 'No reason provided'}`, id);
   
   res.json({ ok: true, message: 'Stasiun berhasil dihapus' });
 });
 
-// Quick swap items between pairings
+// Quick swap items between pairings (v2 - two-way swap with category matching)
+app.post('/api/pairings/swap-v2', requireAuth, (req, res) => {
+  const { from_pairing_id, to_pairing_id, from_item_id, to_item_id, unmatched_action } = req.body;
+  const now = Date.now();
+  
+  // Get source item details
+  const fromItem = db.prepare('SELECT * FROM inventory_pairing_items WHERE pairing_id = ? AND item_id = ?').get(from_pairing_id, from_item_id);
+  if (!fromItem) return res.status(404).json({ error: 'Item sumber tidak ditemukan di stasiun asal' });
+  
+  // Get source item category
+  const sourceItemDetails = db.prepare('SELECT category FROM inventory_items WHERE id = ?').get(from_item_id);
+  if (!sourceItemDetails) return res.status(404).json({ error: 'Detail item sumber tidak ditemukan' });
+  
+  // Start transaction
+  const transaction = db.transaction(() => {
+    if (to_item_id) {
+      // Two-way swap: both items exist
+      const toItem = db.prepare('SELECT * FROM inventory_pairing_items WHERE pairing_id = ? AND item_id = ?').get(to_pairing_id, to_item_id);
+      if (!toItem) throw new Error('Item tujuan tidak ditemukan di stasiun tujuan');
+      
+      // Log the swap
+      db.prepare('INSERT INTO inventory_pairing_history (item_id, old_pairing_id, new_pairing_id, change_date, reason) VALUES (?, ?, ?, ?, ?)')
+        .run(from_item_id, from_pairing_id, to_pairing_id, now, `Quick swap: ditukar dengan ${to_item_id}`);
+      db.prepare('INSERT INTO inventory_pairing_history (item_id, old_pairing_id, new_pairing_id, change_date, reason) VALUES (?, ?, ?, ?, ?)')
+        .run(to_item_id, to_pairing_id, from_pairing_id, now, `Quick swap: ditukar dengan ${from_item_id}`);
+      
+      // Delete both items from current pairings
+      db.prepare('DELETE FROM inventory_pairing_items WHERE pairing_id = ? AND item_id = ?').run(from_pairing_id, from_item_id);
+      db.prepare('DELETE FROM inventory_pairing_items WHERE pairing_id = ? AND item_id = ?').run(to_pairing_id, to_item_id);
+      
+      // Insert swapped items
+      db.prepare('INSERT INTO inventory_pairing_items (pairing_id, item_id, role, added_date, notes) VALUES (?, ?, ?, date(\'now\'), ?)')
+        .run(to_pairing_id, from_item_id, fromItem.role, fromItem.notes || null);
+      db.prepare('INSERT INTO inventory_pairing_items (pairing_id, item_id, role, added_date, notes) VALUES (?, ?, ?, date(\'now\'), ?)')
+        .run(from_pairing_id, to_item_id, toItem.role, toItem.notes || null);
+      
+      return { type: 'swap', message: `Item berhasil ditukar: ${from_item_id} ⇄ ${to_item_id}` };
+    } else {
+      // One-way: no matching item in target
+      if (unmatched_action === 'unpair') {
+        // Just remove from source (unpair)
+        db.prepare('INSERT INTO inventory_pairing_history (item_id, old_pairing_id, new_pairing_id, change_date, reason) VALUES (?, ?, ?, ?, ?)')
+          .run(from_item_id, from_pairing_id, null, now, 'Quick swap: di-unpair (tidak ada item sejenis di stasiun tujuan)');
+        db.prepare('DELETE FROM inventory_pairing_items WHERE pairing_id = ? AND item_id = ?').run(from_pairing_id, from_item_id);
+        return { type: 'unpair', message: `${from_item_id} di-unpair dan tersedia di inventory` };
+      } else {
+        // Move to target station
+        db.prepare('INSERT INTO inventory_pairing_history (item_id, old_pairing_id, new_pairing_id, change_date, reason) VALUES (?, ?, ?, ?, ?)')
+          .run(from_item_id, from_pairing_id, to_pairing_id, now, 'Quick swap: dipindahkan ke stasiun tujuan (tidak ada item sejenis)');
+        db.prepare('DELETE FROM inventory_pairing_items WHERE pairing_id = ? AND item_id = ?').run(from_pairing_id, from_item_id);
+        db.prepare('INSERT INTO inventory_pairing_items (pairing_id, item_id, role, added_date, notes) VALUES (?, ?, ?, date(\'now\'), ?)')
+          .run(to_pairing_id, from_item_id, fromItem.role, fromItem.notes || null);
+        return { type: 'move', message: `${from_item_id} dipindahkan ke stasiun tujuan` };
+      }
+    }
+  });
+  
+  try {
+    const result = transaction();
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    console.error('[Swap V2 Error]', error);
+    res.status(500).json({ error: error.message || 'Gagal melakukan swap' });
+  }
+});
+
+// Legacy quick swap endpoint (kept for backward compatibility)
 app.post('/api/pairings/swap', requireAuth, (req, res) => {
   const { from_pairing_id, to_pairing_id, item_id } = req.body;
   const now = Date.now();
@@ -3751,7 +3828,7 @@ app.post('/api/pairings/swap', requireAuth, (req, res) => {
   
   // Log the change
   db.prepare('INSERT INTO inventory_pairing_history (item_id, old_pairing_id, new_pairing_id, change_date, reason) VALUES (?, ?, ?, ?, ?)')
-    .run(item_id, from_pairing_id, to_pairing_id, now, 'Quick swap');
+    .run(item_id, from_pairing_id, to_pairing_id, now, 'Quick swap (legacy)');
   
   // Remove from old
   db.prepare('DELETE FROM inventory_pairing_items WHERE pairing_id = ? AND item_id = ?').run(from_pairing_id, item_id);
@@ -3760,7 +3837,7 @@ app.post('/api/pairings/swap', requireAuth, (req, res) => {
   db.prepare('INSERT INTO inventory_pairing_items (pairing_id, item_id, role, added_date, notes) VALUES (?, ?, ?, date(\'now\'), ?)')
     .run(to_pairing_id, item_id, item.role, item.notes || null);
   
-  res.json({ ok: true, message: 'Item swapped successfully' });
+  res.json({ ok: true, message: 'Item moved successfully (legacy swap)' });
 });
 
 // Cleanup orphaned pairing items (items that reference non-existent inventory items)

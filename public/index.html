@@ -9,7 +9,7 @@
   <title id="pageTitle">PS3 Rental Manager</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20250415-46">
 </head>
 <body>
   <!-- ═════════════════ LOGIN SCREEN ═════════════════ -->
@@ -796,22 +796,27 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="nav">
+    <nav class="nav" id="mainNav">
+      <!-- Toggle button untuk desktop sidebar -->
+      <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+        <span class="nav-icon">☰</span>
+      </button>
+      
       <button class="nav-btn active" onclick="showPage('pageDashboard')">
         <span class="nav-icon">🎮</span>
-        <span>Dashboard</span>
+        <span class="nav-text">Dashboard</span>
       </button>
       <button class="nav-btn" onclick="showPage('pageReports')">
         <span class="nav-icon">📊</span>
-        <span>Laporan</span>
+        <span class="nav-text">Laporan</span>
       </button>
       <button class="nav-btn" onclick="showPage('pageManagement')">
         <span class="nav-icon">📋</span>
-        <span>Manajemen</span>
+        <span class="nav-text">Manajemen</span>
       </button>
       <button class="nav-btn" onclick="showPage('pageSettings')">
         <span class="nav-icon">⚙️</span>
-        <span>Pengaturan</span>
+        <span class="nav-text">Pengaturan</span>
       </button>
     </nav>
   </div>
@@ -2797,13 +2802,49 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════
+       MODAL: Edit Stasiun
+  ═══════════════════════════════════════════════════════════════ -->
+  <div id="modalEditStation" class="modal z-3000">
+    <div class="modal-content modal-sm">
+      <div class="modal-header">
+        <div class="modal-title">✏️ Edit Stasiun</div>
+        <button class="modal-close" onclick="closeModal('modalEditStation')">×</button>
+      </div>
+
+      <div class="p-20">
+        <input type="hidden" id="editStationId">
+        <div class="form-group">
+          <label>ID Stasiun</label>
+          <input type="text" id="editStationIdDisplay" readonly style="background: var(--ps3-surface); color: var(--ps3-muted);">
+        </div>
+        <div class="form-group">
+          <label>Nama Stasiun <span class="text-red">*</span></label>
+          <input type="text" id="editStationName" placeholder="Contoh: Station Home 1">
+        </div>
+        <div class="form-group">
+          <label>Deskripsi (opsional)</label>
+          <input type="text" id="editStationDesc" placeholder="Contoh: PS3 di ruang depan">
+        </div>
+
+        <div class="flex-gap-12-mt15">
+          <button class="btn-cancel flex-p12" onclick="closeModal('modalEditStation')">Batal</button>
+          <button class="btn-confirm" onclick="saveEditStation()" style="flex: 2; padding: 12px; border-radius: 10px;">💾 Simpan Perubahan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
        MODAL: Detail Stasiun (Manage Items, Swap)
   ═══════════════════════════════════════════════════════════════ -->
   <div id="modalStationDetail" class="modal z-3000">
     <div class="modal-content max-w-500 max-h-90vh scroll-y">
       <div class="modal-header">
         <div class="modal-title" id="stationDetailTitle">🏢 Detail Stasiun</div>
-        <button class="modal-close" onclick="closeModal('modalStationDetail')">×</button>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="btn btn-sm" onclick="openEditStationModal()" style="background: var(--ps3-silver); color: var(--ps3-black); padding: 6px 12px; font-size: 0.75rem; border-radius: 6px;">✏️ Edit</button>
+          <button class="modal-close" onclick="closeModal('modalStationDetail')">×</button>
+        </div>
       </div>
 
       <div class="p-20">
@@ -2952,22 +2993,158 @@
         <div style="background: rgba(245,166,35,0.1); border: 1px solid var(--ps3-yellow); border-radius: 10px; padding: 12px;">
           <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 8px; color: var(--ps3-yellow);">🔄 Quick Swap</div>
           <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 10px;">
-            Pindahkan item ke stasiun lain dengan cepat
+            Tukar item dengan stasiun lain (item sejenis akan bertukar)
           </div>
           <div class="flex-gap-8">
-            <select id="swapItemId" class="select-equip select-equip-flex">
-              <option value="">Item dari stasiun ini...</option>
+            <select id="swapItemId" class="select-equip select-equip-flex" onchange="onSwapItemSelect()">
+              <option value="">Pilih item dari stasiun ini...</option>
             </select>
-            <select id="swapTargetStation" class="select-equip select-equip-flex">
+            <select id="swapTargetStation" class="select-equip select-equip-flex" onchange="onSwapTargetSelect()">
               <option value="">Ke stasiun...</option>
             </select>
           </div>
-          <button class="btn" onclick="quickSwapItem()" style="width: 100%; margin-top: 10px; font-size: 0.75rem; padding: 10px; background: linear-gradient(135deg, #f5a623, #ff8c00);">🔄 Lakukan Swap</button>
+          <button class="btn" onclick="previewQuickSwap()" style="width: 100%; margin-top: 10px; font-size: 0.75rem; padding: 10px; background: linear-gradient(135deg, #f5a623, #ff8c00);">🔄 Lanjutkan Swap</button>
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
           <button class="btn-cancel flex-p12" onclick="closeModal('modalStationDetail')">Tutup</button>
-          <button class="btn-confirm" onclick="deleteStation()" style="flex: 1; padding: 12px; border-radius: 10px; background: linear-gradient(135deg, #dc2626, #b91c1c);">🗑️ Hapus</button>
+          <button class="btn-confirm" onclick="openDeleteStationModal()" style="flex: 1; padding: 12px; border-radius: 10px; background: linear-gradient(135deg, #dc2626, #b91c1c);">🗑️ Hapus</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════ Quick Swap Confirmation Modal ═════════════════ -->
+  <div id="modalSwapConfirm" class="modal">
+    <div class="modal-content modal-sm">
+      <div class="modal-header" style="background: linear-gradient(135deg, #f5a623, #ff8c00);">
+        <div class="modal-title">🔄 Konfirmasi Quick Swap</div>
+        <button class="modal-close" onclick="closeModal('modalSwapConfirm')">×</button>
+      </div>
+
+      <div class="p-20">
+        <!-- Info Box -->
+        <div style="background: rgba(245, 166, 35, 0.1); border: 1px solid var(--ps3-yellow); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
+          <div style="font-size: 0.8rem; color: var(--ps3-text); line-height: 1.5;">
+            <strong>Quick Swap</strong> akan menukar item dengan kategori yang sama antara dua stasiun.
+          </div>
+        </div>
+
+        <!-- Source Station -->
+        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 12px;">
+          <div style="font-size: 0.75rem; color: var(--ps3-yellow); margin-bottom: 6px;">📤 Stasiun Asal</div>
+          <div id="swapSourceStationName" style="font-weight: 600; font-size: 0.9rem;">-</div>
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--ps3-border);">
+            <div style="font-size: 0.7rem; color: var(--ps3-muted);">Item yang akan dikirim:</div>
+            <div id="swapSourceItem" style="font-size: 0.85rem; margin-top: 4px;">-</div>
+          </div>
+        </div>
+
+        <!-- Swap Arrow -->
+        <div style="text-align: center; margin: 12px 0;">
+          <div style="font-size: 1.5rem;">⇅</div>
+        </div>
+
+        <!-- Target Station -->
+        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 12px;">
+          <div style="font-size: 0.75rem; color: var(--ps3-green); margin-bottom: 6px;">📥 Stasiun Tujuan</div>
+          <div id="swapTargetStationName" style="font-weight: 600; font-size: 0.9rem;">-</div>
+          
+          <!-- Target Item Selection -->
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--ps3-border);">
+            <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 6px;">Item yang akan diterima:</div>
+            <div id="swapTargetItemContainer">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Warning for unmatched category -->
+        <div id="swapUnmatchedWarning" style="display: none; background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
+          <div style="font-size: 0.8rem; color: var(--ps3-red); margin-bottom: 8px;">⚠️ Tidak ada item dengan kategori yang sama</div>
+          <div style="font-size: 0.75rem; color: var(--ps3-text); margin-bottom: 10px;">
+            Stasiun tujuan tidak memiliki item dengan kategori yang sama. Item dari stasiun asal akan:
+          </div>
+          <label style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+            <input type="radio" name="swapUnmatchedAction" value="move" checked style="margin-top: 2px;">
+            <span style="font-size: 0.8rem;">Pindahkan ke stasiun tujuan</span>
+          </label>
+          <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer;">
+            <input type="radio" name="swapUnmatchedAction" value="unpair" style="margin-top: 2px;">
+            <span style="font-size: 0.8rem;">Jadikan unpaired (available)</span>
+          </label>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-10" style="margin-top: 16px;">
+          <button class="btn btn-secondary flex-1" onclick="closeModal('modalSwapConfirm')">Batal</button>
+          <button id="btnConfirmSwap" class="btn" onclick="executeQuickSwap()" style="flex: 2; background: linear-gradient(135deg, #f5a623, #ff8c00);">
+            🔄 Konfirmasi Swap
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════ Delete Station Modal ═════════════════ -->
+  <div id="modalDeleteStation" class="modal">
+    <div class="modal-content modal-sm">
+      <div class="modal-header" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">
+        <div class="modal-title">⚠️ Hapus Stasiun Permanen</div>
+        <button class="modal-close" onclick="closeModal('modalDeleteStation')">×</button>
+      </div>
+
+      <div class="p-20">
+        <!-- Warning Box -->
+        <div style="background: rgba(230, 0, 18, 0.15); border: 2px solid var(--ps3-red); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+          <div style="color: var(--ps3-red); font-weight: 700; margin-bottom: 10px; font-size: 1rem;">🚨 PERINGATAN SERIUS</div>
+          <div style="font-size: 0.9rem; color: var(--ps3-text); line-height: 1.5;">
+            Stasiun akan dihapus <strong style="color: var(--ps3-red);">PERMANEN</strong> dan tidak dapat dikembalikan.
+          </div>
+        </div>
+
+        <!-- Consequences Box -->
+        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: var(--ps3-yellow);">📋 Konsekuensi Penghapusan:</div>
+          <div id="deleteStationConsequences" style="font-size: 0.85rem; color: var(--ps3-text); line-height: 1.6;">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Station Details -->
+        <div style="background: var(--ps3-bg); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+          <div class="text-8 text-muted mb-4">ID Stasiun</div>
+          <div id="deleteStationId" style="font-family: monospace; font-weight: 600; margin-bottom: 12px;">-</div>
+
+          <div class="text-8 text-muted mb-4">Nama Stasiun</div>
+          <div id="deleteStationName" style="font-weight: 600; color: var(--ps3-text); margin-bottom: 12px;">-</div>
+
+          <div class="text-8 text-muted mb-4">Item Terpasang</div>
+          <div id="deleteStationItemCount" class="fw-600 text-yellow">-</div>
+        </div>
+
+        <!-- Confirmation Checkbox -->
+        <label style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px; cursor: pointer;">
+          <input type="checkbox" id="confirmDeleteStationCheckbox" class="checkbox-ps3 checkbox-mt">
+          <span class="fs-9" style="line-height: 1.4;">
+            Saya mengerti bahwa stasiun ini akan dihapus <strong>permanen</strong> dan semua item yang terpasang akan dilepas (unpaired).
+          </span>
+        </label>
+
+        <!-- Reason Input -->
+        <div class="mb-20">
+          <label style="display: block; margin-bottom: 6px; font-size: 0.85rem;">
+            Alasan Penghapusan <span class="text-red">*</span>
+          </label>
+          <textarea id="deleteStationReason" placeholder="Mengapa stasiun ini dihapus? (minimum 3 karakter)" minlength="3" class="textarea-ps3"></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-10">
+          <button class="btn btn-secondary flex-1" onclick="closeModal('modalDeleteStation')">Batal</button>
+          <button id="deleteStationConfirmBtn" class="btn" onclick="confirmDeleteStation()" style="flex: 2; background: var(--ps3-red); opacity: 0.5; cursor: not-allowed;" disabled>
+            🗑️ Hapus Permanen
+          </button>
         </div>
       </div>
     </div>
@@ -3137,6 +3314,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20250415-46"></script>
 </body>
 </html>

@@ -282,23 +282,181 @@
       50% { opacity: 0.5; }
     }
 
-    /* ═════════════════ Desktop Responsive ═════════════════ */
-    @media (min-width: 768px) {
-      /* Container untuk desktop */
+    /* ═════════════════ Desktop Sidebar ═════════════════ */
+    @media (min-width: 1024px) {
+      /* Layout wrapper dengan sidebar */
       #app {
-        max-width: 1200px;
-        margin: 0 auto;
+        display: flex;
+        flex-direction: row;
       }
 
-      /* Pages lebih lebar di desktop */
+      /* Header full width tapi dengan margin kiri untuk sidebar */
+      .header {
+        position: fixed;
+        top: 0;
+        left: 220px;
+        right: 0;
+        width: calc(100% - 220px);
+        z-index: 999;
+        transition: left 0.3s ease, width 0.3s ease;
+      }
+
+      .header.sidebar-collapsed {
+        left: 70px;
+        width: calc(100% - 70px);
+      }
+
+      /* Sidebar style untuk desktop */
+      .nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 220px;
+        flex-direction: column;
+        border-top: none;
+        border-right: 2px solid var(--ps3-silver);
+        padding: 16px 0;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+        transition: width 0.3s ease;
+        z-index: 1000;
+      }
+
+      .nav.sidebar-collapsed {
+        width: 70px;
+      }
+
+      /* Toggle button style */
+      .sidebar-toggle {
+        display: flex;
+        padding: 12px 16px;
+        background: none;
+        border: none;
+        color: var(--ps3-silver);
+        cursor: pointer;
+        border-bottom: 1px solid var(--ps3-border);
+        margin-bottom: 8px;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+
+      .sidebar-toggle:hover {
+        color: var(--ps3-red);
+        background: rgba(230,0,18,0.1);
+      }
+
+      .nav.sidebar-collapsed .sidebar-toggle {
+        padding: 12px;
+      }
+
+      /* Nav button style di sidebar */
+      .nav-btn {
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 12px 16px;
+        font-size: 0.75rem;
+        gap: 12px;
+        border-left: 3px solid transparent;
+        text-align: left;
+      }
+
+      .nav-btn .nav-icon {
+        font-size: 20px;
+        width: 24px;
+        text-align: center;
+      }
+
+      .nav-btn.active {
+        background: linear-gradient(90deg, rgba(230,0,18,0.15) 0%, transparent 100%);
+        border-left: 3px solid var(--ps3-red);
+      }
+
+      /* Sembunyikan text saat collapsed */
+      .nav.sidebar-collapsed .nav-text {
+        display: none;
+      }
+
+      .nav.sidebar-collapsed .nav-btn {
+        justify-content: center;
+        padding: 16px 12px;
+      }
+
+      /* Pages dengan margin kiri untuk sidebar */
       .page {
-        max-width: 900px;
-        padding: 24px;
+        margin-left: 220px;
+        padding: 24px 32px;
+        max-width: calc(100% - 220px);
+        min-height: 100vh;
+        transition: margin-left 0.3s ease, max-width 0.3s ease;
       }
 
-      /* Stats grid 3 columns di desktop */
+      .page.sidebar-collapsed {
+        margin-left: 70px;
+        max-width: calc(100% - 70px);
+      }
+
+      /* Footer space untuk desktop */
+      .footer {
+        margin-left: 220px;
+        transition: margin-left 0.3s ease;
+      }
+
+      .footer.sidebar-collapsed {
+        margin-left: 70px;
+      }
+    }
+
+    /* Hide toggle button di mobile */
+    @media (max-width: 1023px) {
+      .sidebar-toggle {
+        display: none;
+      }
+    }
+    @media (min-width: 768px) {
+      /* Container full width untuk desktop */
+      #app {
+        max-width: 100%;
+        width: 100%;
+        margin: 0;
+      }
+
+      /* Pages full width di desktop */
+      .page {
+        max-width: 100%;
+        width: 100%;
+        padding: 24px 32px;
+      }
+
+      /* Stations grid - 2 columns di desktop */
+      #stationsGrid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        align-items: stretch;
+      }
+
+      #stationsGrid .unit-card {
+        margin-bottom: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #stationsGrid .unit-card .unit-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      #stationsGrid .unit-card .unit-actions {
+        margin-top: auto;
+      }
+
+      /* Stats grid 4 columns di desktop */
       .stats-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 16px;
       }
 
@@ -344,13 +502,29 @@
         font-size: 24px;
       }
 
-      /* Header lebih spacious */
+      /* Header lebih spacious - dengan title center */
       .header {
         padding: 16px 24px;
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
 
+      /* Title absolute center untuk desktop */
       .header-title {
         font-size: 1.2rem;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: nowrap;
+      }
+
+      /* Pastikan left & right content tetap clickable */
+      .header-left,
+      .header-right {
+        position: relative;
+        z-index: 1;
       }
 
       #clock {
@@ -407,6 +581,28 @@
         font-size: 0.9rem;
       }
 
+      /* Inventory grid untuk desktop */
+      #inventoryList {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      #inventoryList > div {
+        margin-bottom: 0 !important;
+      }
+
+      /* Stations list grid untuk desktop */
+      #stationsList {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      #stationsList > div {
+        margin-bottom: 0 !important;
+      }
+
       /* Settings form lebih spacious */
       .setting-item {
         padding: 18px 0;
@@ -438,16 +634,46 @@
     /* ═════════════════ Large Desktop ═════════════════ */
     @media (min-width: 1200px) {
       .page {
-        max-width: 1000px;
-        padding: 32px;
+        max-width: 100%;
+        width: 100%;
+        padding: 32px 48px;
       }
 
+      /* Stations grid - 3 columns di large desktop */
+      #stationsGrid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+
+      #stationsGrid .unit-card {
+        padding: 24px;
+      }
+
+      /* Stats grid 5 columns di large desktop */
       .stats-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
+        gap: 20px;
       }
 
       .header {
-        padding: 20px 32px;
+        padding: 20px 48px;
+      }
+
+      /* Cards lebih spacious */
+      .card {
+        padding: 24px;
+        margin-bottom: 20px;
+      }
+
+      .unit-card {
+        padding: 24px;
+      }
+
+      /* Inventory & Stations - 3 columns di large desktop */
+      #inventoryList,
+      #stationsList {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
       }
     }
 
@@ -1215,6 +1441,39 @@
 
     .tx-id-badge:active {
       transform: scale(0.95);
+    }
+
+    /* Station ID Badge - Copyable badge for station ID */
+    .station-id-badge {
+      font-family: 'Courier New', monospace;
+      font-size: 0.65rem;
+      background: rgba(192, 192, 192, 0.12);
+      border: 1px solid rgba(192, 192, 192, 0.25);
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: var(--ps3-silver);
+      cursor: pointer;
+      user-select: all;
+      transition: all 0.15s ease;
+      letter-spacing: 0.02em;
+    }
+
+    .station-id-badge:hover {
+      background: rgba(230, 0, 18, 0.15);
+      border-color: var(--ps3-red);
+      color: var(--ps3-text);
+    }
+
+    .station-id-badge:active {
+      transform: scale(0.95);
+    }
+
+    .station-id-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.7;
+      color: var(--ps3-silver);
     }
 
     .transaction-amount {

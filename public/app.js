@@ -283,6 +283,7 @@
         renderAll();
         startPolling();
         startTimers(); // Start timer updates separately (1 second interval)
+        initSidebar(); // Initialize sidebar state untuk desktop
         showLoading(false);
       } catch (error) {
         showLoading(false);
@@ -584,7 +585,13 @@
         return `
           <div class="unit-card active ${isBooking ? 'booking' : ''}" data-station-id="${station.id}" style="border: 2px solid #22c55e;">
             <div class="unit-header">
-              <div class="unit-name">${station.name}</div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div class="unit-name">${station.name}</div>
+                <div class="tab-btn-group" style="margin-left: 4px;">
+                  
+                  <span onclick="copyToClipboard('${station.id}')" class="station-id-badge" title="Klik untuk copy ID Stasiun">${station.id}</span>
+                </div>
+              </div>
               <div style="display: flex; gap: 6px; align-items: center;">
                 ${bookingBadgeHTML}
                 <div class="unit-status-badge" style="background: #22c55e; color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; box-shadow: 0 2px 8px rgba(34,197,94,0.4);">AKTIF</div>
@@ -638,7 +645,13 @@
           return `
             <div class="unit-card" data-station-id="${station.id}" style="cursor: not-allowed; opacity: 0.7; border: 2px solid var(--ps3-red);">
               <div class="unit-header">
-                <div class="unit-name">${station.name}</div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <div class="unit-name">${station.name}</div>
+                  <div class="tab-btn-group" style="margin-left: 4px;">
+                    
+                    <span onclick="copyToClipboard('${station.id}')" class="station-id-badge" title="Klik untuk copy ID Stasiun">${station.id}</span>
+                  </div>
+                </div>
                 <div class="unit-status-badge" style="background: var(--ps3-red); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">BELUM SIAP</div>
               </div>
               <div class="unit-body" style="padding: 12px;">
@@ -657,7 +670,13 @@
         return `
           <div class="unit-card" data-station-id="${station.id}" onclick="openStartStationModal('${station.id}')" style="cursor: pointer; opacity: 0.9;">
             <div class="unit-header">
-              <div class="unit-name">${station.name}</div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div class="unit-name">${station.name}</div>
+                <div class="tab-btn-group" style="margin-left: 4px;">
+                  
+                  <span onclick="copyToClipboard('${station.id}')" class="station-id-badge" title="Klik untuk copy ID Stasiun">${station.id}</span>
+                </div>
+              </div>
               <div class="unit-status-badge" style="background: var(--ps3-surface); color: var(--ps3-muted); padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; border: 1px solid var(--ps3-border);">SIAP</div>
             </div>
             <div class="unit-body" style="text-align: center; padding: 20px 0;">
@@ -911,10 +930,11 @@
               </div>
             </div>
 
-            <!-- Row 2: Unit Name + Action Buttons -->
+            <!-- Row 2: Unit Name + Station ID Badge + Action Buttons -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${t.customer ? '6px' : '10px'};">
               <div class="fs-105 lh-14 flex-1 min-w-0 pr-10 text-primary">
                 🎮 ${t.unitName || t.station_name || 'Unknown'}
+                ${t.unitId ? `<span onclick="copyToClipboard('${t.unitId}')" class="station-id-badge" title="Klik untuk copy ID Stasiun">${t.unitId}</span>` : ''}
               </div>
               <div class="flex-center-gap-4 flex-shrink-0">
                 ${t.editCount > 0 ? `<button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName || t.station_name || 'Unknown'}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-green" title="Lihat riwayat edit">📋</button>` : ''}
@@ -1561,10 +1581,14 @@
             </div>
           </div>
 
-          <!-- Row 2: Unit Name + Action Buttons -->
+          <!-- Row 2: Unit Name + Station ID Badge + Action Buttons -->
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${t.customer ? '6px' : '10px'};">
             <div class="fs-105 lh-14 flex-1 min-w-0 pr-10 text-primary">
               🎮 ${t.unitName || t.station_name || 'Unknown'}
+              ${t.unitId ? `
+                
+                <span onclick="copyToClipboard('${t.unitId}')" class="station-id-badge" title="Klik untuk copy ID Stasiun">${t.unitId}</span>
+              ` : ''}
             </div>
             <div class="flex-center-gap-4 flex-shrink-0">
               ${t.editCount > 0 ? `<button onclick="try { viewEditHistory('${t.id || ''}', '${(t.customer || 'No name').replace(/'/g, "\\'")}', '${t.unitName || t.station_name || 'Unknown'}'); } catch(e) { alert('Error: ' + e.message); }" class="icon-btn-green" title="Lihat riwayat edit">📋</button>` : ''}
@@ -2514,7 +2538,13 @@
           <div class="fs-85 text-primary fw-600 mb-6">
             ${formatScheduleTime(normalizedSchedule)}
           </div>
-          ${s.unitName ? `<div class="label-xs-muted" class="mb-4">🎮 ${escapeHtml(s.unitName)}</div>` : ''}
+          ${s.unitName ? `<div class="label-xs-muted" class="mb-4">
+            🎮 ${escapeHtml(s.unitName)}
+            ${s.unitId ? `
+              
+              <span onclick="copyToClipboard('${s.unitId}')" class="station-id-badge" title="Klik untuk copy ID Stasiun">${s.unitId}</span>
+            ` : ''}
+          </div>` : ''}
           ${s.note ? `<div class="fs-8 text-muted italic mt-4">💬 ${escapeHtml(s.note)}</div>` : ''}
         </div>
       `;
@@ -4091,6 +4121,57 @@
       URL.revokeObjectURL(url);
     }
 
+    // ═════════════════ Sidebar Toggle ═════════════════
+    let sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+
+    function initSidebar() {
+      if (window.innerWidth >= 1024) {
+        applySidebarState();
+      }
+    }
+
+    function toggleSidebar() {
+      sidebarCollapsed = !sidebarCollapsed;
+      localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
+      applySidebarState();
+    }
+
+    function applySidebarState() {
+      const nav = document.getElementById('mainNav');
+      const header = document.querySelector('.header');
+      const pages = document.querySelectorAll('.page');
+      const footer = document.querySelector('.footer');
+
+      if (sidebarCollapsed) {
+        nav?.classList.add('sidebar-collapsed');
+        header?.classList.add('sidebar-collapsed');
+        pages.forEach(p => p.classList.add('sidebar-collapsed'));
+        footer?.classList.add('sidebar-collapsed');
+      } else {
+        nav?.classList.remove('sidebar-collapsed');
+        header?.classList.remove('sidebar-collapsed');
+        pages.forEach(p => p.classList.remove('sidebar-collapsed'));
+        footer?.classList.remove('sidebar-collapsed');
+      }
+    }
+
+    // Handle resize window
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 1024) {
+        applySidebarState();
+      } else {
+        // Reset sidebar classes di mobile
+        const nav = document.getElementById('mainNav');
+        const header = document.querySelector('.header');
+        const pages = document.querySelectorAll('.page');
+        const footer = document.querySelector('.footer');
+        nav?.classList.remove('sidebar-collapsed');
+        header?.classList.remove('sidebar-collapsed');
+        pages.forEach(p => p.classList.remove('sidebar-collapsed'));
+        footer?.classList.remove('sidebar-collapsed');
+      }
+    });
+
     // ═════════════════ UI Helpers ═════════════════
     function showPage(pageId) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -4693,7 +4774,13 @@
             <div class="fs-85 text-primary fw-600 mb-6">
               ${formattedTime}
             </div>
-            ${item.unitName ? `<div class="label-xs-muted" class="mb-4">🎮 ${escapeHtml(item.unitName)}</div>` : ''}
+            ${item.unitName ? `<div class="label-xs-muted" class="mb-4">
+              🎮 ${escapeHtml(item.unitName)}
+              ${item.unitId ? `
+                
+                <span onclick="copyToClipboard('${item.unitId}')" class="station-id-badge" title="Klik untuk copy ID Stasiun">${item.unitId}</span>
+              ` : ''}
+            </div>` : ''}
             ${item.note ? `<div class="fs-8 text-muted italic mt-4">💬 ${escapeHtml(item.note)}</div>` : ''}
             <div style="font-size: 0.75rem; color: var(--ps3-green-dark); margin-top: 6px; padding: 4px 8px; background: rgba(34, 197, 94, 0.1); border-radius: 4px; border: 1px solid rgba(34, 197, 94, 0.3);">
               ✅ Diselesaikan: Transaksi tercatat otomatis
@@ -4916,7 +5003,13 @@
             <div class="fs-85 text-primary fw-600 mb-6">
               ${formattedTime}
             </div>
-            ${item.unitName ? `<div class="label-xs-muted" class="mb-4">🎮 ${escapeHtml(item.unitName)}</div>` : ''}
+            ${item.unitName ? `<div class="label-xs-muted" class="mb-4">
+              🎮 ${escapeHtml(item.unitName)}
+              ${item.unitId ? `
+                
+                <span onclick="copyToClipboard('${item.unitId}')" class="station-id-badge" title="Klik untuk copy ID Stasiun">${item.unitId}</span>
+              ` : ''}
+            </div>` : ''}
             ${item.note ? `<div class="fs-8 text-muted italic mt-4">💬 ${escapeHtml(item.note)}</div>` : ''}
             <div style="font-size: 0.75rem; color: var(--ps3-red); margin-top: 6px; padding: 4px 8px; background: rgba(230, 0, 18, 0.1); border-radius: 4px; border: 1px solid rgba(230, 0, 18, 0.3);">
               🗑️ Dibatalkan: ${deletedDate}${item.deleteReason ? ` - ${escapeHtml(item.deleteReason)}` : ''}
@@ -5910,10 +6003,14 @@
               </div>
             </div>
 
-            <!-- Row 2: Unit Name -->
+            <!-- Row 2: Unit Name + Station ID Badge -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: ${t.customer ? '6px' : '10px'};">
               <div class="fs-105 lh-14 flex-1 min-w-0 pr-10 text-primary">
                 🎮 ${t.unitName || t.station_name || 'Unknown'}
+                ${t.unitId ? `
+                  
+                  <span onclick="copyToClipboard('${t.unitId}')" class="station-id-badge" title="Klik untuk copy ID Stasiun">${t.unitId}</span>
+                ` : ''}
               </div>
             </div>
 
@@ -7219,6 +7316,24 @@
       return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     }
 
+    // Format duration for item tracking (e.g., "2 hari, 3 jam, 15 menit" or "3 jam, 15 menit" or "15 menit")
+    function formatDuration(ms) {
+      if (ms < 0) ms = 0;
+      const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+      const hours = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+      const minutes = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
+      
+      const parts = [];
+      if (days > 0) parts.push(`${days} hari`);
+      if (hours > 0) parts.push(`${hours} jam`);
+      if (minutes > 0) parts.push(`${minutes} menit`);
+      
+      // If everything is 0, return "0 menit"
+      if (parts.length === 0) return '0 menit';
+      
+      return parts.join(', ');
+    }
+
     function formatDate(timestamp) {
       return new Date(timestamp).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
@@ -7968,7 +8083,14 @@
             <div class="fs-85 text-primary fw-600 mb-6">
               ${formatScheduleTime(s)}
             </div>
-            ${s.unitName ? `<div class="label-xs-muted" class="mb-4">🎮 ${s.unitName} ${s.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem;">● AKTIF</span>' : ''}</div>` : ''}
+            ${s.unitName ? `<div class="label-xs-muted" class="mb-4">
+              🎮 ${s.unitName}
+              ${s.unitId ? `
+                
+                <span onclick="copyToClipboard('${s.unitId}')" class="station-id-badge" title="Klik untuk copy ID Stasiun">${s.unitId}</span>
+              ` : ''}
+              ${s.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem; margin-left: 8px;">● AKTIF</span>' : ''}
+            </div>` : ''}
             ${s.note ? `<div class="fs-8 text-muted italic mt-4">💬 ${s.note}</div>` : ''}
             ${s.status === 'running' ? `<div style="font-size: 0.75rem; color: var(--ps3-green); margin-top: 6px; padding: 4px 8px; background: rgba(119,221,119,0.1); border-radius: 4px; border: 1px solid rgba(119,221,119,0.3);">▶️ Sedang berjalan di unit</div>` : ''}
             <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
@@ -8565,7 +8687,14 @@
               <div class="fs-85 text-primary fw-600 mb-6">
                 ${formatScheduleTime(s)}
               </div>
-              ${s.unitName ? `<div class="label-xs-muted" class="mb-4">🎮 ${s.unitName} ${s.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem;">● AKTIF</span>' : ''}</div>` : ''}
+              ${s.unitName ? `<div class="label-xs-muted" class="mb-4">
+                🎮 ${s.unitName}
+                ${s.unitId ? `
+                  
+                  <span onclick="copyToClipboard('${s.unitId}')" class="station-id-badge" title="Klik untuk copy ID Stasiun">${s.unitId}</span>
+                ` : ''}
+                ${s.status === 'running' ? '<span style="color: var(--ps3-green); font-size: 0.7rem; margin-left: 8px;">● AKTIF</span>' : ''}
+              </div>` : ''}
               ${s.note ? `<div class="fs-8 text-muted italic mt-4">💬 ${s.note}</div>` : ''}
               ${s.status === 'running' ? `<div style="font-size: 0.75rem; color: var(--ps3-green); margin-top: 6px; padding: 4px 8px; background: rgba(119,221,119,0.1); border-radius: 4px; border: 1px solid rgba(119,221,119,0.3);">▶️ Sedang berjalan di unit</div>` : ''}
               <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
@@ -8817,7 +8946,13 @@
           </div>
 
           <!-- Unit & Note -->
-          ${s.unitName ? `<div class="label-xs-muted" class="mb-4">🎮 ${escapeHtml(s.unitName)}</div>` : ''}
+          ${s.unitName ? `<div class="label-xs-muted" class="mb-4">
+            🎮 ${escapeHtml(s.unitName)}
+            ${s.unitId ? `
+              
+              <span onclick="copyToClipboard('${s.unitId}')" class="station-id-badge" title="Klik untuk copy ID Stasiun">${s.unitId}</span>
+            ` : ''}
+          </div>` : ''}
           ${s.note ? `<div class="fs-8 text-muted italic mt-4">💬 ${escapeHtml(s.note)}</div>` : ''}
         </div>
       `;
@@ -9751,12 +9886,18 @@
         return;
       }
 
+      // Calculate duration since assigned
+      const assignedAt = new Date(item.current_pairing.assigned_at || item.created_at).getTime();
+      const durationMs = Date.now() - assignedAt;
+      const durationText = formatDuration(durationMs);
+
       container.innerHTML = `
         <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 12px;">
           <div style="font-size: 0.8rem; font-weight: 600;">🏢 ${item.current_pairing.name}</div>
           <div class="text-sm text-muted">ID: ${item.current_pairing.id}</div>
           <div style="font-size: 0.75rem; margin-top: 8px;">Role: ${item.current_pairing.role}</div>
           <div class="text-sm text-muted">Dipasang: ${new Date(item.current_pairing.assigned_at).toLocaleDateString('id-ID')}</div>
+          <div style="font-size: 0.75rem; margin-top: 6px; color: var(--ps3-silver);">⏱️ ${durationText}</div>
         </div>
       `;
     }
@@ -9938,6 +10079,58 @@
         loadStations();
       } catch (error) {
         showToast(error.message, 'error');
+      }
+    }
+
+    // Edit Station Functions
+    function openEditStationModal() {
+      const stationId = document.getElementById('stationDetailId').value;
+      const stationName = document.getElementById('stationDetailTitle').textContent.replace('🏢 ', '');
+      
+      // Get description from currentStationDetail (set in openStationDetail)
+      const description = currentStationDetail?.description || '';
+      
+      document.getElementById('editStationId').value = stationId;
+      document.getElementById('editStationIdDisplay').value = stationId;
+      document.getElementById('editStationName').value = stationName;
+      document.getElementById('editStationDesc').value = description;
+      
+      // Close detail modal first to avoid z-index layering issue
+      closeModal('modalStationDetail');
+      
+      openModal('modalEditStation');
+    }
+
+    async function saveEditStation() {
+      const stationId = document.getElementById('editStationId').value;
+      const name = document.getElementById('editStationName').value.trim();
+      const description = document.getElementById('editStationDesc').value.trim();
+
+      if (!name) {
+        showToast('Nama stasiun wajib diisi', 'error');
+        return;
+      }
+
+      try {
+        await api('PUT', `/pairings/${stationId}`, { 
+          name, 
+          description,
+          is_active: true 
+        });
+        
+        showToast('Stasiun berhasil diperbarui', 'success');
+        closeModal('modalEditStation');
+        
+        // Refresh stations data and re-render all views
+        await loadStations();
+        
+        // Re-render Dashboard to reflect station name changes
+        renderDashboard();
+        
+        // Reopen station detail to show updated info
+        openStationDetail(stationId);
+      } catch (error) {
+        showToast(error.message || 'Gagal memperbarui stasiun', 'error');
       }
     }
 
@@ -10304,6 +10497,183 @@
       }
     }
 
+    // Store swap data
+    let currentSwapData = {
+      sourceItem: null,
+      targetStation: null,
+      targetItems: [],
+      selectedTargetItem: null
+    };
+
+    function onSwapItemSelect() {
+      const itemId = document.getElementById('swapItemId').value;
+      if (!itemId || !currentStationDetail) return;
+      
+      const item = currentStationDetail.items.find(i => i.item_id === itemId);
+      currentSwapData.sourceItem = item;
+    }
+
+    function onSwapTargetSelect() {
+      const stationId = document.getElementById('swapTargetStation').value;
+      if (!stationId) {
+        currentSwapData.targetStation = null;
+        currentSwapData.targetItems = [];
+        return;
+      }
+      
+      const station = stations.find(s => s.id === stationId);
+      currentSwapData.targetStation = station;
+    }
+
+    async function previewQuickSwap() {
+      const fromStationId = document.getElementById('stationDetailId').value;
+      const itemId = document.getElementById('swapItemId').value;
+      const toStationId = document.getElementById('swapTargetStation').value;
+
+      if (!itemId || !toStationId) {
+        showToast('Pilih item dan stasiun tujuan terlebih dahulu', 'error');
+        return;
+      }
+
+      if (fromStationId === toStationId) {
+        showToast('Tidak dapat swap ke stasiun yang sama', 'error');
+        return;
+      }
+
+      // Get source item details
+      const sourceItem = currentStationDetail.items.find(i => i.item_id === itemId);
+      if (!sourceItem) {
+        showToast('Item tidak ditemukan di stasiun ini', 'error');
+        return;
+      }
+
+      // Get target station details
+      const targetStation = stations.find(s => s.id === toStationId);
+      if (!targetStation) {
+        showToast('Stasiun tujuan tidak ditemukan', 'error');
+        return;
+      }
+
+      // Get items in target station with same category
+      const targetResponse = await api('GET', `/pairings/${toStationId}`);
+      const targetItems = targetResponse.items || [];
+      const sameCategoryItems = targetItems.filter(i => i.category === sourceItem.category);
+
+      // Store data for execution
+      currentSwapData = {
+        fromStationId,
+        toStationId,
+        sourceItem,
+        targetStation,
+        targetItems: sameCategoryItems,
+        selectedTargetItem: sameCategoryItems.length === 1 ? sameCategoryItems[0] : null
+      };
+
+      // Populate modal
+      document.getElementById('swapSourceStationName').textContent = currentStationDetail.name;
+      document.getElementById('swapSourceItem').innerHTML = `
+        <strong>${sourceItem.item_id}</strong> - ${sourceItem.name || sourceItem.category}
+        <span style="color: var(--ps3-muted); font-size: 0.75rem;">(${sourceItem.category})</span>
+      `;
+
+      document.getElementById('swapTargetStationName').textContent = targetStation.name;
+
+      const targetContainer = document.getElementById('swapTargetItemContainer');
+      const unmatchedWarning = document.getElementById('swapUnmatchedWarning');
+
+      if (sameCategoryItems.length === 0) {
+        // No matching category - show warning
+        targetContainer.innerHTML = `
+          <div style="color: var(--ps3-muted); font-size: 0.8rem; font-style: italic;">
+            Tidak ada item ${sourceItem.category} di stasiun ini
+          </div>
+        `;
+        unmatchedWarning.style.display = 'block';
+      } else if (sameCategoryItems.length === 1) {
+        // Exactly one item - auto select
+        const item = sameCategoryItems[0];
+        targetContainer.innerHTML = `
+          <div style="background: var(--ps3-bg); padding: 8px; border-radius: 6px;">
+            <strong>${item.item_id}</strong> - ${item.name || item.category}
+            <span style="color: var(--ps3-muted); font-size: 0.75rem;">(otomatis dipilih)</span>
+          </div>
+        `;
+        unmatchedWarning.style.display = 'none';
+      } else {
+        // Multiple items - show dropdown
+        let options = sameCategoryItems.map(item => 
+          `<option value="${item.item_id}">${item.item_id} - ${item.name || item.category}</option>`
+        ).join('');
+        
+        targetContainer.innerHTML = `
+          <select id="swapTargetItemSelect" class="select-equip" style="width: 100%;">
+            <option value="">Pilih item ${sourceItem.category}...</option>
+            ${options}
+          </select>
+          <div style="margin-top: 8px; padding: 8px; background: rgba(245,166,35,0.1); border-radius: 6px; font-size: 0.75rem; color: var(--ps3-yellow);">
+            ⚠️ Stasiun tujuan memiliki ${sameCategoryItems.length} item ${sourceItem.category}. Pilih satu untuk ditukar.
+          </div>
+        `;
+        unmatchedWarning.style.display = 'none';
+      }
+
+      closeModal('modalStationDetail');
+      openModal('modalSwapConfirm', true);
+    }
+
+    async function executeQuickSwap() {
+      const { fromStationId, toStationId, sourceItem, targetItems } = currentSwapData;
+      
+      let targetItemId = null;
+      
+      // Check if we need to get selected item from dropdown
+      if (targetItems.length > 1) {
+        const select = document.getElementById('swapTargetItemSelect');
+        if (!select || !select.value) {
+          showToast('Pilih item dari stasiun tujuan untuk ditukar', 'error');
+          return;
+        }
+        targetItemId = select.value;
+      } else if (targetItems.length === 1) {
+        targetItemId = targetItems[0].item_id;
+      }
+      
+      // Check unmatched action
+      let unmatchedAction = 'move';
+      const unmatchedWarning = document.getElementById('swapUnmatchedWarning');
+      if (unmatchedWarning.style.display !== 'none') {
+        const radio = document.querySelector('input[name="swapUnmatchedAction"]:checked');
+        if (radio) unmatchedAction = radio.value;
+      }
+
+      try {
+        showToast('⏳ Menjalankan swap...', 'info');
+        
+        await api('POST', '/pairings/swap-v2', {
+          from_pairing_id: fromStationId,
+          to_pairing_id: toStationId,
+          from_item_id: sourceItem.item_id,
+          to_item_id: targetItemId,
+          unmatched_action: unmatchedAction
+        });
+        
+        showToast('✅ Item berhasil ditukar!', 'success');
+        closeModal('modalSwapConfirm');
+        
+        // Refresh data
+        await loadStations();
+        renderDashboard();
+        lastStationsHash = getStationsHash(stations);
+      } catch (error) {
+        showToast(error.message || 'Gagal melakukan swap', 'error');
+      }
+    }
+
+    async function quickSwapItem() {
+      // Deprecated: replaced by previewQuickSwap + executeQuickSwap
+      previewQuickSwap();
+    }
+
     async function removeItemFromStation(itemId) {
       const stationId = document.getElementById('stationDetailId').value;
       if (!confirm('Hapus item dari stasiun ini?')) return;
@@ -10317,41 +10687,112 @@
       }
     }
 
-    async function quickSwapItem() {
-      const fromStationId = document.getElementById('stationDetailId').value;
-      const itemId = document.getElementById('swapItemId').value;
-      const toStationId = document.getElementById('swapTargetStation').value;
+    // Store station data for delete modal
+    let currentDeleteStationData = null;
 
-      if (!itemId || !toStationId) {
-        showToast('Pilih item dan stasiun tujuan', 'error');
+    function openDeleteStationModal() {
+      const stationId = document.getElementById('stationDetailId').value;
+      if (!stationId) {
+        showToast('ID stasiun tidak valid', 'error');
+        return;
+      }
+
+      // Get station data from currentStationDetail
+      if (!currentStationDetail || currentStationDetail.id !== stationId) {
+        showToast('Data stasiun tidak ditemukan', 'error');
+        return;
+      }
+
+      currentDeleteStationData = currentStationDetail;
+
+      // Populate modal details
+      document.getElementById('deleteStationId').textContent = stationId;
+      document.getElementById('deleteStationName').textContent = currentStationDetail.name || '-';
+      document.getElementById('deleteStationItemCount').textContent = `${currentStationDetail.item_count || 0} item`;
+
+      // Populate consequences
+      const items = currentStationDetail.items || [];
+      const itemList = items.length > 0
+        ? items.map(i => `• <strong>${i.item_id || i.id || 'N/A'}</strong> (${i.name || i.category || 'item'})`).join('<br>')
+        : '<em>Tidak ada item terpasang</em>';
+
+      document.getElementById('deleteStationConsequences').innerHTML = `
+        <div style="margin-bottom: 10px;">✅ Semua item berikut akan <strong>unpaired</strong>:</div>
+        <div style="background: var(--ps3-bg); border-left: 3px solid var(--ps3-yellow); padding: 10px; border-radius: 0 6px 6px 0; max-height: 150px; overflow-y: auto;">
+          ${itemList}
+        </div>
+        <div style="margin-top: 10px; color: var(--ps3-muted);">
+          📊 Total: <strong>${items.length}</strong> item akan kembali ke inventory
+        </div>
+      `;
+
+      // Reset form
+      document.getElementById('confirmDeleteStationCheckbox').checked = false;
+      document.getElementById('deleteStationReason').value = '';
+      updateDeleteStationButton();
+
+      // Close detail modal and open delete modal
+      closeModal('modalStationDetail');
+      openModal('modalDeleteStation', true);
+
+      // Add checkbox listener
+      document.getElementById('confirmDeleteStationCheckbox').addEventListener('change', updateDeleteStationButton);
+    }
+
+    function updateDeleteStationButton() {
+      const checkbox = document.getElementById('confirmDeleteStationCheckbox');
+      const btn = document.getElementById('deleteStationConfirmBtn');
+      if (checkbox.checked) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+      } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+      }
+    }
+
+    async function confirmDeleteStation() {
+      // Validate checkbox
+      if (!document.getElementById('confirmDeleteStationCheckbox').checked) {
+        showToast('Anda harus menyetujui penghapusan', 'error');
+        return;
+      }
+
+      // Validate reason
+      const reason = document.getElementById('deleteStationReason').value.trim();
+      if (!reason || reason.length < 3) {
+        showToast('Alasan penghapusan wajib diisi (minimum 3 karakter)', 'error');
+        return;
+      }
+
+      const stationId = currentDeleteStationData?.id;
+      if (!stationId) {
+        showToast('ID stasiun tidak valid', 'error');
         return;
       }
 
       try {
-        await api('POST', '/pairings/swap', {
-          from_pairing_id: fromStationId,
-          to_pairing_id: toStationId,
-          item_id: itemId
-        });
-        showToast('Item berhasil dipindahkan', 'success');
-        openStationDetail(fromStationId);
+        await api('DELETE', `/pairings/${stationId}`, { reason });
+        closeModal('modalDeleteStation');
+        showToast('Stasiun berhasil dihapus permanen', 'success');
+        
+        // Refresh stations data and update all views immediately
+        await loadStations();
+        renderDashboard();
+        
+        // Update hash to prevent duplicate render on next poll
+        lastStationsHash = getStationsHash(stations);
       } catch (error) {
         showToast(error.message, 'error');
       }
     }
 
     async function deleteStation() {
-      const stationId = document.getElementById('stationDetailId').value;
-      if (!confirm('Hapus stasiun ini? Semua item akan dilepas dari stasiun.')) return;
-
-      try {
-        await api('DELETE', `/pairings/${stationId}`);
-        closeModal('modalStationDetail');
-        showToast('Stasiun dihapus', 'success');
-        loadStations();
-      } catch (error) {
-        showToast(error.message, 'error');
-      }
+      // This function is now replaced by openDeleteStationModal + confirmDeleteStation
+      // Kept for backward compatibility
+      openDeleteStationModal();
     }
 
     // Analytics Functions
