@@ -1792,7 +1792,7 @@ app.post('/api/schedules/:id/start-unit', requireAuth, (req, res) => {
   
   // Create a transaction record for the active session
   const txStmt = db.prepare(`
-    INSERT INTO transactions (unitId, unitName, customer, startTime, duration, paid, payment, note, date)
+    INSERT INTO transactions (unitId, unitName, customer, startTime, durationMin, paid, payment, note, date)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const txResult = txStmt.run(
