@@ -190,12 +190,14 @@ db.exec(`
   );
 
   -- Management: Schedules table for advance bookings
+  -- NOTE: unitId changed to TEXT to support station IDs (HOME-01, etc.)
+  -- FK constraint removed since station system uses different ID space than units table
   CREATE TABLE IF NOT EXISTS schedules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     scheduleId TEXT UNIQUE,
     customer TEXT NOT NULL,
     phone TEXT,
-    unitId INTEGER,
+    unitId TEXT,
     unitName TEXT,
     scheduledDate TEXT NOT NULL,
     scheduledTime TEXT,
@@ -204,8 +206,7 @@ db.exec(`
     duration INTEGER,
     note TEXT,
     status TEXT DEFAULT 'pending',
-    created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000),
-    FOREIGN KEY (unitId) REFERENCES units(id)
+    created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
   );
 
   -- Note: scheduleId column is added via runtime migration below
@@ -556,6 +557,63 @@ if (db) {
     }
   } catch (e) {
     console.error('[DB] Migration error for schedules columns:', e.message);
+  }
+}
+
+// Migration: Fix schedules unitId column type from INTEGER to TEXT
+// This is needed for station system compatibility (HOME-01, etc.)
+if (db) {
+  try {
+    const scheduleInfo = db.prepare(`PRAGMA table_info(schedules)`).all();
+    const unitIdCol = scheduleInfo.find(c => c.name === 'unitId');
+    
+    // If unitId exists and has type INTEGER, we need to migrate
+    if (unitIdCol && unitIdCol.type === 'INTEGER') {
+      console.log('[DB] Migration: Converting schedules.unitId from INTEGER to TEXT for station system');
+      
+      // SQLite doesn't support ALTER COLUMN, so we use the recreate approach
+      db.exec(`
+        BEGIN TRANSACTION;
+        
+        -- Create new schedules table with TEXT unitId
+        CREATE TABLE schedules_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          scheduleId TEXT UNIQUE,
+          customer TEXT NOT NULL,
+          phone TEXT,
+          unitId TEXT,
+          unitName TEXT,
+          scheduledDate TEXT NOT NULL,
+          scheduledTime TEXT,
+          scheduledEndDate TEXT,
+          scheduledEndTime TEXT,
+          duration INTEGER,
+          note TEXT,
+          status TEXT DEFAULT 'pending',
+          created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
+        );
+        
+        -- Copy data, converting INTEGER unitId to TEXT
+        INSERT INTO schedules_new 
+        SELECT id, scheduleId, customer, phone, 
+               CASE WHEN unitId IS NOT NULL THEN CAST(unitId AS TEXT) ELSE NULL END,
+               unitName, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime,
+               duration, note, status, created_at
+        FROM schedules;
+        
+        -- Drop old table
+        DROP TABLE schedules;
+        
+        -- Rename new table
+        ALTER TABLE schedules_new RENAME TO schedules;
+        
+        COMMIT;
+      `);
+      
+      console.log('[DB] Migration: schedules.unitId converted to TEXT successfully');
+    }
+  } catch (e) {
+    console.error('[DB] Migration error for schedules unitId column:', e.message);
   }
 }
 
@@ -2059,6 +2117,35 @@ app.post('/api/deletion-logs/:id/restore', requireAuth, (req, res) => {
   } catch (error) {
     console.error('[Restore Error]', error.message);
     res.status(500).json({ error: 'Gagal mengembalikan data: ' + error.message });
+  }
+});
+
+// POST permanently delete from deletion_logs (trash) - removes forever
+app.post('/api/deletion-logs/:id/permanent-delete', requireAuth, (req, res) => {
+  const logId = req.params.id;
+  
+  // Get the deletion log entry before deleting
+  const logEntry = db.prepare('SELECT * FROM deletion_logs WHERE id = ?').get(logId);
+  if (!logEntry) {
+    return res.status(404).json({ error: 'Data tidak ditemukan di tempat sampah' });
+  }
+  
+  const { recordType, recordId } = logEntry;
+  
+  try {
+    // Permanently delete from deletion_logs
+    db.prepare('DELETE FROM deletion_logs WHERE id = ?').run(logId);
+    
+    res.json({ 
+      ok: true, 
+      message: `${recordType === 'transaction' ? 'Transaksi' : 'Pengeluaran'} ${recordId} dihapus permanen`,
+      deletedId: recordId,
+      recordType
+    });
+    
+  } catch (error) {
+    console.error('[Permanent Delete Error]', error.message);
+    res.status(500).json({ error: 'Gagal menghapus permanen: ' + error.message });
   }
 });
 
