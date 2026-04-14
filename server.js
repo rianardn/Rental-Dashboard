@@ -3409,13 +3409,16 @@ app.post('/api/inventory/:id/maintenance', requireAuth, (req, res) => {
 
 // Get all pairings/stations
 app.get('/api/pairings', requireAuth, (req, res) => {
-  const { is_active } = req.query;
+  const { is_active, include_inactive } = req.query;
   let sql = 'SELECT * FROM inventory_pairings';
   const params = [];
 
+  // Default: only show active stations (is_active=1 or is_active IS NULL for backward compatibility)
   if (is_active !== undefined) {
     sql += ' WHERE is_active = ?';
     params.push(is_active === 'true' ? 1 : 0);
+  } else if (include_inactive !== 'true') {
+    sql += ' WHERE (is_active = 1 OR is_active IS NULL)';
   }
 
   sql += ' ORDER BY id';
@@ -3703,6 +3706,38 @@ app.delete('/api/pairings/:id/items/:item_id', requireAuth, (req, res) => {
     .run(req.params.id, req.params.item_id);
   
   res.json({ ok: true, message: 'Item removed from pairing' });
+});
+
+// Delete pairing/station (soft delete - set is_active=0)
+app.delete('/api/pairings/:id', requireAuth, (req, res) => {
+  const { id } = req.params;
+  const now = Date.now();
+  
+  // Check if station exists
+  const station = db.prepare('SELECT * FROM inventory_pairings WHERE id = ?').get(id);
+  if (!station) {
+    return res.status(404).json({ error: 'Stasiun tidak ditemukan' });
+  }
+  
+  // Check if station is currently active (has ongoing session)
+  if (station.active) {
+    return res.status(400).json({ error: 'Tidak dapat menghapus stasiun yang sedang aktif. Silakan hentikan sesi terlebih dahulu.' });
+  }
+  
+  // Unpair all items from this station (log and delete)
+  const items = db.prepare('SELECT item_id FROM inventory_pairing_items WHERE pairing_id = ?').all(id);
+  for (const item of items) {
+    db.prepare('INSERT INTO inventory_pairing_history (item_id, old_pairing_id, change_date, reason) VALUES (?, ?, ?, ?)')
+      .run(item.item_id, id, now, 'Stasiun dihapus, item dilepas');
+  }
+  
+  // Delete all item pairings
+  db.prepare('DELETE FROM inventory_pairing_items WHERE pairing_id = ?').run(id);
+  
+  // Soft delete: set is_active = 0
+  db.prepare('UPDATE inventory_pairings SET is_active = 0, updated_at = ? WHERE id = ?').run(now, id);
+  
+  res.json({ ok: true, message: 'Stasiun berhasil dihapus' });
 });
 
 // Quick swap items between pairings
