@@ -566,9 +566,13 @@
                 <span style="color: var(--ps3-muted);">🕐 Mulai</span>
                 <span style="font-weight: 500; font-family: var(--font-display);">${startTimeStr}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed rgba(34,197,94,0.2);">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed rgba(34,197,94,0.2);">
                 <span style="color: var(--ps3-muted);">🏁 Berakhir</span>
                 <span style="font-weight: 500; font-family: var(--font-display); color: #22c55e;">${endTimeStr}</span>
+              </div>
+              <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed rgba(34,197,94,0.2);">
+                <span style="color: var(--ps3-muted);">💰 Estimasi Pendapatan</span>
+                <span style="color: #22c55e; font-weight: 700; font-size: 0.9rem; margin-left: auto;">Rp${estimatedRevenue.toLocaleString()}</span>
               </div>
               <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
                 <span style="color: var(--ps3-muted);">📝</span>${noteWithTx}
