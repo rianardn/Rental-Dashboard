@@ -1305,8 +1305,9 @@ app.post('/api/units/:id/start', requireAuth, (req, res) => {
   if (!unit) return res.status(404).json({ error: 'Unit tidak ditemukan' });
   if (unit.active) return res.status(400).json({ error: 'Unit sudah aktif' });
 
-  const { customer = '', duration = 0, note = '', linkedScheduleId = null } = req.body;
-  const startTime = Date.now();
+  const { customer = '', duration = 0, note = '', linkedScheduleId = null, startTime: clientStartTime } = req.body;
+  // Use client-provided startTime if available (to avoid network delay), otherwise use server time
+  const startTime = clientStartTime ? parseInt(clientStartTime) : Date.now();
   const durationMinutes = parseInt(duration) || 0;
 
   // Conflict detection: Check if there are pending schedules that overlap with this rental
@@ -1565,8 +1566,9 @@ app.post('/api/stations/:id/start', requireAuth, (req, res) => {
     });
   }
 
-  const { customer = '', duration = 0, note = '', linkedScheduleId = null } = req.body;
-  const startTime = Date.now();
+  const { customer = '', duration = 0, note = '', linkedScheduleId = null, startTime: clientStartTime } = req.body;
+  // Use client-provided startTime if available (to avoid network delay), otherwise use server time
+  const startTime = clientStartTime ? parseInt(clientStartTime) : Date.now();
   const durationMinutes = parseInt(duration) || 0;
 
   // Conflict detection: Check if there are pending schedules for this station

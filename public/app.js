@@ -2411,7 +2411,7 @@
       }
       
       try {
-        await api('POST', `/units/${currentUnitId}/start`, { customer, duration, note });
+        await api('POST', `/units/${currentUnitId}/start`, { customer, duration, note, startTime: Date.now() });
         closeModal('modalStart');
         await loadData();
         renderAll();
@@ -2586,7 +2586,7 @@
       
       try {
         showToast('Menaktifkan unit...', 'info');
-        await api('POST', `/units/${currentUnitId}/start`, { customer, duration, note });
+        await api('POST', `/units/${currentUnitId}/start`, { customer, duration, note, startTime: Date.now() });
         
         // Clear pending data
         pendingActivationData = null;
@@ -2669,7 +2669,7 @@
       }
       
       try {
-        await api('POST', `/stations/${currentStationId}/start`, { customer, duration, note });
+        await api('POST', `/stations/${currentStationId}/start`, { customer, duration, note, startTime: Date.now() });
         closeModal('modalStartStation');
         await loadStations();
         renderDashboard();
@@ -2769,7 +2769,7 @@
       
       try {
         showToast('Mengaktifkan stasiun...', 'info');
-        await api('POST', `/stations/${currentStationId}/start`, { customer, duration, note });
+        await api('POST', `/stations/${currentStationId}/start`, { customer, duration, note, startTime: Date.now() });
         
         pendingStationActivationData = null;
         pendingStationConflictSchedule = null;
