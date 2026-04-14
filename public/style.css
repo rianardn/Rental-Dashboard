@@ -203,14 +203,15 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      min-width: 100px; /* Reserve space for balance */
+      width: 140px; /* Fixed width for balance */
     }
 
     .header-brand {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 12px;
-      /* Mobile: normal flow, will appear after header-left */
+      flex: 1; /* Take remaining space */
     }
 
     .header-icon {
@@ -230,6 +231,7 @@
       font-family: var(--font-display);
       font-size: 1rem;
       letter-spacing: 0.08em;
+      white-space: nowrap; /* Prevent wrapping */
     }
 
     .header-title span {
@@ -241,29 +243,14 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      min-width: 100px; /* Reserve space for balance */
+      width: 140px; /* Fixed width for balance */
       justify-content: flex-end;
     }
 
-    /* Desktop: Center brand, hide left section */
+    /* Desktop: hide left section but keep width for balance */
     @media (min-width: 768px) {
-      .header {
-        position: relative;
-        justify-content: center; /* Center the brand */
-      }
-      
-      .header-brand {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-      }
-      
       .header-left {
-        flex: 1;
-      }
-      
-      .header-right {
-        flex: 1;
+        visibility: hidden; /* Hide but keep space */
       }
     }
 
