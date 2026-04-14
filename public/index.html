@@ -9,7 +9,7 @@
   <title id="pageTitle">PS3 Rental Manager</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=20250415-48">
+<link rel="stylesheet" href="style.css?v=20250415-50">
 </head>
 <body>
   <!-- ═════════════════ LOGIN SCREEN ═════════════════ -->
@@ -377,63 +377,30 @@
       <div id="mainTabCapital" class="management-tab-content" style="display: none;">
         <div class="card">
           <div class="section-title">💰 Modal Awal & Investasi</div>
-          <p class="text-8 text-muted mb-15">Catat modal awal dan proyeksi balik modal</p>
+          <p class="text-8 text-muted mb-15">Kelola modal, investasi, dan proyeksi balik modal</p>
           
-          <div style="background: rgba(0,170,0,0.1); border: 1px solid var(--ps3-green); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-            <div class="section-title text-green">➕ Tambah Modal</div>
-            <div class="form-group">
-              <label>Jumlah Modal (Rp)</label>
-              <input type="number" id="capitalAmount" placeholder="5000000" min="0">
-            </div>
-            <div class="form-group">
-              <label>Deskripsi/Sumber</label>
-              <input type="text" id="capitalDesc" placeholder="Contoh: Modal dari tabungan pribadi">
-            </div>
-            <div class="form-group">
-              <label>Tanggal</label>
-              <input type="date" id="capitalDate">
-            </div>
-            <button class="btn" style="background: linear-gradient(135deg, #00aa00, #00cc00, #00aa00);" onclick="addCapital()">Catat Modal</button>
-          </div>
-          
-          <div style="background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-            <div class="section-title text-red">➖ Pengeluaran Investasi</div>
-            <div class="form-group">
-              <label>Nama Item/Investasi</label>
-              <input type="text" id="capitalExpenseItem" placeholder="Contoh: Beli PS3 bekas">
-            </div>
-            <div class="form-group">
-              <label>Kategori</label>
-              <select id="capitalExpenseCategory">
-                <option value="">Pilih kategori...</option>
-                <option value="console">Pembelian Console</option>
-                <option value="tv">Pembelian TV/Monitor</option>
-                <option value="furniture">Furniture/Renovasi</option>
-                <option value="accessories">Aksesoris</option>
-                <option value="other">Lainnya</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Jumlah (Rp)</label>
-              <input type="number" id="capitalExpenseAmount" placeholder="2500000" min="0">
-            </div>
-            <div class="form-group">
-              <label>Tanggal</label>
-              <input type="date" id="capitalExpenseDate">
-            </div>
-            <button class="btn btn-red" onclick="addCapitalExpense()">Catat Pengeluaran</button>
-          </div>
-          
-          <div id="roiSummary" style="background: rgba(192,192,192,0.1); border: 1px solid var(--ps3-silver); border-radius: 12px; padding: 15px;">
+          <!-- ROI Summary Card with Action Buttons -->
+          <div id="roiSummary" style="background: rgba(192,192,192,0.1); border: 1px solid var(--ps3-silver); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
             <div class="section-title">📊 Proyeksi Balik Modal</div>
             <div id="roiContent">
               <p class="empty-state-p20">Belum ada data untuk proyeksi</p>
             </div>
+            
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--ps3-border);">
+              <button class="btn" style="flex: 1; background: linear-gradient(135deg, #00aa00, #00cc00, #00aa00);" onclick="openModal('modalAddCapital')">
+                <span style="margin-right: 4px;">➕</span> Catat Modal
+              </button>
+              <button class="btn btn-red" style="flex: 1;" onclick="openModal('modalAddCapitalExpense')">
+                <span style="margin-right: 4px;">➖</span> Catat Investasi
+              </button>
+            </div>
           </div>
           
-          <div class="mt-20">
+          <!-- Capital History -->
+          <div>
             <div class="section-title">Riwayat Modal & Investasi</div>
-            <div id="capitalHistory" style="max-height: 200px; overflow-y: auto;">
+            <div id="capitalHistory" style="max-height: 300px; overflow-y: auto;">
               <p class="empty-state-p15">Belum ada data modal</p>
             </div>
           </div>
@@ -2586,6 +2553,81 @@
         <div class="flex-gap-12-mt15">
           <button class="btn-cancel flex-p14" onclick="closeModal('modalAddInventory')">Batal</button>
           <button class="btn-confirm flex-2-p14" onclick="addInventory()">Tambah Inventori</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MODAL: Tambah Modal (Capital)
+  ═══════════════════════════════════════════════════════════════ -->
+  <div id="modalAddCapital" class="modal z-3000">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header" style="background: rgba(0, 170, 0, 0.2); border-color: var(--ps3-green);">
+        <div class="modal-title">➕ Tambah Modal</div>
+        <button class="modal-close" onclick="closeModal('modalAddCapital')">×</button>
+      </div>
+
+      <div class="p-20">
+        <div class="form-group">
+          <label>Jumlah Modal (Rp) <span class="text-red">*</span></label>
+          <input type="number" id="capitalAmount" placeholder="5000000" min="0">
+        </div>
+        <div class="form-group">
+          <label>Deskripsi/Sumber</label>
+          <input type="text" id="capitalDesc" placeholder="Contoh: Modal dari tabungan pribadi">
+        </div>
+        <div class="form-group">
+          <label>Tanggal</label>
+          <input type="date" id="capitalDate">
+        </div>
+
+        <div class="flex-gap-12-mt15">
+          <button class="btn-cancel flex-p14" onclick="closeModal('modalAddCapital')">Batal</button>
+          <button class="btn-confirm flex-2-p14" style="background: linear-gradient(135deg, #00aa00, #00cc00, #00aa00);" onclick="addCapital()">Catat Modal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MODAL: Catat Investasi (Capital Expense)
+  ═══════════════════════════════════════════════════════════════ -->
+  <div id="modalAddCapitalExpense" class="modal z-3000">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header" style="background: rgba(230, 0, 18, 0.2); border-color: var(--ps3-red);">
+        <div class="modal-title">➖ Catat Pengeluaran Investasi</div>
+        <button class="modal-close" onclick="closeModal('modalAddCapitalExpense')">×</button>
+      </div>
+
+      <div class="p-20">
+        <div class="form-group">
+          <label>Nama Item/Investasi <span class="text-red">*</span></label>
+          <input type="text" id="capitalExpenseItem" placeholder="Contoh: Beli PS3 bekas">
+        </div>
+        <div class="form-group">
+          <label>Kategori</label>
+          <select id="capitalExpenseCategory">
+            <option value="">Pilih kategori...</option>
+            <option value="console">🎮 Pembelian Console</option>
+            <option value="tv">📺 Pembelian TV/Monitor</option>
+            <option value="furniture">🪑 Furniture/Renovasi</option>
+            <option value="accessories">🎧 Aksesoris</option>
+            <option value="other">📦 Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Jumlah (Rp) <span class="text-red">*</span></label>
+          <input type="number" id="capitalExpenseAmount" placeholder="2500000" min="0">
+        </div>
+        <div class="form-group">
+          <label>Tanggal</label>
+          <input type="date" id="capitalExpenseDate">
+        </div>
+
+        <div class="flex-gap-12-mt15">
+          <button class="btn-cancel flex-p14" onclick="closeModal('modalAddCapitalExpense')">Batal</button>
+          <button class="btn-confirm flex-2-p14 btn-red" onclick="addCapitalExpense()">Catat Investasi</button>
         </div>
       </div>
     </div>

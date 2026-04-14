@@ -10965,6 +10965,7 @@
         await loadCapital();
         renderCapitalSummary();
         renderCapitalHistory();
+        closeModal('modalAddCapital');
         showToast('Modal berhasil dicatat', 'success');
       } catch (error) {
         showToast(error.message, 'error');
@@ -10997,6 +10998,7 @@
         await loadCapital();
         renderCapitalSummary();
         renderCapitalHistory();
+        closeModal('modalAddCapitalExpense');
         showToast('Pengeluaran investasi dicatat', 'success');
       } catch (error) {
         showToast(error.message, 'error');
