@@ -2366,6 +2366,30 @@
       document.getElementById('startDuration').value = this.value;
     });
 
+    // Handle station duration dropdown change
+    function handleStationDurationChange() {
+      const preset = document.getElementById('startStationDurationPreset').value;
+      const customContainer = document.getElementById('customStationDurationContainer');
+      const hiddenInput = document.getElementById('startStationDuration');
+      const customInput = document.getElementById('startStationDurationCustom');
+      
+      if (preset === 'custom') {
+        customContainer.style.display = 'block';
+        hiddenInput.value = customInput.value || '';
+      } else if (preset === 'unlimited') {
+        customContainer.style.display = 'none';
+        hiddenInput.value = '0';
+      } else {
+        customContainer.style.display = 'none';
+        hiddenInput.value = preset;
+      }
+    }
+
+    // Update hidden input when station custom value changes
+    document.getElementById('startStationDurationCustom')?.addEventListener('input', function() {
+      document.getElementById('startStationDuration').value = this.value;
+    });
+
     function startSession(unitId, unitName) {
       currentUnitId = unitId;
       document.getElementById('startUnitName').textContent = unitName;
@@ -2652,7 +2676,10 @@
       currentStationId = stationId;
       document.getElementById('startStationName').textContent = station.name;
       document.getElementById('startStationCustomer').value = '';
+      document.getElementById('startStationDurationPreset').value = '';
+      document.getElementById('startStationDurationCustom').value = '';
       document.getElementById('startStationDuration').value = '';
+      document.getElementById('customStationDurationContainer').style.display = 'none';
       document.getElementById('startStationNote').value = '';
       openModal('modalStartStation');
     }
@@ -2660,11 +2687,29 @@
     // Confirm start station session
     async function confirmStartStation() {
       const customer = document.getElementById('startStationCustomer').value;
-      const duration = parseInt(document.getElementById('startStationDuration').value) || 0;
+      const preset = document.getElementById('startStationDurationPreset').value;
+      let duration = 0;
+      
+      if (preset === 'custom') {
+        duration = parseInt(document.getElementById('startStationDurationCustom').value) || 0;
+      } else if (preset !== 'unlimited' && preset !== '') {
+        duration = parseInt(preset) || 0;
+      }
+      
       const note = document.getElementById('startStationNote').value;
       
       if (!customer.trim()) {
         showToast('Nama pelanggan wajib diisi', 'error');
+        return;
+      }
+      
+      if (preset === '') {
+        showToast('Pilih durasi sewa terlebih dahulu', 'error');
+        return;
+      }
+      
+      if (preset === 'custom' && duration <= 0) {
+        showToast('Masukkan durasi valid dalam menit', 'error');
         return;
       }
       

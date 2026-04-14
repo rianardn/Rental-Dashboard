@@ -964,10 +964,24 @@
           <input type="text" id="startStationCustomer" placeholder="Nama pelanggan">
         </div>
         <div class="form-group">
-          <label>Durasi Sewa (menit)</label>
-          <input type="number" id="startStationDuration" placeholder="Contoh: 60 untuk 1 jam" min="1">
-          <small>Kosongkan untuk sewa terbuka (tanpa batas waktu)</small>
+          <label>Durasi Sewa</label>
+          <select id="startStationDurationPreset" onchange="handleStationDurationChange()" class="input-ps3-mb">
+            <option value="">Pilih durasi...</option>
+            <option value="60">1 Jam</option>
+            <option value="120">2 Jam</option>
+            <option value="180">3 Jam</option>
+            <option value="240">4 Jam</option>
+            <option value="300">5 Jam</option>
+            <option value="custom">Custom (menit)</option>
+            <option value="unlimited">Tanpa Batas (Terbuka)</option>
+          </select>
+          <div id="customStationDurationContainer" style="display: none; margin-top: 10px;">
+            <input type="number" id="startStationDurationCustom" placeholder="Masukkan durasi dalam menit" min="1">
+          </div>
+          <small>Pilih durasi sewa atau pilih Custom untuk input manual</small>
         </div>
+        <!-- Hidden input untuk nilai durasi final -->
+        <input type="hidden" id="startStationDuration" value="">
         <div class="form-group">
           <label>Catatan (opsional)</label>
           <input type="text" id="startStationNote" placeholder="Catatan khusus...">
