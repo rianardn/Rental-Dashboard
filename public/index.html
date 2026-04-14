@@ -9,7 +9,7 @@
   <title id="pageTitle">PS3 Rental Manager</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=20250415-47">
+  <link rel="stylesheet" href="style.css?v=20250415-48">
 </head>
 <body>
   <!-- ═════════════════ LOGIN SCREEN ═════════════════ -->
@@ -280,9 +280,9 @@
             </button>
           </div>
           
-          <button class="btn" style="width: 100%; padding: 12px 20px; font-size: 0.8rem; background: #1a1a3a; border-color: #4a4a8a; color: #a0a0ff; margin-top: 10px;" onclick="openExportScheduleModal()">
-            <span class="mr-4">📤</span> Ekspor Jadwal
-          </button>
+          <a href="#" onclick="openExportScheduleModal(); return false;" style="display: block; text-align: center; margin-top: 16px; font-size: 0.8rem; color: var(--ps3-chrome); text-decoration: underline; opacity: 0.8;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
+            📤 Ekspor jadwal ke Excel
+          </a>
         </div>
       </div>
 
