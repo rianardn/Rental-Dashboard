@@ -590,8 +590,8 @@
               <div class="customer-name" style="font-size: 1rem; font-weight: 600; color: var(--ps3-text); margin-bottom: 8px;">${station.customer || 'Walk-in'}</div>
               ${timerHTML}
               ${isBooking ? bookingInfoHTML : `
-                <div class="walkin-info" style="font-size: 0.8rem; color: var(--ps3-text); margin-top: 12px; padding: 12px; background: rgba(34,197,94,0.05); border: 1px solid rgba(34,197,94,0.15); border-radius: 10px;">
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed rgba(34,197,94,0.15);">
+                <div class="walkin-info" style="font-size: 0.8rem; color: var(--ps3-text); margin-top: 12px; padding: 12px; background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); border-radius: 10px;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed rgba(34,197,94,0.2);">
                     <span style="color: var(--ps3-muted);">👤 Penyewa</span>
                     <span style="font-weight: 600; color: var(--ps3-text);">${station.customer || 'Walk-in'}</span>
                   </div>
@@ -603,16 +603,16 @@
                     <span style="color: var(--ps3-muted);">🕐 Mulai</span>
                     <span style="font-weight: 500; font-family: var(--font-display);">${startTimeStr}</span>
                   </div>
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed rgba(34,197,94,0.15);">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed rgba(34,197,94,0.2);">
                     <span style="color: var(--ps3-muted);">🏁 Berakhir</span>
                     <span style="font-weight: 500; font-family: var(--font-display); color: #22c55e;">${endTimeStr}</span>
                   </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: var(--ps3-muted);">💰 Estimasi</span>
-                    <span style="color: #22c55e; font-weight: 700; font-size: 0.9rem;">Rp${estimatedRevenue.toLocaleString()}</span>
+                  <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+                    <span style="color: var(--ps3-muted);">💰 Estimasi Pendapatan</span>
+                    <span style="color: #22c55e; font-weight: 700; font-size: 0.9rem; margin-left: auto;">Rp${estimatedRevenue.toLocaleString()}</span>
                   </div>
                   ${station.note ? `
-                  <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(34,197,94,0.15); display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+                  <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(34,197,94,0.2); display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
                     <span style="color: var(--ps3-muted);">📝</span><span style="color: var(--ps3-muted);">${station.note}</span>
                   </div>
                   ` : ''}
