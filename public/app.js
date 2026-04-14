@@ -2817,7 +2817,7 @@
         closeModal('modalStopStation');
         await loadStations();
         renderDashboard();
-        await loadTransactions();
+        await loadData();
         renderReports();
         showToast('Sewa selesai!', 'success');
       } catch (error) {
