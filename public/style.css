@@ -199,15 +199,20 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
 
-    .header-spacer {
-      display: block;
+    .header-left {
+      /* Empty spacer for balance */
+    }
+
+    .header-center {
+      display: flex;
+      justify-content: center;
     }
 
     .header-brand {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
       gap: 12px;
+      /* Icon + text sebagai satu unit yang bergerak bersama */
     }
 
     .header-icon {
@@ -221,6 +226,7 @@
       font-size: 18px;
       border: 1px solid #808080;
       box-shadow: 0 2px 8px rgba(192,192,192,0.3);
+      flex-shrink: 0;
     }
 
     .header-title {
