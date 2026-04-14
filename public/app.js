@@ -7539,10 +7539,10 @@
       
       // Helper: get overtime (for running schedules)
       function hasOvertime() {
-        if (s.unitId && Array.isArray(units)) {
-          const unit = units.find(u => u.id == s.unitId && u.active);
-          if (unit && unit.startTime && unit.duration) {
-            const endTime = new Date(unit.startTime + (unit.duration * 60000));
+        if (s.unitId && Array.isArray(stations)) {
+          const station = stations.find(st => st.id === s.unitId && st.active);
+          if (station && station.startTime && station.duration) {
+            const endTime = new Date(station.startTime + (station.duration * 60000));
             return now > endTime;
           }
         }
@@ -7638,13 +7638,13 @@
       }
       
       // Helper: get overtime (for running schedules)
-      // Gunakan data unit yang aktual untuk perhitungan yang akurat
+      // Gunakan data stasiun yang aktif untuk perhitungan yang akurat
       function getOvertime() {
-        // Prioritaskan data unit yang sedang aktif
-        if (s.unitId && Array.isArray(units)) {
-          const unit = units.find(u => u.id == s.unitId && u.active);
-          if (unit && unit.startTime && unit.duration) {
-            const endTime = new Date(unit.startTime + (unit.duration * 60000));
+        // Prioritaskan data stasiun yang sedang aktif (dari inventory_pairings)
+        if (s.unitId && Array.isArray(stations)) {
+          const station = stations.find(st => st.id === s.unitId && st.active);
+          if (station && station.startTime && station.duration) {
+            const endTime = new Date(station.startTime + (station.duration * 60000));
             const diffMs = now - endTime;
             if (diffMs <= 0) return null;
             const hours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -7691,13 +7691,13 @@
       }
       
       // Helper: get remaining time (for running schedules)
-      // Gunakan data unit yang aktual (waktu mulai sebenarnya saat user klik tombol Mulai)
+      // Gunakan data stasiun yang aktif (waktu mulai sebenarnya saat user klik tombol Mulai)
       function getRemainingTime() {
-        // Cari unit yang terkait dengan schedule ini
-        if (s.unitId && Array.isArray(units)) {
-          const unit = units.find(u => u.id == s.unitId && u.active);
-          if (unit && unit.startTime && unit.duration) {
-            const endTime = new Date(unit.startTime + (unit.duration * 60000));
+        // Cari stasiun yang terkait dengan schedule ini
+        if (s.unitId && Array.isArray(stations)) {
+          const station = stations.find(st => st.id === s.unitId && st.active);
+          if (station && station.startTime && station.duration) {
+            const endTime = new Date(station.startTime + (station.duration * 60000));
             const remainingMs = endTime - now;
             if (remainingMs <= 0) return null;
             const hours = Math.floor(remainingMs / (1000 * 60 * 60));
@@ -7708,7 +7708,7 @@
             return `${minutes} menit`;
           }
         }
-        // Fallback: gunakan data jadwal jika unit tidak ditemukan
+        // Fallback: gunakan data jadwal jika station tidak ditemukan
         if (!s.scheduledTime || !s.duration) return null;
         const startTime = new Date(s.scheduledDate + 'T' + s.scheduledTime);
         const endTime = new Date(startTime.getTime() + parseInt(s.duration) * 60000);
@@ -8581,10 +8581,10 @@
         
         // If completing a running schedule, show payment modal first (same as stopSession)
         if (status === 'completed' && schedule && schedule.status === 'running') {
-          // Get linked unit info
-          const unit = units.find(u => u.id === schedule.unitId);
-          if (!unit || !unit.active) {
-            showToast('Unit tidak aktif atau tidak ditemukan', 'error');
+          // Get linked station info from stations array (inventory_pairings)
+          const station = stations.find(s => s.id === schedule.unitId);
+          if (!station || !station.active) {
+            showToast('Stasiun tidak aktif atau tidak ditemukan', 'error');
             return;
           }
           
@@ -8592,11 +8592,11 @@
           currentCompleteScheduleId = id;
           
           // Populate modal with data (same calculation as stopSession)
-          const elapsed = Math.floor((Date.now() - unit.startTime) / 60000);
+          const elapsed = Math.floor((Date.now() - station.startTime) / 60000);
           const cost = Math.round((elapsed / 60) * settings.ratePerHour);
           
-          document.getElementById('completeScheduleUnitName').textContent = unit.name;
-          document.getElementById('completeScheduleCustomer').textContent = unit.customer || '-';
+          document.getElementById('completeScheduleUnitName').textContent = station.name;
+          document.getElementById('completeScheduleCustomer').textContent = station.customer || schedule.customer || '-';
           document.getElementById('completeScheduleDuration').textContent = `${elapsed} menit`;
           document.getElementById('completeScheduleCost').value = cost;
           document.getElementById('completeSchedulePaid').value = cost;
