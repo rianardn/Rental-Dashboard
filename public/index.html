@@ -9,7 +9,7 @@
   <title id="pageTitle">PS3 Rental Manager</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="style.css?v=20250415-51">
+<link rel="stylesheet" href="style.css?v=20250415-52">
 </head>
 <body>
   <!-- ═════════════════ LOGIN SCREEN ═════════════════ -->
@@ -242,7 +242,7 @@
          MANAGEMENT PAGE - Tab-based Architecture
     ═══════════════════════════════════════════════════════════════ -->
     <div id="pageManagement" class="page">
-      <!-- Main Tab Navigation: Jadwal | Inventori | Modal -->
+      <!-- Main Tab Navigation: Jadwal | Inventori | Modal | Pembayaran -->
       <div class="management-tabs">
         <button id="tabMainSchedule" class="management-tab active" onclick="switchMainTab('schedule')">
           <span class="tab-icon">📅</span>
@@ -255,6 +255,10 @@
         <button id="tabMainCapital" class="management-tab" onclick="switchMainTab('capital')">
           <span class="tab-icon">💰</span>
           <span class="tab-text">Modal</span>
+        </button>
+        <button id="tabMainPayment" class="management-tab" onclick="switchMainTab('payment')">
+          <span class="tab-icon">💳</span>
+          <span class="tab-text">Pembayaran</span>
         </button>
       </div>
 
@@ -414,6 +418,36 @@
         </div>
       </div>
 
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB: METODE PEMBAYARAN
+      ═══════════════════════════════════════════════════════════════ -->
+      <div id="mainTabPayment" class="management-tab-content" style="display: none;">
+        <div class="card">
+          <div class="section-title">💳 Metode Pembayaran</div>
+          <p class="text-8 text-muted mb-15">Kelola metode pembayaran dan lihat saldo</p>
+          
+          <!-- Payment Methods List -->
+          <div id="paymentMethodsList" style="margin-bottom: 15px;">
+            <p class="empty-state-p15">Memuat metode pembayaran...</p>
+          </div>
+          
+          <!-- Add New Payment Method -->
+          <div style="border-top: 1px solid var(--ps3-border); padding-top: 15px; margin-top: 15px;">
+            <div class="section-title text-8" style="margin-bottom: 10px;">➕ Tambah Metode Baru</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <input type="text" id="newPaymentMethodName" placeholder="Nama metode (contoh: BCA, GoPay)" style="flex: 1; min-width: 150px;">
+              <select id="newPaymentMethodType" style="width: 130px;">
+                <option value="cash">💵 Tunai</option>
+                <option value="bank_transfer">🏦 Transfer</option>
+                <option value="e_wallet">📱 E-Wallet</option>
+                <option value="qris">📲 QRIS</option>
+              </select>
+              <button class="btn" style="padding: 10px 16px;" onclick="addPaymentMethod()">Tambah</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Settings Page -->
@@ -450,62 +484,34 @@
         </div>
       </div>
 
-      <!-- ═══════════════════════════════════════════════════════════════
-           PAYMENT METHODS MANAGEMENT
-      ═══════════════════════════════════════════════════════════════ -->
-      <div class="card mt-20">
-        <div class="section-title">💳 Metode Pembayaran</div>
-        <p class="text-8 text-muted mb-15">Kelola metode pembayaran dan lihat saldo</p>
-        
-        <!-- Payment Methods List -->
-        <div id="paymentMethodsList" style="margin-bottom: 15px;">
-          <p class="empty-state-p15">Memuat metode pembayaran...</p>
-        </div>
-        
-        <!-- Add New Payment Method -->
-        <div style="border-top: 1px solid var(--ps3-border); padding-top: 15px; margin-top: 15px;">
-          <div class="section-title text-8" style="margin-bottom: 10px;">➕ Tambah Metode Baru</div>
-          <div style="display: flex; gap: 8px;">
-            <input type="text" id="newPaymentMethodName" placeholder="Nama metode (contoh: BCA, GoPay, QRIS)" style="flex: 1;">
-            <select id="newPaymentMethodType" style="width: 120px;">
-              <option value="cash">💵 Tunai</option>
-              <option value="bank_transfer">🏦 Transfer</option>
-              <option value="e_wallet">📱 E-Wallet</option>
-              <option value="qris">📲 QRIS</option>
-            </select>
-            <button class="btn" style="padding: 10px 16px;" onclick="addPaymentMethod()">Tambah</button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Import Confirmation Modal -->
-      <div id="modalImportConfirm" class="modal">
-        <div class="modal-content" style="max-width: 400px;">
-          <div class="modal-header" style="background: rgba(230,0,18,0.2); border-color: var(--ps3-red);">
-            <h3>⚠️ PERINGATAN KEAMANAN</h3>
-          </div>
-          <div class="modal-body">
-            <div style="background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
-              <p style="color: var(--ps3-red); font-weight: 600; margin-bottom: 8px;">Import akan MENGHAPUS semua data saat ini!</p>
-              <ul style="font-size: 0.8rem; color: var(--ps3-text); margin: 0; padding-left: 16px;">
-                <li>Semua unit aktif akan terhapus</li>
-                <li>Semua transaksi akan terhapus</li>
-                <li>Data yang dihapus TIDAK dapat dikembalikan</li>
-              </ul>
-            </div>
-            <p style="font-size: 0.8rem; margin-bottom: 8px;">Untuk melanjutkan, ketik <strong style="color: var(--ps3-red);">SAYA SETUJU</strong> di bawah:</p>
-            <input type="text" id="importConfirmText" placeholder="Ketik SAYA SETUJU disini" class="input-ps3 input-uppercase">
-          </div>
-          <div class="modal-footer">
-            <button class="btn-cancel" onclick="closeModal('modalImportConfirm')">Batal</button>
-            <button class="btn-confirm" onclick="confirmImport()">Lanjutkan Import</button>
-          </div>
-        </div>
-      </div>
-
       <div class="card mt-20">
         <div class="section-title">Akun</div>
         <button class="btn btn-red" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <!-- ═════════════════ MODAL: IMPORT CONFIRMATION ═════════════════ -->
+    <div id="modalImportConfirm" class="modal">
+      <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header" style="background: rgba(230,0,18,0.2); border-color: var(--ps3-red);">
+          <h3>⚠️ PERINGATAN KEAMANAN</h3>
+        </div>
+        <div class="modal-body">
+          <div style="background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <p style="color: var(--ps3-red); font-weight: 600; margin-bottom: 8px;">Import akan MENGHAPUS semua data saat ini!</p>
+            <ul style="font-size: 0.8rem; color: var(--ps3-text); margin: 0; padding-left: 16px;">
+              <li>Semua unit aktif akan terhapus</li>
+              <li>Semua transaksi akan terhapus</li>
+              <li>Data yang dihapus TIDAK dapat dikembalikan</li>
+            </ul>
+          </div>
+          <p style="font-size: 0.8rem; margin-bottom: 8px;">Untuk melanjutkan, ketik <strong style="color: var(--ps3-red);">SAYA SETUJU</strong> di bawah:</p>
+          <input type="text" id="importConfirmText" placeholder="Ketik SAYA SETUJU disini" class="input-ps3 input-uppercase">
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" onclick="closeModal('modalImportConfirm')">Batal</button>
+          <button class="btn-confirm" onclick="confirmImport()">Lanjutkan Import</button>
+        </div>
       </div>
     </div>
 

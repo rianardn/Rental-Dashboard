@@ -4395,9 +4395,6 @@
         const businessName = settings.businessName || 'PS3 Rental';
         document.getElementById('pageTitle').textContent = businessName + ' - Manager';
         document.querySelector('.header-title').innerHTML = businessName.replace(/(.+?)\s*(\S+)$/, '$1 <span>$2</span>');
-        
-        // Render payment methods
-        renderPaymentMethods();
       }
       
       if (pageId === 'pageManagement') {
@@ -4421,6 +4418,8 @@
         } else if (activeTab === 'capital') {
           renderCapitalSummary();
           renderCapitalHistory();
+        } else if (activeTab === 'payment') {
+          renderPaymentMethods();
         }
 
         // Set default dates
@@ -9904,11 +9903,14 @@
       document.getElementById('mainTabInventory').classList.remove('active');
       document.getElementById('mainTabCapital').style.display = 'none';
       document.getElementById('mainTabCapital').classList.remove('active');
+      document.getElementById('mainTabPayment').style.display = 'none';
+      document.getElementById('mainTabPayment').classList.remove('active');
 
       // Reset all main tab buttons
       document.getElementById('tabMainSchedule').classList.remove('active');
       document.getElementById('tabMainInventory').classList.remove('active');
       document.getElementById('tabMainCapital').classList.remove('active');
+      document.getElementById('tabMainPayment').classList.remove('active');
 
       // Show selected tab and activate button
       const tabContent = document.getElementById(`mainTab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
@@ -9935,6 +9937,8 @@
       } else if (tab === 'capital') {
         renderCapitalSummary();
         renderCapitalHistory();
+      } else if (tab === 'payment') {
+        renderPaymentMethods();
       }
 
       // Save preference to localStorage
@@ -9944,7 +9948,7 @@
     // Restore last active tab when page loads
     function restoreManagementTab() {
       const savedTab = localStorage.getItem('managementActiveTab');
-      if (savedTab && ['schedule', 'inventory', 'capital'].includes(savedTab)) {
+      if (savedTab && ['schedule', 'inventory', 'capital', 'payment'].includes(savedTab)) {
         switchMainTab(savedTab);
       }
     }
