@@ -30,6 +30,17 @@
     let deletedTransactions = []; // Tempat sampah transaksi pendapatan
     let pollTimer = null;
     let timerInterval = null;
+    
+    // Payment Methods State
+    let paymentMethods = JSON.parse(localStorage.getItem('ps3_payment_methods') || 'null') || [
+      { id: 'cash', name: 'Tunai', type: 'cash', icon: '💵', balance: 0 },
+      { id: 'bca', name: 'BCA', type: 'bank_transfer', icon: '🏦', balance: 0 },
+      { id: 'mandiri', name: 'Mandiri', type: 'bank_transfer', icon: '🏦', balance: 0 },
+      { id: 'gopay', name: 'GoPay', type: 'e_wallet', icon: '📱', balance: 0 },
+      { id: 'ovo', name: 'OVO', type: 'e_wallet', icon: '📱', balance: 0 },
+      { id: 'dana', name: 'DANA', type: 'e_wallet', icon: '📱', balance: 0 },
+      { id: 'qris', name: 'QRIS', type: 'qris', icon: '📲', balance: 0 }
+    ];
 
     // Global error handler for mobile debugging
     window.addEventListener('error', function(e) {
@@ -280,6 +291,7 @@
       try {
         await loadData();
         await loadStations(); // Load stations for Dashboard integration
+        populatePaymentMethodDropdowns(); // Populate payment method dropdowns
         renderAll();
         startPolling();
         startTimers(); // Start timer updates separately (1 second interval)
@@ -2433,6 +2445,7 @@
     async function confirmStartSession() {
       const customer = document.getElementById('startCustomer').value;
       const preset = document.getElementById('startDurationPreset').value;
+      const paymentMethod = document.getElementById('startPaymentMethod').value;
       let duration = 0;
       
       if (preset === 'custom') {
@@ -2453,13 +2466,24 @@
         return;
       }
       
+      if (!paymentMethod) {
+        showToast('Pilih metode pembayaran', 'error');
+        return;
+      }
+      
       if (preset === 'custom' && duration <= 0) {
         showToast('Masukkan durasi valid dalam menit', 'error');
         return;
       }
       
       try {
-        await api('POST', `/units/${currentUnitId}/start`, { customer, duration, note, startTime: Date.now() });
+        await api('POST', `/units/${currentUnitId}/start`, { 
+          customer, 
+          duration, 
+          note, 
+          payment_method: paymentMethod,
+          startTime: Date.now() 
+        });
         closeModal('modalStart');
         await loadData();
         renderAll();
@@ -2470,7 +2494,7 @@
         const errorData = error.data || {};
         if (errorData.requiresCancellation && errorData.schedule) {
           // Simpan data untuk digunakan setelah konfirmasi
-          pendingActivationData = { customer, duration, note };
+          pendingActivationData = { customer, duration, note, payment_method: paymentMethod };
           pendingConflictSchedule = errorData.schedule;
           
           // Tampilkan modal konfirmasi
@@ -3101,6 +3125,7 @@
       const category = document.getElementById('expenseCategory').value;
       const amount = parseInt(document.getElementById('expenseAmount').value);
       const note = document.getElementById('expenseNote').value;
+      const paymentMethod = document.getElementById('expensePaymentMethod').value;
 
       // Validate category selection
       if (!category) {
@@ -3128,9 +3153,14 @@
         return;
       }
 
+      if (!paymentMethod) {
+        showToast('Pilih metode pembayaran', 'error');
+        return;
+      }
+
       // Date auto-set by backend in WIB timezone - no user input needed
       try {
-        await api('POST', '/expenses', { item, amount, note, category });
+        await api('POST', '/expenses', { item, amount, note, category, payment_method: paymentMethod });
 
         // Reset form
         document.getElementById('expenseCategory').value = '';
@@ -3166,6 +3196,182 @@
         showToast('Pengaturan disimpan', 'success');
       } catch (error) {
         showToast(error.message, 'error');
+      }
+    }
+
+    // ═════════════════ Payment Methods Management ═════════════════
+    
+    function savePaymentMethods() {
+      localStorage.setItem('ps3_payment_methods', JSON.stringify(paymentMethods));
+    }
+    
+    function getPaymentMethodIcon(type) {
+      const icons = {
+        'cash': '💵',
+        'bank_transfer': '🏦',
+        'e_wallet': '📱',
+        'qris': '📲'
+      };
+      return icons[type] || '💳';
+    }
+    
+    function renderPaymentMethods() {
+      const container = document.getElementById('paymentMethodsList');
+      if (!container) return;
+      
+      // Calculate balances from transactions
+      calculatePaymentMethodBalances();
+      
+      if (paymentMethods.length === 0) {
+        container.innerHTML = '<p class="empty-state-p15">Belum ada metode pembayaran</p>';
+        return;
+      }
+      
+      let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+      
+      paymentMethods.forEach((method, index) => {
+        const balanceClass = method.balance >= 0 ? 'text-green' : 'text-red';
+        const formattedBalance = 'Rp' + Math.abs(method.balance).toLocaleString('id-ID');
+        
+        html += `
+          <div style="display: flex; align-items: center; justify-content: space-between; 
+                      background: var(--ps3-surface); border: 1px solid var(--ps3-border); 
+                      border-radius: 8px; padding: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.4rem;">${method.icon}</span>
+              <div>
+                <div style="font-weight: 600; color: var(--ps3-silver);">${method.name}</div>
+                <div style="font-size: 0.75rem; color: var(--ps3-muted); text-transform: capitalize;">
+                  ${method.type.replace('_', ' ')}
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="text-align: right;">
+                <div style="font-weight: 700; ${balanceClass}; font-size: 0.95rem;">
+                  ${method.balance >= 0 ? '' : '-'}${formattedBalance}
+                </div>
+                <div style="font-size: 0.7rem; color: var(--ps3-muted);">Saldo</div>
+              </div>
+              <button onclick="deletePaymentMethod(${index})" 
+                      style="background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); 
+                             color: var(--ps3-red); border-radius: 6px; padding: 6px 10px; 
+                             font-size: 0.75rem; cursor: pointer;"
+                      title="Hapus metode">
+                🗑️
+              </button>
+            </div>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+    
+    function calculatePaymentMethodBalances() {
+      // Reset balances
+      paymentMethods.forEach(method => method.balance = 0);
+      
+      // Add income from transactions
+      transactions.forEach(tx => {
+        if (tx.payment_method) {
+          const method = paymentMethods.find(m => m.id === tx.payment_method);
+          if (method) {
+            method.balance += tx.total_paid || 0;
+          }
+        }
+      });
+      
+      // Subtract expenses
+      expenses.forEach(exp => {
+        if (exp.payment_method) {
+          const method = paymentMethods.find(m => m.id === exp.payment_method);
+          if (method) {
+            method.balance -= exp.amount || 0;
+          }
+        }
+      });
+    }
+    
+    function addPaymentMethod() {
+      const nameInput = document.getElementById('newPaymentMethodName');
+      const typeInput = document.getElementById('newPaymentMethodType');
+      
+      const name = nameInput.value.trim();
+      const type = typeInput.value;
+      
+      if (!name) {
+        showToast('Nama metode pembayaran wajib diisi', 'error');
+        return;
+      }
+      
+      // Check for duplicate name
+      if (paymentMethods.some(m => m.name.toLowerCase() === name.toLowerCase())) {
+        showToast('Metode pembayaran dengan nama tersebut sudah ada', 'error');
+        return;
+      }
+      
+      const id = 'pm_' + Date.now();
+      const icon = getPaymentMethodIcon(type);
+      
+      paymentMethods.push({
+        id,
+        name,
+        type,
+        icon,
+        balance: 0
+      });
+      
+      savePaymentMethods();
+      renderPaymentMethods();
+      populatePaymentMethodDropdowns();
+      
+      // Clear inputs
+      nameInput.value = '';
+      typeInput.value = 'cash';
+      
+      showToast('Metode pembayaran ditambahkan', 'success');
+    }
+    
+    function deletePaymentMethod(index) {
+      const method = paymentMethods[index];
+      if (!method) return;
+      
+      // Check if method has transactions
+      const hasTransactions = transactions.some(tx => tx.payment_method === method.id) ||
+                              expenses.some(exp => exp.payment_method === method.id);
+      
+      if (hasTransactions) {
+        showToast('Tidak dapat menghapus metode yang memiliki transaksi', 'error');
+        return;
+      }
+      
+      if (!confirm(`Hapus metode pembayaran "${method.name}"?`)) return;
+      
+      paymentMethods.splice(index, 1);
+      savePaymentMethods();
+      renderPaymentMethods();
+      populatePaymentMethodDropdowns();
+      
+      showToast('Metode pembayaran dihapus', 'success');
+    }
+    
+    function populatePaymentMethodDropdowns() {
+      const options = paymentMethods.map(m => 
+        `<option value="${m.id}">${m.icon} ${m.name}</option>`
+      ).join('');
+      
+      // Update expense form dropdown
+      const expenseDropdown = document.getElementById('expensePaymentMethod');
+      if (expenseDropdown) {
+        expenseDropdown.innerHTML = '<option value="">-- Pilih Metode --</option>' + options;
+      }
+      
+      // Update start session dropdown
+      const startDropdown = document.getElementById('startPaymentMethod');
+      if (startDropdown) {
+        startDropdown.innerHTML = '<option value="">-- Pilih Metode --</option>' + options;
       }
     }
 
@@ -4189,6 +4395,9 @@
         const businessName = settings.businessName || 'PS3 Rental';
         document.getElementById('pageTitle').textContent = businessName + ' - Manager';
         document.querySelector('.header-title').innerHTML = businessName.replace(/(.+?)\s*(\S+)$/, '$1 <span>$2</span>');
+        
+        // Render payment methods
+        renderPaymentMethods();
       }
       
       if (pageId === 'pageManagement') {
