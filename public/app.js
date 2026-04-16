@@ -6287,6 +6287,9 @@
         // Refresh data dari server
         await loadData();
 
+        // Recalculate payment method balances
+        calculatePaymentMethodBalances();
+
         // Remove restored item from cache and re-render
         cachedTrashTransactions = cachedTrashTransactions.filter(log => log.id !== logId);
         setupTrashAutocomplete();
@@ -6294,6 +6297,9 @@
         showToast(`Transaksi ${res.restoredId} berhasil dikembalikan dengan ID yang sama`, 'success');
         renderTrashIncomeList();
         renderReports();
+        
+        // Refresh payment methods display if on payment tab
+        renderPaymentMethods();
       } catch (error) {
         showToast('Gagal mengembalikan transaksi: ' + error.message, 'error');
       }
@@ -6886,6 +6892,9 @@
         // Refresh data dari server
         await loadData();
 
+        // Recalculate payment method balances after restore
+        calculatePaymentMethodBalances();
+
         // Remove restored item from cache and re-render
         cachedTrashExpenses = cachedTrashExpenses.filter(log => log.id !== logId);
         setupTrashExpenseAutocomplete();
@@ -6901,6 +6910,9 @@
         showToast(`Pengeluaran ${res.restoredId} berhasil dikembalikan dengan ID yang sama`, 'success');
         renderTrashExpenseList();
         renderReports();
+        
+        // Refresh payment methods display to show updated balance
+        renderPaymentMethods();
       } catch (error) {
         showToast('Gagal mengembalikan pengeluaran: ' + error.message, 'error');
       }
