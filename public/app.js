@@ -27,7 +27,6 @@
     let units = [];
     let transactions = [];
     let expenses = [];
-    let deletedTransactions = []; // Tempat sampah transaksi pendapatan
     let pollTimer = null;
     let timerInterval = null;
     
@@ -63,8 +62,6 @@
       console.error('[Unhandled Promise]', e.reason);
       showToast('Async Error: ' + String(e.reason).substring(0, 50), 'error');
     });
-    
-    let isOnline = true;
     
     // ═════════════════ Audio Warning System ═════════════════
     // Track which units have played warning sound (to avoid continuous playing)
@@ -924,152 +921,6 @@
           </div>
         `;
       }
-    }
-    
-    function renderDashboardUnitManagement() {
-      const container = document.getElementById('dashUnitsManagement');
-      if (!container) return;
-      
-      if (units.length === 0) {
-        container.innerHTML = '<span style="color: var(--ps3-muted); font-size: 0.8rem;">Belum ada unit</span>';
-        return;
-      }
-      
-      container.innerHTML = units.map(unit => `
-        <div class="unit-chip" style="
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 12px;
-          background: ${unit.active ? 'rgba(230,0,18,0.2)' : 'var(--ps3-surface)'};
-          border: 1px solid ${unit.active ? 'var(--ps3-red)' : 'var(--ps3-border)'};
-          border-radius: 8px;
-          font-size: 0.85rem;
-        ">
-          <span class="fw-600">${unit.name}</span>
-          ${unit.active ? '<span style="color: var(--ps3-red); font-size: 0.7rem;">(AKTIF)</span>' : `
-            <button onclick="renameUnit(${unit.id}, '${unit.name}')" style="
-              background: none; border: none; color: var(--ps3-muted); cursor: pointer;
-              font-size: 0.75rem; padding: 2px 4px;
-            " title="Ganti nama">✏️</button>
-            <button onclick="deleteUnit(${unit.id})" style="
-              background: none; border: none; color: var(--ps3-red); cursor: pointer;
-              font-size: 0.75rem; padding: 2px 4px;
-            " title="Hapus">🗑️</button>
-          `}
-        </div>
-      `).join('');
-    }
-
-    function renderUnitCard(unit) {
-      const isActive = unit.active;
-      let timerHTML = '';
-      
-      if (isActive) {
-        const elapsed = Date.now() - unit.startTime;
-        const remaining = unit.duration > 0 ? (unit.duration * 60000) - elapsed : null;
-        
-        if (remaining !== null) {
-          const warnMs = settings.warnBefore * 60000;
-          const isWarning = remaining < warnMs && remaining > 0;
-          const isExpired = remaining <= 0;
-          
-          // Note: Warning jingle logic moved to updateTimers() for real-time updates
-          
-          timerHTML = `
-            <div class="timer-display" data-unit-id="${unit.id}" data-start-time="${unit.startTime}" data-duration="${unit.duration}">
-              <div class="timer-countdown ${isWarning ? 'warning' : ''} ${isExpired ? 'expired' : ''}" data-timer-type="countdown">
-                ${isExpired ? 'WAKTU HABIS' : formatTime(remaining)}
-              </div>
-              <div class="timer-elapsed" data-timer-type="elapsed">${formatTime(elapsed)}</div>
-            </div>
-          `;
-        } else {
-          // Open session (no duration limit)
-          timerHTML = `
-            <div class="timer-display" data-unit-id="${unit.id}" data-start-time="${unit.startTime}" data-duration="0">
-              <div class="timer-countdown infinite" data-timer-type="countdown">∞</div>
-              <div class="timer-elapsed" data-timer-type="elapsed">${formatTime(elapsed)}</div>
-            </div>
-          `;
-        }
-        
-        // Calculate estimated revenue based on elapsed time
-        const elapsedMin = Math.floor(elapsed / 60000);
-        const estimatedRevenue = Math.round((elapsedMin / 60) * (settings.ratePerHour || 4000));
-        
-        // Calculate end time
-        const startDate = new Date(unit.startTime);
-        const endDate = unit.duration > 0 ? new Date(unit.startTime + (unit.duration * 60000)) : null;
-        
-        timerHTML += `
-          <div class="customer-info">
-            <div class="customer-info-row">
-              <span class="customer-info-label">Pelanggan</span>
-              <span class="customer-info-value" class="fw-700 text-primary">${unit.customer || '-'}</span>
-            </div>
-            <div class="customer-info-row">
-              <span class="customer-info-label">Waktu Mulai</span>
-              <span class="customer-info-value" class="fw-600 text-primary">${startDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false})} WIB</span>
-            </div>
-            ${endDate ? `
-            <div class="customer-info-row">
-              <span class="customer-info-label">Waktu Akhir</span>
-              <span class="customer-info-value" class="fw-600 text-primary">${endDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false})} WIB</span>
-            </div>
-            ` : ''}
-            <div class="customer-info-row">
-              <span class="customer-info-label">Estimasi Pendapatan</span>
-              <span class="customer-info-value" style="color: var(--ps3-green); font-weight: 700;">${formatMoney(estimatedRevenue)}</span>
-            </div>
-            ${unit.duration > 0 ? `
-            <div class="customer-info-row">
-              <span class="customer-info-label">Durasi</span>
-              <span class="customer-info-value" class="fw-600 text-primary">${unit.duration} menit</span>
-            </div>
-            ` : ''}
-            ${unit.note ? `
-            <div class="customer-info-row">
-              <span class="customer-info-label">Catatan</span>
-              <span class="customer-info-value">${(() => {
-              const txMatch = unit.note.match(/\[([A-Z]+-\d+)\](.*)/);
-              if (txMatch) {
-                const txId = txMatch[1];
-                const actualNote = txMatch[2] ? txMatch[2].replace(/^ - /, '') : '';
-                return `<span onclick="copyToClipboard('${txId}', this)" class="tx-badge-clickable" style="background: var(--ps3-green); color: #000; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin-right: 6px; cursor: pointer; user-select: none;" title="Klik untuk copy ID">📋 ${txId}</span>${actualNote ? `<span class="text-green">${actualNote}</span>` : ''}`;
-              }
-              return unit.note;
-            })()}</span>
-            </div>
-            ` : ''}
-          </div>
-        `;
-      }
-      
-      const isFromBooking = unit.note && /\[[A-Z]+-\d+\]/.test(unit.note);
-      
-      return `
-        <div class="unit-card ${isActive ? 'active' : ''}">
-          <div class="unit-header">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <div class="unit-name">${unit.name}</div>
-              ${isFromBooking ? '<span style="background: var(--ps3-green); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 700;">📅 BOOKING</span>' : ''}
-            </div>
-            <div class="unit-status ${isActive ? 'active' : 'idle'}">
-              ${isActive ? 'BERMAIN' : 'SIAP'}
-            </div>
-          </div>
-          ${timerHTML}
-          <div class="action-btns">
-            ${isActive ? `
-              <button class="btn-stop" onclick="stopSession(${unit.id})">AKHIRI</button>
-              <button class="btn-extend" onclick="openExtendDurationModal(${unit.id}, '${unit.name}')" title="Tambah durasi">➕</button>
-            ` : `
-              <button class="btn-start" onclick="startSession(${unit.id}, '${unit.name}')">MULAI</button>
-            `}
-          </div>
-        </div>
-      `;
     }
 
     function renderReports() {

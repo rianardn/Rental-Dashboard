@@ -817,26 +817,6 @@
         margin-bottom: 0 !important;
       }
 
-      /* Settings form lebih spacious */
-      .setting-item {
-        padding: 18px 0;
-      }
-
-      .setting-label {
-        font-size: 0.9rem;
-      }
-
-      .setting-input {
-        padding: 12px 14px;
-        font-size: 1rem;
-      }
-
-      /* Unit management buttons */
-      .unit-chip {
-        padding: 10px 18px;
-        font-size: 0.85rem;
-      }
-
       /* Toast notifications */
       .toast {
         max-width: 400px;

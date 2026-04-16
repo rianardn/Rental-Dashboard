@@ -1056,10 +1056,6 @@ function generateToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-function hashPassword(password) {
-  return crypto.createHmac('sha256', JWT_SECRET).update(password).digest('hex');
-}
-
 // ─── EXPRESS APP ─────────────────────────────────────────────
 const app = express();
 
