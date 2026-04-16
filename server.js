@@ -2538,15 +2538,16 @@ app.post('/api/deletion-logs/:id/restore', requireAuth, (req, res) => {
       
       // Restore expense with same ID
       db.prepare(`INSERT INTO expenses 
-        (id, item, category, amount, date, note)
-        VALUES (?, ?, ?, ?, ?, ?)`)
+        (id, item, category, amount, date, note, payment_method)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`)
         .run(
           recordId,
           recordData.item,
           recordData.category || '',
           recordData.amount,
           recordData.date,
-          recordData.note
+          recordData.note,
+          recordData.payment_method || ''
         );
     } else {
       return res.status(400).json({ error: 'Tipe data tidak didukung untuk restore' });
