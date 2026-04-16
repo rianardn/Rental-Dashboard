@@ -1,10 +1,11 @@
 # 🎮 PS3 Rental Dashboard - Full Stack Management System
 
-A complete rental management solution for PlayStation 3 rental businesses, featuring authentic PS3 2006-2007 aesthetic design, real-time operations, and comprehensive business analytics.
+A complete rental management solution for PlayStation 3 rental businesses, featuring authentic PS3 2006-2007 aesthetic design, real-time operations, comprehensive business analytics, and multi-theme support.
 
-![Version](https://img.shields.io/badge/version-3.0.0-blue)
+![Version](https://img.shields.io/badge/version-3.5.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Fly.io-orange)
+![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)
 
 ---
 
@@ -12,22 +13,36 @@ A complete rental management solution for PlayStation 3 rental businesses, featu
 
 ### 🕹️ **Rental Operations**
 - **Real-time Dashboard**: Live countdown/count-up timers with 1-second polling
-- **Multi-unit Management**: Support unlimited PS3/TV units with individual tracking
+- **Station Management**: Support unlimited PS3 stations with individual tracking
 - **Flexible Duration**: 1-5 hour presets, custom minutes, or unlimited sessions
 - **WIB Timezone**: Indonesia Western Time (UTC+7) throughout the application
 - **Audio Alert System**: 4 unique chill jingles for final 30-second warnings
+- **Draggable Warning Bubbles**: Floating orange/red bubbles for stations with <5 minutes remaining (drag to reposition)
+
+### 🎨 **Multi-Theme System**
+- **PS3 Classic**: Authentic black/silver/red PS3 2006-2007 aesthetic
+- **Dark Night**: Deep blue midnight theme for low-light environments
+- **Dynamic Switching**: Instant theme changes with smooth CSS transitions
+- **Persistent Preference**: Theme selection saved to localStorage
+
+### 💳 **Payment Methods Management**
+- **Custom Payment Methods**: Add/remove payment types (Cash, QRIS, Transfer, etc.)
+- **Balance Tracking**: Real-time balance calculation per payment method
+- **Transaction Linking**: All income/expense records linked to payment methods
+- **Icon Support**: Emoji icons for visual identification
 
 ### 📊 **Financial Management**
 - **Transaction IDs**: Auto-generated sequential IDs (PSM-0001, PSM-0002...)
-- **Payment Methods**: Cash, QRIS, and Bank Transfer tracking
+- **Payment Methods**: Cash, QRIS, Bank Transfer, and custom methods tracking
 - **Expense Tracking**: Categorized expenses with sub-categories (PSK-0001, PSK-0002...)
 - **Daily Reports**: Income, expense, and profit analysis with date range filtering
 - **CSV Export**: One-click export for accounting purposes
+- **Full Backup/Restore**: JSON export/import with "I AGREE" safety confirmation
 
 ### 📅 **Booking & Scheduling**
 - **Schedule IDs**: Auto-generated booking IDs (PSJ-0001, PSJ-0002...)
 - **Advance Bookings**: Record customer reservations with phone, date, time, duration
-- **Conflict Detection**: Automatic overlap detection for unit reservations
+- **Conflict Detection**: Automatic overlap detection for station reservations
 - **Status Tracking**: Pending, Active, Completed, Cancelled states
 - **Mobile-first Design**: Optimized for phone-based booking management
 
@@ -156,7 +171,7 @@ open http://localhost:3000
 Create `.env` file:
 ```env
 ADMIN_PASSWORD=your-secure-password
-JWT_SECRET=your-random-jwt-secret
+JWT_SECRET=your-random-secret
 NODE_ENV=production
 DATA_DIR=./data
 PORT=3000
@@ -174,16 +189,23 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ### Dashboard Operations
 
 **Starting a Rental:**
-1. Click the unit card
+1. Click the station card
 2. Enter customer name and phone (optional)
 3. Select duration: Preset (1-5 hours), Custom minutes, or Unlimited
-4. Click "Start"
-5. Timer begins with WIB timestamp
+4. Select payment method
+5. Click "Start"
+6. Timer begins with WIB timestamp
 
 **Audio Alerts:**
 - Final 30 seconds: Gentle jingle plays (4 different patterns cycle by unit)
 - "Stop Alarm" button appears during jingle playback
 - Auto-stops after 30 seconds or manual mute
+
+**Warning Bubbles:**
+- Orange bubble: < 5 minutes remaining (draggable)
+- Red bubble: Time expired (draggable)
+- Click bubble to jump to station
+- Drag to reposition anywhere on screen
 
 **Extending Sessions:**
 - Click "+15min" or "+30min" during active session
@@ -194,11 +216,17 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 Access via 📋 button in navigation.
 
 #### 📅 Jadwal (Booking Schedule)
-- **Create**: Customer name, phone, date range, time, duration, unit assignment
-- **Conflict Detection**: System warns if unit already booked
+- **Create**: Customer name, phone, date range, time, duration, station assignment
+- **Conflict Detection**: System warns if station already booked
 - **Today's View**: Today's bookings highlighted in red
 - **Quick Actions**: Start (converts to rental), Complete, Cancel, Delete
 - **ID Display**: Each schedule shows `PSJxxxxx` badge
+
+#### 💳 Metode Pembayaran (Payment Methods)
+- **Add Methods**: Name + Type (Cash/Card/Wallet/Bank)
+- **Balance Tracking**: Auto-calculated from transactions
+- **Edit/Delete**: Modify existing methods
+- **Icons**: Emoji selection for visual identification
 
 #### 📦 Inventory (Asset Tracking)
 - **Categories**: 🎮 Konsol, 📺 TV, 🕹️ Stik, 🔌 Kabel USB, 🔌 Kabel HDMI, 🔌 Kabel Power, 📦 Lainnya
@@ -236,7 +264,7 @@ Access via 📋 button in navigation.
 - Income breakdown by payment method
 - Expense breakdown by category
 - Net profit calculation
-- Per-unit revenue analysis
+- Per-station revenue analysis
 
 **Export Options:**
 - **CSV**: For Excel/accounting software
@@ -296,8 +324,10 @@ Vendor: Text search
 │  ├── /api/expenses     (Expense CRUD + search)              │
 │  ├── /api/schedules    (Booking management)                 │
 │  ├── /api/inventory    (Asset tracking)                     │
+│  ├── /api/pairings     (Station management)                 │
 │  ├── /api/capital      (Capital & ROI)                      │
 │  ├── /api/reports      (Analytics & export)                 │
+│  ├── /api/payment-methods (Payment method management)       │
 │  └── /api/db           (Import/Export)                      │
 ├─────────────────────────────────────────────────────────────┤
 │  Middleware                                                   │
@@ -320,11 +350,12 @@ Vendor: Text search
 │  ├── inventory_depreciation (Asset depreciation)            │
 │  ├── inventory_pairing_history (Change tracking)            │
 │  ├── capital                (Initial capital & expenses)  │
+│  ├── payment_methods        (Custom payment methods)        │
 │  ├── sessions               (JWT token storage)             │
 │  ├── edit_logs              (Edit audit trail)              │
 │  └── deletion_logs          (Soft-delete compliance)        │
 ├─────────────────────────────────────────────────────────────┤
-│  Persistence                                                │
+│  Persistence                                                  │
 │  └── Fly.io Volume: ps3_data → /app/data                    │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -418,6 +449,15 @@ offset      - Pagination offset
 | POST | `/api/pairings/swap` | Quick swap items between stations |
 | GET | `/api/pairings/:id/analysis` | Get cost/revenue analysis |
 | GET | `/api/pairings/:id/history` | Get pairing change history |
+
+### Payment Methods
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/payment-methods` | List all payment methods |
+| POST | `/api/payment-methods` | Create payment method |
+| PUT | `/api/payment-methods/:id` | Update payment method |
+| DELETE | `/api/payment-methods/:id` | Delete payment method |
+| GET | `/api/payment-methods/:id/balance` | Get calculated balance |
 
 ### Inventory Analytics
 | Method | Endpoint | Description |
@@ -613,6 +653,18 @@ reason (TEXT)
 changed_by (TEXT)
 ```
 
+**payment_methods**
+```sql
+id (TEXT PRIMARY KEY) - UUID format
+name (TEXT)
+type (TEXT: cash/card/wallet/bank)
+icon (TEXT)
+balance (INTEGER DEFAULT 0)
+is_active (INTEGER DEFAULT 1)
+created_at (INTEGER)
+updated_at (INTEGER)
+```
+
 **capital**
 ```sql
 id (INTEGER PRIMARY KEY)
@@ -659,21 +711,21 @@ curl https://rental.blockchainism.store/ping
 ```bash
 curl -X POST https://rental.blockchainism.store/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"password": "your-password"}'
+  -d '{"password": "***"}'
 ```
 
 ### API Test Examples
 ```bash
 # Get units
-curl -H "Authorization: Bearer $TOKEN" \
+curl -H "Authorization: Bearer *** \
   https://rental.blockchainism.store/api/units
 
 # Search transactions
-curl -H "Authorization: Bearer $TOKEN" \
+curl -H "Authorization: Bearer *** \
   "https://rental.blockchainism.store/api/transactions?search=PSM&limit=10"
 
 # Get ROI stats
-curl -H "Authorization: Bearer $TOKEN" \
+curl -H "Authorization: Bearer *** \
   https://rental.blockchainism.store/api/stats/roi
 ```
 
@@ -681,19 +733,19 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 ## ⚙️ Customization
 
-### Change Theme Colors
-Edit CSS variables in `public/index.html`:
-```css
-:root {
-  --ps3-black: #000000;
-  --ps3-silver: #C0C0C0;
-  --ps3-red: #e60012;
-  --ps3-dark-gray: #1a1a1a;
-}
+### Change Theme
+Access Settings modal → Themes tab:
+- **PS3 Classic**: Black/Silver/Red authentic 2006-2007 aesthetic
+- **Dark Night**: Deep blue theme for low-light operation
+
+Or programmatically:
+```javascript
+localStorage.setItem('ps3_theme', 'dark-night');
+location.reload();
 ```
 
 ### Adjust Audio Patterns
-Edit `JINGLE_PATTERNS` in `public/index.html`:
+Edit `JINGLE_PATTERNS` in `public/app.js`:
 ```javascript
 const JINGLE_PATTERNS = [
   [432, 0, 528, 0, 639],  // Unit 1 (meditation)
@@ -721,10 +773,17 @@ const FINAL_ALERT_SECONDS = 30; // Change to 60 for 1-minute warning
 | Polling Interval | 1 second |
 | Audio Latency | < 100ms |
 | Concurrent Users | Unlimited (stateless) |
+| Theme Switch | Instant (CSS variables) |
 
 ---
 
 ## 📋 Changelog
+
+### v3.5.0 (2025-04-15)
+- **Multi-Theme System**: PS3 Classic + Dark Night themes with instant switching
+- **Draggable Warning Bubbles**: Floating notification bubbles for time warnings
+- **Payment Methods Management**: Custom payment methods with balance tracking
+- **ES6 Modernization**: Refactored codebase with modern JavaScript patterns
 
 ### v3.0.0 (2025-04-11)
 - **Schedule ID System**: Implemented PSJxxxxx IDs for all bookings
@@ -763,6 +822,7 @@ MIT License - See [LICENSE](LICENSE) for details.
 - **Icons**: Native system emoji
 - **Audio**: Web Audio API implementation
 - **Deployment**: [Fly.io](https://fly.io)
+- **Database**: [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
 
 ---
 

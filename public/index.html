@@ -9,7 +9,7 @@
   <title id="pageTitle">PS3 Rental Manager</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="style.css?v=20250415-58">
+<link rel="stylesheet" href="style.css?v=20250415-130">
 </head>
 <body>
   <!-- ═════════════════ LOGIN SCREEN ═════════════════ -->
@@ -64,6 +64,81 @@
         <div id="syncIndicator" class="sync-indicator"></div>
       </div>
     </header>
+
+    <!-- Floating Warning Bubbles Container for <5 min remaining -->
+    <div id="warningBubblesContainer" style="position: fixed; bottom: 100px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none;">
+      <!-- Bubbles will be dynamically created here -->
+    </div>
+
+    <style>
+      @keyframes bubblePulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 4px 20px rgba(255, 140, 0, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.1); }
+        50% { transform: scale(1.02); box-shadow: 0 6px 25px rgba(255, 140, 0, 0.7), 0 0 0 3px rgba(255, 255, 255, 0.2); }
+      }
+      
+      @keyframes bubblePulseRed {
+        0%, 100% { transform: scale(1); box-shadow: 0 4px 20px rgba(230, 0, 18, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.1); }
+        50% { transform: scale(1.02); box-shadow: 0 6px 25px rgba(230, 0, 18, 0.7), 0 0 0 3px rgba(255, 255, 255, 0.2); }
+      }
+
+      .warning-bubble {
+        cursor: pointer;
+        background: linear-gradient(135deg, #FF8C00, #FFA500);
+        border-radius: 16px;
+        padding: 12px 16px;
+        box-shadow: 0 4px 20px rgba(255, 140, 0, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.1);
+        max-width: 280px;
+        animation: bubblePulse 2s infinite;
+        user-select: none;
+        touch-action: none;
+        pointer-events: auto;
+        position: relative;
+        will-change: transform, left, top;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+      }
+
+      .warning-bubble.expired {
+        background: linear-gradient(135deg, #dc2626, #e60012);
+        box-shadow: 0 4px 20px rgba(230, 0, 18, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.1);
+        animation: bubblePulseRed 2s infinite;
+      }
+      
+      .warning-bubble:hover {
+        filter: brightness(1.1);
+      }
+      
+      .warning-bubble.dragging {
+        animation: none !important;
+        cursor: grabbing !important;
+        transition: none !important;
+        opacity: 0.9;
+      }
+      
+      .warning-bubble.dragging .bubble-drag-handle {
+        cursor: grabbing !important;
+      }
+
+      .bubble-drag-handle {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 8px;
+        cursor: grab;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding-top: 4px;
+      }
+
+      .bubble-drag-handle div {
+        width: 24px;
+        height: 3px;
+        background: rgba(255,255,255,0.4);
+        border-radius: 2px;
+      }
+    </style>
 
     <!-- Pages -->
     <!-- Dashboard Page -->
@@ -133,69 +208,6 @@
       </div>
       <div id="transactionsList"></div>
 
-      <!-- Expense Management Section -->
-      <div class="section-title mt-24">
-        <span>💸 Catat Pengeluaran</span>
-      </div>
-      <div class="card">
-        <!-- Baris 1: Tipe Biaya & Sub-kategori -->
-        <div class="form-row" style="gap: 12px;">
-          <div class="form-group">
-            <label>Tipe Biaya Pengeluaran</label>
-            <select id="expenseCategory" onchange="onExpenseCategoryChange()" class="input-ps3">
-              <option value="">-- Pilih Tipe --</option>
-              <option value="Listrik">⚡ Listrik</option>
-              <option value="Prive">💰 Prive</option>
-              <option value="Unit PS Baru">🎮 Unit PS Baru</option>
-              <option value="TV/Monitor Baru">📺 TV/Monitor Baru</option>
-              <option value="Servis/Perawatan">🔧 Servis/Perawatan</option>
-              <option value="Aksesoris">🎧 Aksesoris</option>
-              <option value="Custom">✏️ Custom (Input Manual)</option>
-            </select>
-          </div>
-          <div class="form-group" id="expenseSubCategoryGroup" style="display: none;">
-            <label>Sub-Kategori</label>
-            <select id="expenseSubCategory" class="input-ps3">
-              <option value="">-- Pilih Sub --</option>
-            </select>
-          </div>
-          <div class="form-group" id="expenseCustomGroup" style="display: none;">
-            <label>Nama Pengeluaran Custom</label>
-            <input type="text" id="expenseCustomName" placeholder="Contoh: Beli CD Game" class="input-ps3">
-          </div>
-        </div>
-
-        <!-- Baris 2: Jumlah & Metode Pembayaran -->
-        <div class="form-row" style="gap: 12px; margin-top: 12px;">
-          <div class="form-group" style="flex: 1;">
-            <label>Jumlah (Rp)</label>
-            <input type="number" id="expenseAmount" placeholder="50000" class="input-ps3">
-          </div>
-          <div class="form-group" style="flex: 1;">
-            <label>Metode Pembayaran</label>
-            <select id="expensePaymentMethod" class="input-ps3">
-              <option value="">-- Pilih Metode --</option>
-              <!-- Populated by JS -->
-            </select>
-          </div>
-        </div>
-        <div style="font-size: 0.8rem; color: var(--ps3-chrome); margin-top: 4px; text-align: right;">
-          📅 Tanggal tercatat otomatis saat submit
-        </div>
-
-        <!-- Baris 3: Catatan -->
-        <div class="form-row mt-12">
-          <div class="form-group">
-            <label>Catatan (opsional)</label>
-            <input type="text" id="expenseNote" placeholder="Catatan tambahan..." class="input-ps3">
-          </div>
-        </div>
-
-        <button class="btn btn-red mt-16" onclick="addExpense()">
-          Tambah Pengeluaran
-        </button>
-      </div>
-
       <!-- Expense List -->
       <div class="section-title" style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
         <span>Daftar Pengeluaran Periode Ini</span>
@@ -233,10 +245,6 @@
         <button class="export-btn" onclick="exportCustomRange()">
           <span class="icon">⚙️</span>
           <span>Kustom</span>
-        </button>
-        <button class="export-btn grid-full" onclick="exportFullBackup()">
-          <span class="icon">💾</span>
-          <span>Backup JSON</span>
         </button>
       </div>
     </div>
@@ -324,48 +332,54 @@
             </button>
           </div>
 
-          <!-- Sub-tab: Items -->
+          <!-- Sub-tab: Items - Redesigned Friendly Layout -->
           <div id="inventoryTabItems">
-            <div class="form-row-8">
-              <select id="inventoryFilterCategory" onchange="renderInventory()" class="input-sm">
-                <option value="">Semua Kategori</option>
-                <option value="konsol">🎮 Konsol</option>
-                <option value="tv">📺 TV</option>
-                <option value="stik">🕹️ Stik</option>
-                <option value="kabel_usb">🔌 USB</option>
-                <option value="kabel_hdmi">🔌 HDMI</option>
-                <option value="kabel_power">🔌 Plug</option>
-                <option value="lainnya">📦 Lainnya</option>
-              </select>
-              <select id="inventoryFilterCondition" onchange="renderInventory()" class="input-sm">
-                <option value="">Semua Kondisi</option>
-                <option value="baik">🟢 Baik</option>
-                <option value="rusak">🔴 Rusak</option>
-                <option value="perbaikan">🟡 Perbaikan</option>
-                <option value="rusak_total">⚫ Rusak Total</option>
-              </select>
+            <!-- Compact Header with Stats -->
+            <div id="inventoryHeader" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 12px 15px; background: var(--ps3-surface); border-radius: 10px; border: 1px solid var(--ps3-border);">
+              <div style="display: flex; gap: 20px;">
+                <div>
+                  <div id="statItemsCount" style="font-size: 1.1rem; font-weight: 700; color: var(--ps3-silver);">0</div>
+                  <div style="font-size: 0.65rem; color: var(--ps3-muted); text-transform: uppercase;">Items</div>
+                </div>
+                <div>
+                  <div id="statItemsValue" style="font-size: 1.1rem; font-weight: 700; color: var(--ps3-green);">Rp0</div>
+                  <div style="font-size: 0.65rem; color: var(--ps3-muted); text-transform: uppercase;">Nilai</div>
+                </div>
+              </div>
+              <button class="btn btn-sm" onclick="openModal('modalAddInventory')" style="background: var(--ps3-green); color: white; border: none; padding: 8px 14px; font-size: 0.8rem; border-radius: 6px;">
+                ➕ Tambah
+              </button>
             </div>
 
-            <div id="inventoryStats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;">
-              <div class="card-surface">
-                <div id="statTotalItems" style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-silver);">0</div>
-                <div class="fs-65 text-muted">Total Items</div>
-              </div>
-              <div class="card-surface">
-                <div id="statTotalValue" style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-green);">Rp0</div>
-                <div class="fs-65 text-muted">Nilai Aset</div>
-              </div>
-              <div class="card-surface">
-                <div id="statNeedMaintenance" style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-yellow);">0</div>
-                <div class="fs-65 text-muted">Butuh Perawatan</div>
-              </div>
+            <!-- Quick Filter Chips -->
+            <div style="display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; overflow-x: auto;">
+              <button onclick="setInventoryFilter('')" class="filter-chip active" data-filter="" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--ps3-border); background: var(--ps3-surface); color: var(--ps3-silver); font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
+                Semua
+              </button>
+              <button onclick="setInventoryFilter('konsol')" class="filter-chip" data-filter="konsol" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--ps3-border); background: var(--ps3-surface); color: var(--ps3-silver); font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
+                🎮 Konsol
+              </button>
+              <button onclick="setInventoryFilter('tv')" class="filter-chip" data-filter="tv" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--ps3-border); background: var(--ps3-surface); color: var(--ps3-silver); font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
+                📺 TV
+              </button>
+              <button onclick="setInventoryFilter('stik')" class="filter-chip" data-filter="stik" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--ps3-border); background: var(--ps3-surface); color: var(--ps3-silver); font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
+                🕹️ Stik
+              </button>
+              <button onclick="setInventoryFilter('kabel_usb')" class="filter-chip" data-filter="kabel_usb" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--ps3-border); background: var(--ps3-surface); color: var(--ps3-silver); font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
+                🔌 USB
+              </button>
+              <button onclick="setInventoryFilter('kabel_hdmi')" class="filter-chip" data-filter="kabel_hdmi" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--ps3-border); background: var(--ps3-surface); color: var(--ps3-silver); font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
+                🔌 HDMI
+              </button>
+              <button onclick="setInventoryFilter('kabel_power')" class="filter-chip" data-filter="kabel_power" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--ps3-border); background: var(--ps3-surface); color: var(--ps3-silver); font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
+                ⚡ Power
+              </button>
             </div>
 
-            <div id="inventoryList" class="max-h-400 scroll-y mb-15">
+            <!-- Clean Item List -->
+            <div id="inventoryList" style="max-height: 400px; overflow-y: auto;">
               <p class="empty-state-p20">Belum ada item inventori</p>
             </div>
-
-            <button class="btn w-full" onclick="openModal('modalAddInventory')">➕ Tambah Item Inventori</button>
           </div>
 
           <!-- Sub-tab: Stations -->
@@ -474,16 +488,43 @@
         <button class="btn" onclick="saveSettings()">Simpan Pengaturan</button>
       </div>
 
+      <!-- THEME SELECTOR -->
       <div class="card mt-20">
-        <div class="section-title">Manajemen Data</div>
-        <button class="btn" onclick="exportFullBackup()">
-          💾 Export Backup (JSON)
+        <div class="section-title">🎨 Tema & Tampilan</div>
+        <p class="text-sm text-muted mb-15">Pilih tema warna untuk mengubah tampilan aplikasi sesuai selera Anda.</p>
+        
+        <div id="themeGrid" class="theme-grid">
+          <!-- Themes will be generated by JS -->
+        </div>
+        
+        <div id="currentThemeInfo" class="theme-info" style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 3px solid var(--ps3-red);">
+          <div class="theme-preview" style="display: flex; align-items: center; gap: 12px;">
+            <div id="currentThemeIcon" style="width: 40px; height: 40px; border-radius: 8px; background: var(--ps3-chrome); display: flex; align-items: center; justify-content: center; font-size: 20px;">🎮</div>
+            <div>
+              <div id="currentThemeName" style="font-weight: 600; color: var(--ps3-text);">PS3 Classic</div>
+              <div id="currentThemeDesc" style="font-size: 0.75rem; color: var(--ps3-muted);">Tema hitam & silver ala PS3 2006</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-20">
+        <div class="section-title">💾 Backup & Restore Data</div>
+        <p class="text-sm text-muted mb-15">Backup seluruh data aplikasi termasuk transaksi, jadwal, inventori, modal, dan pengaturan.</p>
+        
+        <button class="btn" onclick="createFullBackup()" style="width: 100%; margin-bottom: 10px; background: linear-gradient(135deg, #00aa00, #00cc00); border-color: var(--ps3-green);">
+          <span style="margin-right: 8px;">💾</span> Backup Semua Data (JSON)
         </button>
-        <div style="margin-top: 15px; text-align: center;">
-          <a href="#" onclick="showImportConfirm(); return false;" class="text-75 text-muted" style="text-decoration: underline; opacity: 0.7;">
-            📥 Import Data (JSON)
-          </a>
-          <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+        
+        <button class="btn" onclick="openRestoreModal()" style="width: 100%; background: rgba(245, 166, 35, 0.1); border-color: var(--ps3-yellow);">
+          <span style="margin-right: 8px;">📂</span> Restore dari Backup
+        </button>
+        
+        <div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 0.75rem; color: var(--ps3-muted);">
+          <strong style="color: var(--ps3-yellow);">⚠️ Penting:</strong><br>
+          • Backup mencakup: Transaksi, Jadwal, Inventori, Modal, Pengaturan<br>
+          • Restore akan <strong>MENIMPA</strong> semua data saat ini<br>
+          • Pastikan backup tersimpan di tempat aman
         </div>
       </div>
 
@@ -518,218 +559,102 @@
       </div>
     </div>
 
-    <!-- ═════════════════ MODAL: EXPORT DATA TYPE SELECTION (Modal 1) ═════════════════ -->
-    <div id="modalExportDataType" class="modal">
+    <!-- ═════════════════ MODAL: BACKUP PROGRESS ═════════════════ -->
+    <div id="modalBackupProgress" class="modal">
       <div class="modal-content modal-sm">
-        <div class="modal-header">
-          <h3>📦 Pilih Data untuk Diekspor</h3>
+        <div class="modal-header" style="background: rgba(0, 170, 0, 0.2); border-color: var(--ps3-green);">
+          <h3>💾 Membuat Backup...</h3>
         </div>
-        <div class="modal-body">
-          <p class="label-xs-muted mb-16">Pilih jenis data transaksi yang ingin disertakan dalam ekspor:</p>
-          
-          <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
-            <label class="label-row-12">
-              <input type="checkbox" id="exportIncludeIncome" checked class="checkbox-ps3">
-              <div>
-                <div class="font-semibold text-primary">📈 Transaksi Pendapatan</div>
-                <div class="text-75 text-muted">Data pemasukan dari penyewaan PS</div>
-              </div>
-            </label>
-            
-            <label class="label-row-12">
-              <input type="checkbox" id="exportIncludeExpense" checked class="checkbox-ps3">
-              <div>
-                <div class="font-semibold text-primary">📉 Transaksi Pengeluaran</div>
-                <div class="text-75 text-muted">Data pengeluaran operasional</div>
-              </div>
-            </label>
-          </div>
-          
-          <div id="exportDataTypeError" style="display: none; background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 8px; padding: 10px; margin-top: 10px;">
-            <p style="color: var(--ps3-red); font-size: 0.8rem; margin: 0;">⚠️ Pilih minimal satu jenis data</p>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel" onclick="closeModal('modalExportDataType')">Batal</button>
-          <button class="btn-confirm" onclick="confirmExportDataType()">Lanjutkan ➜</button>
+        <div class="modal-body" style="text-align: center; padding: 30px;">
+          <div style="font-size: 3rem; margin-bottom: 16px;">⏳</div>
+          <p style="color: var(--ps3-text);">Mengumpulkan data dari database...</p>
+          <p id="backupProgressDetail" style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 8px;">Mohon tunggu</p>
         </div>
       </div>
     </div>
 
-    <!-- ═════════════════ MODAL: EXPORT HISTORY OPTIONS (Modal 2) ═════════════════ -->
-    <div id="modalExportHistory" class="modal">
-      <div class="modal-content" style="max-width: 480px;">
-        <div class="modal-header">
-          <h3 id="modalExportHistoryTitle">📜 Pilih Data untuk Diekspor</h3>
+    <!-- ═════════════════ MODAL: RESTORE ═════════════════ -->
+    <div id="modalRestore" class="modal">
+      <div class="modal-content modal-sm">
+        <div class="modal-header" style="background: rgba(245, 166, 35, 0.2); border-color: var(--ps3-yellow);">
+          <h3>📂 Restore Data dari Backup</h3>
         </div>
         <div class="modal-body">
-          <p id="modalExportHistoryDesc" class="label-xs-muted mb-16">Pilih data yang ingin disertakan dalam ekspor (minimal pilih satu):</p>
-          
-          <div class="flex-col-gap-12-mb20">
-            <!-- Transaction History (Active Data) -->
-            <label class="label-row-12">
-              <input type="checkbox" id="exportIncludeTransactionHistory" class="checkbox-ps3">
-              <div>
-                <div class="font-semibold text-primary">📋 Riwayat Transaksi</div>
-                <div class="text-75 text-muted">Data transaksi aktif yang tersimpan di database</div>
-              </div>
-            </label>
-            
-            <!-- Edit History -->
-            <label class="label-row-12">
-              <input type="checkbox" id="exportIncludeEditHistory" class="checkbox-ps3">
-              <div>
-                <div class="font-semibold text-primary">✏️ Riwayat Edit</div>
-                <div class="text-75 text-muted">Catatan perubahan data transaksi</div>
-              </div>
-            </label>
-            
-            <!-- Delete History with Ghost Records - HIDDEN for periodic exports -->
-            <label id="ghostRecordsOption" class="label-row-12">
-              <input type="checkbox" id="exportIncludeDeleteHistory" class="checkbox-ps3">
-              <div>
-                <div class="font-semibold text-primary">🗑️ Riwayat Hapus (Ghost Records)</div>
-                <div class="text-75 text-muted">TX ID transaksi yang sudah dihapus dengan keterangan "Dihapus"</div>
-              </div>
-            </label>
+          <p class="label-xs-muted mb-16">Pilih file backup JSON untuk mengembalikan data aplikasi:</p>
+
+          <!-- File Input -->
+          <div class="form-group mb-16">
+            <label class="form-group-label-8mb8">File Backup JSON</label>
+            <input type="file" id="restoreFileInput" accept=".json,application/json" class="input-file" style="width: 100%; padding: 10px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; color: var(--ps3-text);">
           </div>
-          
-          <div id="ghostRecordsInfoBox" style="background: rgba(34,197,94,0.1); border: 1px solid var(--ps3-green); border-radius: 8px; padding: 12px;">
-            <p style="color: var(--ps3-green); font-size: 0.8rem; margin: 0; font-weight: 500;">ℹ️ Informasi Ghost Records:</p>
-            <ul style="font-size: 0.75rem; color: var(--ps3-text); margin: 8px 0 0 0; padding-left: 16px;">
-              <li>TX ID transaksi yang dihapus permanen</li>
-              <li>Status: "Dihapus"</li>
-              <li>Tanggal & waktu penghapusan</li>
-              <li>Alasan penghapusan</li>
+
+          <!-- Backup Info Display -->
+          <div id="restoreFileInfo" style="display: none; background: rgba(0, 170, 0, 0.1); border: 1px solid var(--ps3-green); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <div style="font-size: 0.8rem; color: var(--ps3-green); font-weight: 600; margin-bottom: 8px;">✅ File backup valid</div>
+            <div id="restoreFileDetails" style="font-size: 0.75rem; color: var(--ps3-text);"></div>
+          </div>
+
+          <!-- Validation Error -->
+          <div id="restoreFileError" style="display: none; background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <div style="font-size: 0.8rem; color: var(--ps3-red); font-weight: 600;">❌ File tidak valid</div>
+            <div id="restoreFileErrorMsg" style="font-size: 0.75rem; color: var(--ps3-text); margin-top: 4px;"></div>
+          </div>
+
+          <!-- Warning -->
+          <div style="background: rgba(230, 0, 18, 0.1); border: 1px solid var(--ps3-red); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <div style="font-size: 0.8rem; color: var(--ps3-red); font-weight: 600; margin-bottom: 4px;">⚠️ PERINGATAN PENTING</div>
+            <ul style="font-size: 0.75rem; color: var(--ps3-text); margin: 0; padding-left: 16px;">
+              <li>Restore akan <strong>MENIMPA</strong> semua data saat ini</li>
+              <li>Data yang ada akan diganti dengan data backup</li>
+              <li>Proses ini tidak dapat dibatalkan</li>
             </ul>
           </div>
+
+          <!-- Confirm Checkbox -->
+          <label class="label-row-12" style="margin-top: 12px;">
+            <input type="checkbox" id="restoreConfirm" class="checkbox-ps3">
+            <div>
+              <div class="font-semibold text-primary">Saya mengerti dan ingin melanjutkan</div>
+              <div class="text-sm text-muted">Data saat ini akan ditimpa oleh data backup</div>
+            </div>
+          </label>
         </div>
         <div class="modal-footer">
-          <button class="btn-cancel" onclick="document.getElementById('modalExportHistory').classList.remove('active'); document.getElementById('modalExportDataType').classList.add('active')">⬅ Kembali</button>
-          <button class="btn-confirm" onclick="executeExportWithOptions()">📥 Ekspor Data</button>
+          <button class="btn-cancel" onclick="closeModal('modalRestore')">Batal</button>
+          <button class="btn-confirm btn-red" id="btnExecuteRestore" onclick="executeFullRestore()" disabled>🔄 Restore Data</button>
         </div>
       </div>
     </div>
 
-    <!-- ═════════════════ MODAL: CUSTOM EXPORT RANGE (Modal 1 - Custom) ═════════════════ -->
-    <div id="modalCustomExportRange" class="modal">
+    <!-- ═════════════════ MODAL: RESTORE PROGRESS ═════════════════ -->
+    <div id="modalRestoreProgress" class="modal">
       <div class="modal-content modal-sm">
-        <div class="modal-header">
-          <h3>⚙️ Ekspor Kustom</h3>
+        <div class="modal-header" style="background: rgba(245, 166, 35, 0.2); border-color: var(--ps3-yellow);">
+          <h3>🔄 Sedang Restore...</h3>
         </div>
-        <div class="modal-body">
-          <p class="label-xs-muted mb-16">Atur range tanggal dan format ekspor data:</p>
-
-          <!-- Date Range -->
-          <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
-            <div class="flex gap-12">
-              <div class="flex-1">
-                <label class="form-group-label-8">Dari Tanggal</label>
-                <input type="date" id="customExportStartDate" class="input-date">
-              </div>
-              <div class="flex-1">
-                <label class="form-group-label-8">Sampai Tanggal</label>
-                <input type="date" id="customExportEndDate" class="input-date">
-              </div>
-            </div>
-          </div>
-
-          <!-- File Format -->
-          <div class="mb-16">
-            <label class="form-group-label-8mb8">Format File</label>
-            <div class="flex gap-12">
-              <label style="flex: 1; display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-                <input type="checkbox" id="customExportCSV" checked class="checkbox-ps3">
-                <span class="font-semibold text-primary">📊 CSV</span>
-              </label>
-              <label style="flex: 1; display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; cursor: pointer;">
-                <input type="checkbox" id="customExportJSON" checked class="checkbox-ps3">
-                <span class="font-semibold text-primary">💾 JSON</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Data Type -->
-          <div class="mb-16">
-            <label class="form-group-label-8mb8">Jenis Data</label>
-            <div class="flex-col-gap-10">
-              <label class="label-row-12">
-                <input type="checkbox" id="customExportIncome" checked class="checkbox-ps3">
-                <div>
-                  <div class="font-semibold text-primary">📈 Transaksi Pendapatan</div>
-                </div>
-              </label>
-              <label class="label-row-12">
-                <input type="checkbox" id="customExportExpense" checked class="checkbox-ps3">
-                <div>
-                  <div class="font-semibold text-primary">📉 Transaksi Pengeluaran</div>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <div id="customExportRangeError" style="display: none; background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); border-radius: 8px; padding: 10px; margin-top: 10px;">
-            <p style="color: var(--ps3-red); font-size: 0.8rem; margin: 0;">⚠️ Pilih minimal satu format file dan satu jenis data</p>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel" onclick="closeModal('modalCustomExportRange')">Batal</button>
-          <button class="btn-confirm" onclick="confirmCustomExportRange()">Lanjutkan ➜</button>
+        <div class="modal-body" style="text-align: center; padding: 30px;">
+          <div style="font-size: 3rem; margin-bottom: 16px;">⏳</div>
+          <p style="color: var(--ps3-text);">Mengembalikan data dari backup...</p>
+          <p id="restoreProgressDetail" style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 8px;">Mohon tunggu, jangan tutup halaman ini</p>
         </div>
       </div>
     </div>
 
-    <!-- ═════════════════ MODAL: CUSTOM EXPORT OPTIONS (Modal 2 - Custom) ═════════════════ -->
-    <div id="modalCustomExportOptions" class="modal">
-      <div class="modal-content" style="max-width: 480px;">
-        <div class="modal-header">
-          <h3>📜 Pilih Data untuk Diekspor (Kustom)</h3>
+    <!-- ═════════════════ MODAL: RESTORE SUCCESS ═════════════════ -->
+    <div id="modalRestoreSuccess" class="modal">
+      <div class="modal-content modal-sm">
+        <div class="modal-header" style="background: rgba(0, 170, 0, 0.2); border-color: var(--ps3-green);">
+          <h3>✅ Restore Berhasil</h3>
         </div>
         <div class="modal-body">
-          <p class="label-xs-muted mb-16">Pilih detail data yang ingin disertakan dalam ekspor (minimal pilih satu):</p>
-
-          <div class="flex-col-gap-12-mb20">
-            <!-- Transaction History (Active Data) -->
-            <label class="label-row-12">
-              <input type="checkbox" id="customExportTransactionHistory" checked class="checkbox-ps3">
-              <div>
-                <div class="font-semibold text-primary">📋 Riwayat Transaksi Aktif</div>
-                <div class="text-75 text-muted">Data transaksi aktif yang tersimpan di database</div>
-              </div>
-            </label>
-
-            <!-- Edit History -->
-            <label class="label-row-12">
-              <input type="checkbox" id="customExportEditHistory" checked class="checkbox-ps3">
-              <div>
-                <div class="font-semibold text-primary">✏️ Riwayat Edit</div>
-                <div class="text-75 text-muted">Catatan perubahan data transaksi</div>
-              </div>
-            </label>
-
-            <!-- Delete History with Ghost Records -->
-            <label class="label-row-12">
-              <input type="checkbox" id="customExportDeleteHistory" checked class="checkbox-ps3">
-              <div>
-                <div class="font-semibold text-primary">🗑️ Riwayat Hapus (Ghost Records)</div>
-                <div class="text-75 text-muted">TX ID transaksi yang sudah dihapus dengan keterangan "Dihapus"</div>
-              </div>
-            </label>
+          <p style="color: var(--ps3-text); margin-bottom: 16px;">Data berhasil direstore dari backup:</p>
+          <div id="restoreSuccessDetails" style="background: rgba(0, 170, 0, 0.1); border: 1px solid var(--ps3-green); border-radius: 8px; padding: 12px; max-height: 300px; overflow-y: auto;">
+            <!-- Details will be filled dynamically -->
           </div>
-
-          <div style="background: rgba(34,197,94,0.1); border: 1px solid var(--ps3-green); border-radius: 8px; padding: 12px;">
-            <p style="color: var(--ps3-green); font-size: 0.8rem; margin: 0; font-weight: 500;">ℹ️ Informasi Ghost Records:</p>
-            <ul style="font-size: 0.75rem; color: var(--ps3-text); margin: 8px 0 0 0; padding-left: 16px;">
-              <li>TX ID transaksi yang dihapus permanen</li>
-              <li>Status: "Dihapus"</li>
-              <li>Tanggal & waktu penghapusan</li>
-              <li>Alasan penghapusan</li>
-            </ul>
-          </div>
+          <p style="font-size: 0.75rem; color: var(--ps3-muted); margin-top: 12px;">Halaman akan dimuat ulang dalam beberapa detik...</p>
         </div>
         <div class="modal-footer">
-          <button class="btn-cancel" onclick="document.getElementById('modalCustomExportOptions').classList.remove('active'); document.getElementById('modalCustomExportRange').classList.add('active')">⬅ Kembali</button>
-          <button class="btn-confirm" onclick="executeCustomExport()">📥 Ekspor Data</button>
+          <button class="btn-confirm" onclick="location.reload()">🔄 Muat Ulang Sekarang</button>
         </div>
       </div>
     </div>
@@ -824,7 +749,33 @@
       </div>
     </div>
 
-    <!-- Navigation -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         MANAGEMENT PAGE - Tab-based Architecture
+    ═══════════════════════════════════════════════════════════════ -->
+    <div id="pageManagement" class="page">
+      <!-- Main Tab Navigation: Jadwal | Inventori | Modal | Pembayaran -->
+      <div class="management-tabs">
+        <button id="tabMainSchedule" class="management-tab active" onclick="switchMainTab('schedule')">
+          <span class="tab-icon">📅</span>
+          <span class="tab-text">Jadwal</span>
+        </button>
+        <button id="tabMainInventory" class="management-tab" onclick="switchMainTab('inventory')">
+          <span class="tab-icon">📦</span>
+          <span class="tab-text">Inventori</span>
+        </button>
+        <button id="tabMainCapital" class="management-tab" onclick="switchMainTab('capital')">
+          <span class="tab-icon">💰</span>
+          <span class="tab-text">Modal</span>
+        </button>
+        <button id="tabMainPayment" class="management-tab" onclick="switchMainTab('payment')">
+          <span class="tab-icon">💳</span>
+          <span class="tab-text">Pembayaran</span>
+        </button>
+      </div>
+
+      <!-- Navigation -->
+    </div>
+
     <nav class="nav" id="mainNav">
       <!-- Toggle button untuk desktop sidebar -->
       <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
@@ -983,9 +934,7 @@
         <div class="form-group">
           <label>Metode Pembayaran</label>
           <select id="stopPayment">
-            <option value="cash">Tunai (Cash)</option>
-            <option value="transfer">Transfer</option>
-            <option value="qris">QRIS</option>
+            <!-- Populated dynamically from paymentMethods -->
           </select>
         </div>
       </div>
@@ -1101,9 +1050,7 @@
         <div class="form-group">
           <label>Metode Pembayaran</label>
           <select id="stopStationPayment">
-            <option value="cash">Tunai (Cash)</option>
-            <option value="transfer">Transfer</option>
-            <option value="qris">QRIS</option>
+            <!-- Populated dynamically from paymentMethods -->
           </select>
         </div>
       </div>
@@ -1140,9 +1087,7 @@
         <div class="form-group">
           <label>Metode Pembayaran</label>
           <select id="completeSchedulePayment">
-            <option value="cash">Tunai (Cash)</option>
-            <option value="transfer">Transfer</option>
-            <option value="qris">QRIS</option>
+            <!-- Populated dynamically from paymentMethods -->
           </select>
         </div>
       </div>
@@ -1312,9 +1257,7 @@
         <div id="editFieldPayment" class="hidden-mb16">
           <label class="form-label-85-silver">Metode Pembayaran</label>
           <select id="editPayment" class="input-inherit">
-            <option value="cash">Tunai (Cash)</option>
-            <option value="transfer">Transfer</option>
-            <option value="qris">QRIS</option>
+            <!-- Populated dynamically from paymentMethods -->
           </select>
         </div>
 
@@ -1607,9 +1550,7 @@
                 <label>💳 Metode Pembayaran</label>
                 <select id="trashFilterPayment" onchange="searchTrashIncome()">
                   <option value="">Semua Metode</option>
-                  <option value="cash">💵 Tunai</option>
-                  <option value="qris">📱 QRIS</option>
-                  <option value="transfer">🏦 Transfer</option>
+                  <!-- Payment method options populated dynamically -->
                 </select>
               </div>
 
@@ -2031,9 +1972,7 @@
                 <label>💳 Metode Pembayaran</label>
                 <select id="txFilterPayment" onchange="searchTransactions()">
                   <option value="">Semua Metode</option>
-                  <option value="cash">💵 Tunai</option>
-                  <option value="qris">📱 QRIS</option>
-                  <option value="transfer">🏦 Transfer</option>
+                  <!-- Payment method options populated dynamically -->
                 </select>
               </div>
 
@@ -2688,6 +2627,165 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════
+       MODAL: Edit Modal (Capital Edit)
+  ═══════════════════════════════════════════════════════════════ -->
+  <div id="modalEditCapital" class="modal modal-front z-3000">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header" style="background: rgba(0, 170, 0, 0.2); border-color: var(--ps3-green);">
+        <div class="modal-title">✏️ Edit Modal</div>
+        <button class="modal-close" onclick="closeModal('modalEditCapital')">×</button>
+      </div>
+
+      <div class="p-20">
+        <input type="hidden" id="editCapitalId">
+        <div class="form-group">
+          <label>Jumlah Modal (Rp) <span class="text-red">*</span></label>
+          <input type="number" id="editCapitalAmount" placeholder="5000000" min="0">
+        </div>
+        <div class="form-group">
+          <label>Deskripsi</label>
+          <input type="text" id="editCapitalDesc" placeholder="Contoh: Modal awal dari tabungan">
+        </div>
+        <div class="form-group">
+          <label>Sumber Dana</label>
+          <input type="text" id="editCapitalSource" placeholder="Contoh: Tabungan pribadi">
+        </div>
+        <div class="form-group">
+          <label>Tanggal</label>
+          <input type="date" id="editCapitalDate">
+        </div>
+
+        <div class="flex-gap-12-mt15">
+          <button class="btn-cancel flex-p14" onclick="closeModal('modalEditCapital')">Batal</button>
+          <button class="btn-confirm flex-2-p14" style="background: linear-gradient(135deg, #00aa00, #00cc00, #00aa00);" onclick="saveEditCapital()">Simpan Perubahan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MODAL: Edit Investasi (Capital Expense Edit)
+  ═══════════════════════════════════════════════════════════════ -->
+  <div id="modalEditCapitalExpense" class="modal modal-front z-3000">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header" style="background: rgba(230, 0, 18, 0.2); border-color: var(--ps3-red);">
+        <div class="modal-title">✏️ Edit Pengeluaran Investasi</div>
+        <button class="modal-close" onclick="closeModal('modalEditCapitalExpense')">×</button>
+      </div>
+
+      <div class="p-20">
+        <input type="hidden" id="editCapitalExpenseId">
+        <div class="form-group">
+          <label>Nama Item/Investasi <span class="text-red">*</span></label>
+          <input type="text" id="editCapitalExpenseItem" placeholder="Contoh: Beli PS3 bekas">
+        </div>
+        <div class="form-group">
+          <label>Kategori</label>
+          <select id="editCapitalExpenseCategory">
+            <option value="">Pilih kategori...</option>
+            <option value="console">🎮 Pembelian Console</option>
+            <option value="tv">📺 Pembelian TV/Monitor</option>
+            <option value="furniture">🪑 Furniture/Renovasi</option>
+            <option value="accessories">🎧 Aksesoris</option>
+            <option value="other">📦 Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Jumlah (Rp) <span class="text-red">*</span></label>
+          <input type="number" id="editCapitalExpenseAmount" placeholder="2500000" min="0">
+        </div>
+        <div class="form-group">
+          <label>Tanggal</label>
+          <input type="date" id="editCapitalExpenseDate">
+        </div>
+        <div class="form-group">
+          <label>Catatan</label>
+          <input type="text" id="editCapitalExpenseNote" placeholder="Catatan tambahan">
+        </div>
+
+        <div class="flex-gap-12-mt15">
+          <button class="btn-cancel flex-p14" onclick="closeModal('modalEditCapitalExpense')">Batal</button>
+          <button class="btn-confirm flex-2-p14 btn-red" onclick="saveEditCapitalExpense()">Simpan Perubahan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MODAL: Catat Pengeluaran (Operational Expense)
+  ═══════════════════════════════════════════════════════════════ -->
+  <div id="modalAddExpense" class="modal z-3000">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header" style="background: rgba(230, 0, 18, 0.2); border-color: var(--ps3-red);">
+        <div class="modal-title">➖ Catat Pengeluaran</div>
+        <button class="modal-close" onclick="closeModal('modalAddExpense')">×</button>
+      </div>
+
+      <div class="p-20">
+        <!-- Baris 1: Tipe Biaya & Sub-kategori -->
+        <div class="form-group">
+          <label>Tipe Biaya Pengeluaran <span class="text-red">*</span></label>
+          <select id="modalExpenseCategory" onchange="onModalExpenseCategoryChange()" class="input-ps3">
+            <option value="">-- Pilih Tipe --</option>
+            <option value="Listrik">⚡ Listrik</option>
+            <option value="Prive">💰 Prive</option>
+            <option value="Unit PS Baru">🎮 Unit PS Baru</option>
+            <option value="TV/Monitor Baru">📺 TV/Monitor Baru</option>
+            <option value="Servis/Perawatan">🔧 Servis/Perawatan</option>
+            <option value="Aksesoris">🎧 Aksesoris</option>
+            <option value="Custom">✏️ Custom (Input Manual)</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="modalExpenseSubCategoryGroup" style="display: none;">
+          <label>Sub-Kategori</label>
+          <select id="modalExpenseSubCategory" class="input-ps3">
+            <option value="">-- Pilih Sub --</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="modalExpenseCustomGroup" style="display: none;">
+          <label>Nama Pengeluaran Custom</label>
+          <input type="text" id="modalExpenseCustomName" placeholder="Contoh: Beli CD Game" class="input-ps3">
+        </div>
+
+        <!-- Baris 2: Jumlah -->
+        <div class="form-group">
+          <label>Jumlah (Rp) <span class="text-red">*</span></label>
+          <input type="number" id="modalExpenseAmount" placeholder="50000" class="input-ps3" min="0">
+        </div>
+
+        <!-- Baris 3: Metode Pembayaran -->
+        <div class="form-group">
+          <label>Metode Pembayaran <span class="text-red">*</span></label>
+          <select id="modalExpensePaymentMethod" class="input-ps3" onchange="updateModalExpenseBalancePreview()">
+            <option value="">-- Pilih Metode --</option>
+            <!-- Populated by JS -->
+          </select>
+          <div id="modalExpenseBalancePreview" style="font-size: 0.8rem; color: var(--ps3-chrome); margin-top: 4px;">
+            <!-- Balance preview populated by JS -->
+          </div>
+        </div>
+
+        <!-- Baris 4: Catatan -->
+        <div class="form-group">
+          <label>Catatan (opsional)</label>
+          <input type="text" id="modalExpenseNote" placeholder="Catatan tambahan..." class="input-ps3">
+        </div>
+
+        <div style="font-size: 0.75rem; color: var(--ps3-muted); margin: 10px 0; padding: 8px; background: rgba(192,192,192,0.1); border-radius: 6px;">
+          📅 Tanggal tercatat otomatis saat submit (WIB)
+        </div>
+
+        <div class="flex-gap-12-mt15">
+          <button class="btn-cancel flex-p14" onclick="closeModal('modalAddExpense')">Batal</button>
+          <button class="btn-confirm flex-2-p14 btn-red" onclick="addExpenseFromModal()">Catat Pengeluaran</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
        MODAL: Detail Item Inventori (Full Info + Maintenance + Usage)
   ═══════════════════════════════════════════════════════════════ -->
   <div id="modalItemDetail" class="modal z-3000">
@@ -2699,46 +2797,46 @@
 
       <div class="p-20">
         <!-- Item Info Card -->
-        <div id="itemDetailInfo" style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+        <div id="itemDetailInfo" style="background: var(--ps3-card); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 16px; margin-bottom: 16px;">
           <!-- Filled by JS -->
         </div>
 
         <!-- Tabs -->
-        <div style="display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 1px solid var(--ps3-border); padding-bottom: 10px;">
-          <button id="tabItemMaintenance" class="btn" onclick="switchItemTab('maintenance')" style="flex: 1; font-size: 0.7rem; padding: 8px;">🔧 Perawatan</button>
-          <button id="tabItemUsage" class="btn" onclick="switchItemTab('usage')" style="flex: 1; font-size: 0.7rem; padding: 8px; background: var(--ps3-surface);">📊 Penggunaan</button>
-          <button id="tabItemStation" class="btn" onclick="switchItemTab('station')" style="flex: 1; font-size: 0.7rem; padding: 8px; background: var(--ps3-surface);">🏢 Stasiun</button>
+        <div style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--ps3-border); padding-bottom: 12px;">
+          <button id="tabItemMaintenance" class="tab-btn active" onclick="switchItemTab('maintenance')" style="flex: 1; font-size: 0.8rem; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-red); color: #fff; font-weight: 600;">🔧 Perawatan</button>
+          <button id="tabItemUsage" class="tab-btn" onclick="switchItemTab('usage')" style="flex: 1; font-size: 0.8rem; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-surface); color: var(--ps3-muted);">📊 Penggunaan</button>
+          <button id="tabItemStation" class="tab-btn" onclick="switchItemTab('station')" style="flex: 1; font-size: 0.8rem; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: var(--ps3-surface); color: var(--ps3-muted);">🏢 Stasiun</button>
         </div>
 
         <!-- Tab: Maintenance -->
         <div id="itemTabMaintenance">
-          <div id="itemMaintenanceList" style="max-height: 200px; overflow-y: auto; margin-bottom: 12px;">
+          <div id="itemMaintenanceList" style="max-height: 220px; overflow-y: auto; margin-bottom: 12px; padding-right: 4px;">
             <p class="empty-state-p15">Belum ada riwayat perawatan</p>
           </div>
-          <button class="btn" onclick="openAddMaintenanceModal()" style="width: 100%; font-size: 0.8rem;">➕ Tambah Catatan Perawatan</button>
+          <button class="btn btn-sm" onclick="openAddMaintenanceModal()" style="width: 100%; border-radius: 8px; padding: 10px; font-size: 0.85rem;">➕ Tambah Catatan Perawatan</button>
         </div>
 
         <!-- Tab: Usage -->
         <div id="itemTabUsage" style="display: none;">
-          <div id="itemUsageStats" class="mb-12">
+          <div id="itemUsageStats" style="margin-bottom: 16px;">
             <!-- Usage stats filled by JS -->
           </div>
-          <div id="itemUsageChart" style="height: 150px; background: var(--ps3-surface); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--ps3-muted);">
-            📈 Grafik Penggunaan (30 hari)
+          <div style="height: 200px; background: var(--ps3-card); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px;">
+            <canvas id="itemUsageChartCanvas" style="max-height: 176px;"></canvas>
           </div>
         </div>
 
         <!-- Tab: Station -->
         <div id="itemTabStation" style="display: none;">
-          <div id="itemStationInfo">
+          <div id="itemStationInfo" style="margin-bottom: 12px;">
             <p class="empty-state-p15">Item tidak terpasang di stasiun manapun</p>
           </div>
-          <button class="btn" onclick="openAssignToStationModal()" style="width: 100%; font-size: 0.8rem; margin-top: 10px;">🔗 Pasang ke Stasiun</button>
+          <button class="btn btn-sm" onclick="openAssignToStationModal()" style="width: 100%; border-radius: 8px; padding: 10px; font-size: 0.85rem;">🔗 Pasang ke Stasiun</button>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button class="btn-cancel flex-p12" onclick="closeModal('modalItemDetail')">Tutup</button>
-          <button class="btn-confirm" onclick="openEditItemModal()" style="flex: 1; padding: 12px; border-radius: 10px; background: linear-gradient(135deg, #f5a623, #ff8c00);">✏️ Edit</button>
+        <div style="display: flex; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--ps3-border);">
+          <button class="btn-cancel flex-p12" onclick="closeModal('modalItemDetail')" style="border-radius: 8px; padding: 12px;">Tutup</button>
+          <button class="btn-confirm" onclick="openEditItemModal()" style="flex: 1; background: linear-gradient(135deg, var(--ps3-red), #ff4500); border-radius: 8px; padding: 12px; font-weight: 600;">✏️ Edit Item</button>
         </div>
       </div>
     </div>
@@ -2969,15 +3067,9 @@
           <!-- Filled by JS -->
         </div>
 
-        <!-- Items in Station -->
-        <div class="section-title" style="font-size: 0.85rem; margin-bottom: 10px;">📦 Item dalam Stasiun</div>
-        <div id="stationItemsList" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
-          <p class="empty-state-p15">Belum ada item</p>
-        </div>
-
-        <!-- Add Items by Category -->
+        <!-- Add Items by Category - With Paired Items Display -->
         <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 15px;">
-          <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 12px; color: var(--ps3-silver);">➕ Tambah Item per Kategori</div>
+          <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 12px; color: var(--ps3-silver);">📦 Item dalam Stasiun per Kategori</div>
 
           <!-- 🎮 Konsol (Wajib 1, Fixed) -->
           <div style="margin-bottom: 12px; padding: 10px; background: rgba(230,0,18,0.1); border-radius: 8px; border-left: 3px solid var(--ps3-red);">
@@ -2985,6 +3077,10 @@
               <span>🎮</span>
               <span>Konsol</span>
               <span class="text-red fs-65">(Wajib 1)</span>
+            </div>
+            <!-- Paired Items -->
+            <div id="konsolPairedItems" class="paired-items-container" style="margin-bottom: 8px;">
+              <!-- Filled by JS -->
             </div>
             <div id="konsolRows">
               <div class="category-row" data-category="konsol">
@@ -3001,6 +3097,10 @@
               <span>📺</span>
               <span>TV/Monitor</span>
               <span class="text-red fs-65">(Wajib 1)</span>
+            </div>
+            <!-- Paired Items -->
+            <div id="tvPairedItems" class="paired-items-container" style="margin-bottom: 8px;">
+              <!-- Filled by JS -->
             </div>
             <div id="tvRows">
               <div class="category-row" data-category="tv">
@@ -3021,6 +3121,10 @@
               </div>
               <button onclick="addCategoryRow('stik')" style="background: var(--ps3-green); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">+ Tambah</button>
             </div>
+            <!-- Paired Items -->
+            <div id="stikPairedItems" class="paired-items-container" style="margin-bottom: 8px;">
+              <!-- Filled by JS -->
+            </div>
             <div id="stikRows">
               <div class="category-row flex-gap-8-mb6" data-category="stik">
                 <select class="stik-select select-equip select-equip-flex">
@@ -3040,6 +3144,10 @@
               </div>
               <button onclick="addCategoryRow('charger')" style="background: var(--ps3-green); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">+ Tambah</button>
             </div>
+            <!-- Paired Items -->
+            <div id="chargerPairedItems" class="paired-items-container" style="margin-bottom: 8px;">
+              <!-- Filled by JS -->
+            </div>
             <div id="chargerRows">
               <div class="category-row flex-gap-8-mb6" data-category="charger">
                 <select class="charger-select select-equip select-equip-flex">
@@ -3056,6 +3164,10 @@
               <span>Kabel HDMI</span>
               <span class="text-red fs-65">(Wajib 1)</span>
             </div>
+            <!-- Paired Items -->
+            <div id="hdmiPairedItems" class="paired-items-container" style="margin-bottom: 8px;">
+              <!-- Filled by JS -->
+            </div>
             <div id="hdmiRows">
               <div class="category-row" data-category="hdmi">
                 <select class="hdmi-select select-equip select-equip-full">
@@ -3071,6 +3183,10 @@
               <span>⚡</span>
               <span>Kabel Power/Plug</span>
               <span class="text-red fs-65">(Wajib 1)</span>
+            </div>
+            <!-- Paired Items -->
+            <div id="plugPairedItems" class="paired-items-container" style="margin-bottom: 8px;">
+              <!-- Filled by JS -->
             </div>
             <div id="plugRows">
               <div class="category-row" data-category="plug">
@@ -3091,6 +3207,10 @@
               </div>
               <button onclick="addCategoryRow('lainnya')" style="background: var(--ps3-green); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">+ Tambah</button>
             </div>
+            <!-- Paired Items -->
+            <div id="lainnyaPairedItems" class="paired-items-container" style="margin-bottom: 8px;">
+              <!-- Filled by JS -->
+            </div>
             <div id="lainnyaRows">
               <!-- Empty by default -->
             </div>
@@ -3109,15 +3229,15 @@
           <div style="font-size: 0.7rem; color: var(--ps3-muted); margin-bottom: 10px;">
             Tukar item dengan stasiun lain (item sejenis akan bertukar)
           </div>
-          <div class="flex-gap-8">
-            <select id="swapItemId" class="select-equip select-equip-flex" onchange="onSwapItemSelect()">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+            <select id="swapItemId" class="select-equip" onchange="onSwapItemSelect()" style="flex: 1; min-width: 140px;">
               <option value="">Pilih item dari stasiun ini...</option>
             </select>
-            <select id="swapTargetStation" class="select-equip select-equip-flex" onchange="onSwapTargetSelect()">
+            <select id="swapTargetStation" class="select-equip" onchange="onSwapTargetSelect()" style="flex: 1; min-width: 140px;">
               <option value="">Ke stasiun...</option>
             </select>
           </div>
-          <button class="btn" onclick="previewQuickSwap()" style="width: 100%; margin-top: 10px; font-size: 0.75rem; padding: 10px; background: linear-gradient(135deg, #f5a623, #ff8c00);">🔄 Lanjutkan Swap</button>
+          <button class="btn" onclick="previewQuickSwap()" style="width: 100%; font-size: 0.75rem; padding: 10px; background: linear-gradient(135deg, #f5a623, #ff8c00);">🔄 Lanjutkan Swap</button>
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -3428,6 +3548,48 @@
     </div>
   </div>
 
-  <script src="app.js?v=20250415-46"></script>
+  <!-- Modal: Tambah Durasi -->
+  <div id="modalExtendDuration" class="modal z-3500">
+    <div class="modal-content" style="max-width: 480px; max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header" style="background: var(--ps3-green);">
+        <div class="modal-title">➕ Tambah Durasi</div>
+        <button class="modal-close" onclick="closeModal('modalExtendDuration')">×</button>
+      </div>
+
+      <div class="p-20">
+        <div id="extendDurationInfo" class="mb-15" style="background: var(--ps3-surface); padding: 12px; border-radius: 8px; font-size: 0.9rem;">
+          <!-- Info stasiun akan diisi di sini -->
+        </div>
+
+        <div class="form-group mb-15">
+          <label class="label-xs-muted mb-8">Durasi Tambahan (menit)</label>
+          <div class="quick-select-duration" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+            <button type="button" class="duration-chip" onclick="selectExtendDuration(30)">+30 menit</button>
+            <button type="button" class="duration-chip" onclick="selectExtendDuration(60)">+1 jam</button>
+            <button type="button" class="duration-chip" onclick="selectExtendDuration(90)">+1.5 jam</button>
+            <button type="button" class="duration-chip" onclick="selectExtendDuration(120)">+2 jam</button>
+          </div>
+          <input type="number" id="extendDurationInput" class="input" placeholder="Atau masukkan manual (menit)" min="1" max="480" oninput="validateExtendDuration()">
+        </div>
+
+        <div id="extendDurationValidation" class="mb-15" style="font-size: 0.85rem; display: none;">
+          <!-- Validasi jadwal akan ditampilkan di sini -->
+        </div>
+
+        <div id="extendDurationConflict" class="mb-15" style="background: rgba(230,0,18,0.1); border: 1px solid var(--ps3-red); padding: 12px; border-radius: 8px; font-size: 0.85rem; color: var(--ps3-red); display: none;">
+          <!-- Pesan konflik akan ditampilkan di sini -->
+        </div>
+
+        <div class="flex gap-12">
+          <button class="btn-cancel flex-p14" onclick="closeModal('modalExtendDuration')">Batal</button>
+          <button id="btnConfirmExtend" class="btn-confirm flex-p14" onclick="confirmExtendDuration()" disabled>
+            Tambah Durasi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=20250415-125"></script>
 </body>
 </html>

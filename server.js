@@ -488,6 +488,16 @@ if (db) {
   }
 }
 
+// For existing databases, try to add payment_method column to expenses
+if (db) {
+  try {
+    db.prepare(`ALTER TABLE expenses ADD COLUMN payment_method TEXT`).run();
+    console.log('[DB] Migration: Added payment_method column to expenses');
+  } catch (e) {
+    // Column might already exist, ignore error
+  }
+}
+
 // Runtime migration: Add unitId column to schedules table if not exists
 if (db) {
   try {
@@ -1209,61 +1219,322 @@ app.get('/api/db', requireAuth, (req, res) => {
   res.json(data);
 });
 
+// ═══════════════════════════════════════════════════════════════
+// FULL BACKUP ENDPOINT - Export ALL application data
+// ═══════════════════════════════════════════════════════════════
+app.get('/api/backup/full', requireAuth, (req, res) => {
+  try {
+    const data = {
+      exportMetadata: {
+        exportedAt: new Date().toISOString(),
+        timezone: 'WIB (UTC+7)',
+        type: 'full-backup',
+        version: '2.0',
+        description: 'Complete application data backup including all tables'
+      },
+      
+      // Core Settings
+      settings: getSettings(),
+      
+      // Business Data
+      units: db.prepare('SELECT * FROM units ORDER BY id').all(),
+      transactions: db.prepare('SELECT * FROM transactions ORDER BY created_at DESC').all(),
+      expenses: db.prepare('SELECT * FROM expenses ORDER BY created_at DESC').all(),
+      
+      // Schedules
+      schedules: db.prepare('SELECT * FROM schedules ORDER BY scheduledDate DESC, scheduledTime DESC').all(),
+      completedSchedules: db.prepare('SELECT * FROM completed_schedules ORDER BY completedAt DESC').all(),
+      deletedSchedules: db.prepare('SELECT * FROM deleted_schedules ORDER BY deletedAt DESC').all(),
+      
+      // Audit & History
+      editLogs: db.prepare('SELECT * FROM edit_logs ORDER BY editedAt DESC').all(),
+      deletionLogs: db.prepare('SELECT * FROM deletion_logs ORDER BY deletedAt DESC').all(),
+      
+      // ID Counters (for sequential ID generation)
+      idCounters: db.prepare('SELECT * FROM id_counters').all(),
+      
+      // Inventory System
+      inventoryItems: db.prepare('SELECT * FROM inventory_items ORDER BY id').all(),
+      inventoryPairings: db.prepare('SELECT * FROM inventory_pairings ORDER BY id').all(),
+      inventoryPairingItems: db.prepare('SELECT * FROM inventory_pairing_items ORDER BY id').all(),
+      inventoryPairingHistory: db.prepare('SELECT * FROM inventory_pairing_history ORDER BY change_date DESC').all(),
+      inventoryMaintenance: db.prepare('SELECT * FROM inventory_maintenance ORDER BY maintenance_date DESC').all(),
+      inventoryUsage: db.prepare('SELECT * FROM inventory_usage ORDER BY date DESC').all(),
+      inventoryDepreciation: db.prepare('SELECT * FROM inventory_depreciation ORDER BY depreciation_date DESC').all(),
+      unitPairings: db.prepare('SELECT * FROM unit_pairings').all(),
+      
+      // Capital/Financial
+      initialCapital: db.prepare('SELECT * FROM initial_capital ORDER BY created_at DESC').all(),
+      capitalExpenses: db.prepare('SELECT * FROM capital_expenses ORDER BY created_at DESC').all(),
+    };
+
+    res.json({ ok: true, data });
+  } catch (error) {
+    console.error('[Backup Error]', error);
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// FULL RESTORE ENDPOINT - Restore ALL application data
+// ═══════════════════════════════════════════════════════════════
+app.post('/api/restore/full', requireAuth, (req, res) => {
+  const { data } = req.body;
+  
+  if (!data || typeof data !== 'object') {
+    return res.status(400).json({ ok: false, error: 'Invalid backup data format' });
+  }
+
+  // Validate minimum required data
+  if (!data.settings || !Array.isArray(data.units) || !Array.isArray(data.transactions)) {
+    return res.status(400).json({ ok: false, error: 'Backup missing required data fields' });
+  }
+
+  try {
+    const counts = {};
+
+    db.transaction(() => {
+      // 1. Clear ALL existing data (except sessions for auth continuity)
+      const tablesToClear = [
+        'units', 'transactions', 'expenses',
+        'schedules', 'completed_schedules', 'deleted_schedules',
+        'edit_logs', 'deletion_logs', 'id_counters',
+        'inventory_items', 'inventory_pairings', 'inventory_pairing_items',
+        'inventory_pairing_history', 'inventory_maintenance', 'inventory_usage',
+        'inventory_depreciation', 'unit_pairings',
+        'initial_capital', 'capital_expenses'
+      ];
+      
+      tablesToClear.forEach(table => {
+        try {
+          db.prepare(`DELETE FROM ${table}`).run();
+        } catch (e) {
+          console.log(`[Restore] Note: Could not clear ${table}: ${e.message}`);
+        }
+      });
+
+      // 2. Restore Settings
+      if (data.settings && typeof data.settings === 'object') {
+        Object.entries(data.settings).forEach(([key, value]) => {
+          try {
+            updateSetting(key, value);
+          } catch (e) {
+            console.log(`[Restore] Note: Could not restore setting ${key}: ${e.message}`);
+          }
+        });
+        counts.settings = Object.keys(data.settings).length;
+      }
+
+      // 3. Restore Units
+      if (Array.isArray(data.units)) {
+        const insert = db.prepare('INSERT INTO units (id, name, active, startTime, customer, duration, note, linkedScheduleId, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        data.units.forEach(u => {
+          insert.run(u.id, u.name, u.active || 0, u.startTime || null, u.customer || null, u.duration || 0, u.note || null, u.linkedScheduleId || null, u.created_at || Date.now());
+        });
+        counts.units = data.units.length;
+      }
+
+      // 4. Restore Transactions
+      if (Array.isArray(data.transactions)) {
+        const insert = db.prepare('INSERT INTO transactions (id, unitId, unitName, customer, startTime, endTime, durationMin, paid, payment, note, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        data.transactions.forEach(t => {
+          insert.run(t.id, t.unitId, t.unitName, t.customer, t.startTime, t.endTime, t.durationMin, t.paid, t.payment, t.note, t.date, t.created_at || Date.now());
+        });
+        counts.transactions = data.transactions.length;
+      }
+
+      // 5. Restore Expenses
+      if (Array.isArray(data.expenses)) {
+        const insert = db.prepare('INSERT INTO expenses (id, item, category, amount, date, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        data.expenses.forEach(e => {
+          insert.run(e.id, e.item, e.category || null, e.amount, e.date, e.note || null, e.created_at || Date.now());
+        });
+        counts.expenses = data.expenses.length;
+      }
+
+      // 6. Restore Schedules
+      if (Array.isArray(data.schedules)) {
+        const insert = db.prepare('INSERT INTO schedules (id, scheduleId, customer, phone, unitId, unitName, scheduledDate, scheduledTime, scheduledEndDate, scheduledEndTime, duration, note, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        data.schedules.forEach(s => {
+          insert.run(s.id, s.scheduleId, s.customer, s.phone || null, s.unitId, s.unitName || null, s.scheduledDate, s.scheduledTime || null, s.scheduledEndDate || null, s.scheduledEndTime || null, s.duration || null, s.note || null, s.status || 'pending', s.created_at || Date.now());
+        });
+        counts.schedules = data.schedules.length;
+      }
+
+      // 7. Restore Completed Schedules
+      if (Array.isArray(data.completedSchedules)) {
+        const insert = db.prepare('INSERT INTO completed_schedules (id, scheduleId, scheduledDate, scheduledTime, duration, completedAt) VALUES (?, ?, ?, ?, ?, ?)');
+        data.completedSchedules.forEach(c => {
+          insert.run(c.id, c.scheduleId, c.scheduledDate, c.scheduledTime, c.duration, c.completedAt);
+        });
+        counts.completedSchedules = data.completedSchedules.length;
+      }
+
+      // 8. Restore Deleted Schedules
+      if (Array.isArray(data.deletedSchedules)) {
+        const insert = db.prepare('INSERT INTO deleted_schedules (id, scheduleId, scheduledDate, scheduledTime, duration, reason, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        data.deletedSchedules.forEach(d => {
+          insert.run(d.id, d.scheduleId, d.scheduledDate, d.scheduledTime, d.duration, d.reason, d.deletedAt);
+        });
+        counts.deletedSchedules = data.deletedSchedules.length;
+      }
+
+      // 9. Restore Edit Logs
+      if (Array.isArray(data.editLogs)) {
+        const insert = db.prepare('INSERT INTO edit_logs (id, transactionId, expenseId, scheduleId, fieldName, oldValue, newValue, editReason, editedAt, editedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        data.editLogs.forEach(l => {
+          insert.run(l.id || null, l.transactionId || null, l.expenseId || null, l.scheduleId || null, l.fieldName, l.oldValue || null, l.newValue || null, l.editReason || null, l.editedAt, l.editedBy || null);
+        });
+        counts.editLogs = data.editLogs.length;
+      }
+
+      // 10. Restore Deletion Logs
+      if (Array.isArray(data.deletionLogs)) {
+        const insert = db.prepare('INSERT INTO deletion_logs (id, recordType, recordId, recordData, deleteReason, deletedAt, deletedBy) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        data.deletionLogs.forEach(l => {
+          insert.run(l.id || null, l.recordType, l.recordId, l.recordData, l.deleteReason, l.deletedAt, l.deletedBy || null);
+        });
+        counts.deletionLogs = data.deletionLogs.length;
+      }
+
+      // 11. Restore ID Counters
+      if (Array.isArray(data.idCounters)) {
+        const insert = db.prepare('INSERT INTO id_counters (prefix, last_number) VALUES (?, ?)');
+        data.idCounters.forEach(c => {
+          insert.run(c.prefix, c.last_number);
+        });
+        counts.idCounters = data.idCounters.length;
+      }
+
+      // 12. Restore Inventory Items
+      if (Array.isArray(data.inventoryItems)) {
+        const insert = db.prepare('INSERT INTO inventory_items (id, name, category, subcategory, purchase_date, purchase_cost, vendor, warranty_info, condition, current_location, notes, photo_url, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        data.inventoryItems.forEach(i => {
+          insert.run(i.id, i.name, i.category, i.subcategory || null, i.purchase_date || null, i.purchase_cost || 0, i.vendor || null, i.warranty_info || null, i.condition || 'baik', i.current_location || null, i.notes || null, i.photo_url || null, i.is_active !== undefined ? i.is_active : 1, i.created_at || Date.now(), i.updated_at || Date.now());
+        });
+        counts.inventoryItems = data.inventoryItems.length;
+      }
+
+      // 13. Restore Inventory Pairings
+      if (Array.isArray(data.inventoryPairings)) {
+        const insert = db.prepare('INSERT INTO inventory_pairings (id, name, description, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)');
+        data.inventoryPairings.forEach(p => {
+          insert.run(p.id, p.name || null, p.description || null, p.is_active !== undefined ? p.is_active : 1, p.created_at || Date.now(), p.updated_at || Date.now());
+        });
+        counts.inventoryPairings = data.inventoryPairings.length;
+      }
+
+      // 14. Restore Inventory Pairing Items
+      if (Array.isArray(data.inventoryPairingItems)) {
+        const insert = db.prepare('INSERT INTO inventory_pairing_items (id, pairing_id, item_id, role, added_date, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        data.inventoryPairingItems.forEach(p => {
+          insert.run(p.id || null, p.pairing_id, p.item_id, p.role, p.added_date || null, p.notes || null, p.created_at || Date.now());
+        });
+        counts.inventoryPairingItems = data.inventoryPairingItems.length;
+      }
+
+      // 15. Restore Inventory Pairing History
+      if (Array.isArray(data.inventoryPairingHistory)) {
+        const insert = db.prepare('INSERT INTO inventory_pairing_history (id, item_id, old_pairing_id, new_pairing_id, change_date, reason, changed_by) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        data.inventoryPairingHistory.forEach(h => {
+          insert.run(h.id || null, h.item_id, h.old_pairing_id || null, h.new_pairing_id || null, h.change_date || Date.now(), h.reason || null, h.changed_by || null);
+        });
+        counts.inventoryPairingHistory = data.inventoryPairingHistory.length;
+      }
+
+      // 16. Restore Inventory Maintenance
+      if (Array.isArray(data.inventoryMaintenance)) {
+        const insert = db.prepare('INSERT INTO inventory_maintenance (id, item_id, maintenance_date, cost, description, vendor, next_scheduled_maintenance, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        data.inventoryMaintenance.forEach(m => {
+          insert.run(m.id || null, m.item_id, m.maintenance_date || null, m.cost || 0, m.description || null, m.vendor || null, m.next_scheduled_maintenance || null, m.created_at || Date.now());
+        });
+        counts.inventoryMaintenance = data.inventoryMaintenance.length;
+      }
+
+      // 17. Restore Inventory Usage
+      if (Array.isArray(data.inventoryUsage)) {
+        const insert = db.prepare('INSERT INTO inventory_usage (id, item_id, date, hours_used, source, pairing_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        data.inventoryUsage.forEach(u => {
+          insert.run(u.id || null, u.item_id, u.date, u.hours_used || 0, u.source || 'auto', u.pairing_id || null, u.created_at || Date.now());
+        });
+        counts.inventoryUsage = data.inventoryUsage.length;
+      }
+
+      // 18. Restore Inventory Depreciation
+      if (Array.isArray(data.inventoryDepreciation)) {
+        const insert = db.prepare('INSERT INTO inventory_depreciation (id, item_id, depreciation_date, book_value, depreciation_method, created_at) VALUES (?, ?, ?, ?, ?, ?)');
+        data.inventoryDepreciation.forEach(d => {
+          insert.run(d.id || null, d.item_id, d.depreciation_date || null, d.book_value || 0, d.depreciation_method || 'straight_line', d.created_at || Date.now());
+        });
+        counts.inventoryDepreciation = data.inventoryDepreciation.length;
+      }
+
+      // 19. Restore Unit Pairings
+      if (Array.isArray(data.unitPairings)) {
+        const insert = db.prepare('INSERT INTO unit_pairings (unit_id, pairing_id, assigned_date, is_active, created_at) VALUES (?, ?, ?, ?, ?)');
+        data.unitPairings.forEach(up => {
+          insert.run(up.unit_id, up.pairing_id, up.assigned_date || null, up.is_active !== undefined ? up.is_active : 1, up.created_at || Date.now());
+        });
+        counts.unitPairings = data.unitPairings.length;
+      }
+
+      // 20. Restore Initial Capital
+      if (Array.isArray(data.initialCapital)) {
+        const insert = db.prepare('INSERT INTO initial_capital (id, amount, description, date, source, created_at) VALUES (?, ?, ?, ?, ?, ?)');
+        data.initialCapital.forEach(c => {
+          insert.run(c.id || null, c.amount, c.description || null, c.date || null, c.source || null, c.created_at || Date.now());
+        });
+        counts.initialCapital = data.initialCapital.length;
+      }
+
+      // 21. Restore Capital Expenses
+      if (Array.isArray(data.capitalExpenses)) {
+        const insert = db.prepare('INSERT INTO capital_expenses (id, item, category, amount, date, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        data.capitalExpenses.forEach(e => {
+          insert.run(e.id || null, e.item, e.category || null, e.amount, e.date || null, e.note || null, e.created_at || Date.now());
+        });
+        counts.capitalExpenses = data.capitalExpenses.length;
+      }
+    })();
+
+    res.json({ 
+      ok: true, 
+      message: 'Restore completed successfully',
+      counts,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[Restore Error]', error);
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// Legacy endpoint - keep for backward compatibility
 app.put('/api/db', requireAuth, (req, res) => {
   const { settings: newSettings, units: newUnits, transactions: newTx, expenses: newExp, schedules: newSchedules, completedSchedules: newCompleted, deletedSchedules: newDeleted } = req.body;
   
-  // Validate
   if (!newSettings || !Array.isArray(newUnits) || !Array.isArray(newTx)) {
     return res.status(400).json({ error: 'Invalid data format' });
   }
   
-  // Transaction for atomic update
   const insertUnits = db.prepare('INSERT OR REPLACE INTO units (id, name, active, startTime, customer, duration, note) VALUES (?, ?, ?, ?, ?, ?, ?)');
   const insertTx = db.prepare('INSERT OR REPLACE INTO transactions (id, unitId, unitName, customer, startTime, endTime, durationMin, paid, payment, note, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
   const insertExp = db.prepare('INSERT OR REPLACE INTO expenses (id, item, amount, date, note) VALUES (?, ?, ?, ?, ?)');
-  const insertSchedule = db.prepare('INSERT OR REPLACE INTO schedules (id, unitId, customerName, phone, scheduledDate, scheduledTime, duration, scheduledEndDate, scheduledEndTime, note, active, createdAt, editCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-  const insertCompleted = db.prepare('INSERT OR REPLACE INTO completed_schedules (id, scheduleId, scheduledDate, scheduledTime, duration, completedAt) VALUES (?, ?, ?, ?, ?, ?)');
-  const insertDeleted = db.prepare('INSERT OR REPLACE INTO deleted_schedules (id, scheduleId, scheduledDate, scheduledTime, duration, reason, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?)');
   
   db.transaction(() => {
-    // Clear and re-insert
     db.prepare('DELETE FROM units').run();
     db.prepare('DELETE FROM transactions').run();
     db.prepare('DELETE FROM expenses').run();
-    db.prepare('DELETE FROM schedules').run();
-    db.prepare('DELETE FROM completed_schedules').run();
-    db.prepare('DELETE FROM deleted_schedules').run();
     
     newUnits.forEach(u => insertUnits.run(u.id, u.name, u.active ? 1 : 0, u.startTime, u.customer, u.duration, u.note));
     newTx.forEach(t => insertTx.run(t.id, t.unitId, t.unitName, t.customer, t.startTime, t.endTime, t.durationMin, t.paid, t.payment, t.note, t.date));
     (newExp || []).forEach(e => insertExp.run(e.id, e.item, e.amount, e.date, e.note));
     
-    // Restore schedules data if present in backup
-    if (newSchedules && Array.isArray(newSchedules)) {
-      newSchedules.forEach(s => insertSchedule.run(s.id, s.unitId, s.customer || s.customerName, s.phone, s.scheduledDate, s.scheduledTime, s.duration, s.scheduledEndDate, s.scheduledEndTime, s.note, s.active ? 1 : 0, s.createdAt, s.editCount || 0));
-    }
-    if (newCompleted && Array.isArray(newCompleted)) {
-      newCompleted.forEach(c => insertCompleted.run(c.id, c.scheduleId, c.scheduledDate, c.scheduledTime, c.duration, c.completedAt));
-    }
-    if (newDeleted && Array.isArray(newDeleted)) {
-      newDeleted.forEach(d => insertDeleted.run(d.id, d.scheduleId, d.scheduledDate, d.scheduledTime, d.duration, d.reason, d.deletedAt));
-    }
-    
-    // Update settings
     Object.entries(newSettings).forEach(([key, value]) => updateSetting(key, value));
   })();
   
-  res.json({ 
-    ok: true, 
-    counts: {
-      units: newUnits.length,
-      transactions: newTx.length,
-      expenses: (newExp || []).length,
-      schedules: (newSchedules || []).length,
-      completedSchedules: (newCompleted || []).length,
-      deletedSchedules: (newDeleted || []).length
-    }
-  });
+  res.json({ ok: true, counts: { units: newUnits.length, transactions: newTx.length, expenses: (newExp || []).length }});
 });
 
 // ─── SETTINGS ────────────────────────────────────────────────
@@ -1526,6 +1797,120 @@ app.post('/api/units/:id/stop', requireAuth, (req, res) => {
   res.json({ ok: true, tx });
 });
 
+// Extend duration for active unit
+app.post('/api/units/:id/extend', requireAuth, (req, res) => {
+  const id = parseInt(req.params.id);
+  const { additionalMinutes } = req.body;
+  
+  if (!additionalMinutes || additionalMinutes <= 0) {
+    return res.status(400).json({ error: 'Durasi tambahan tidak valid' });
+  }
+  
+  const unit = db.prepare('SELECT * FROM units WHERE id = ?').get(id);
+  if (!unit) return res.status(404).json({ error: 'Unit tidak ditemukan' });
+  if (!unit.active) return res.status(400).json({ error: 'Unit tidak aktif' });
+  
+  const currentDuration = unit.duration || 0;
+  const currentEndTime = currentDuration > 0 ? unit.startTime + (currentDuration * 60000) : Date.now();
+  const newEndTime = currentEndTime + (additionalMinutes * 60000);
+  
+  // Check for schedule conflicts
+  const newEndDate = new Date(newEndTime);
+  
+  // Find pending schedules for this unit
+  const conflictingSchedules = db.prepare(`
+    SELECT * FROM schedules 
+    WHERE unitId = ? 
+    AND status = 'pending'
+    AND datetime(scheduledDate || 'T' || COALESCE(scheduledTime, '00:00')) < ?
+    ORDER BY scheduledDate || 'T' || COALESCE(scheduledTime, '00:00') ASC
+  `).all(id, newEndDate.toISOString());
+  
+  if (conflictingSchedules.length > 0) {
+    const conflict = conflictingSchedules[0];
+    return res.status(409).json({ 
+      error: 'Bertabrakan dengan jadwal booking',
+      conflict: {
+        scheduleId: conflict.scheduleId || conflict.id,
+        customer: conflict.customer,
+        date: conflict.scheduledDate,
+        time: conflict.scheduledTime
+      },
+      maxExtendMinutes: Math.max(0, Math.floor(
+        (new Date(conflict.scheduledDate + 'T' + (conflict.scheduledTime || '00:00')).getTime() - currentEndTime - (5 * 60000)) / 60000
+      ))
+    });
+  }
+  
+  // Update unit duration
+  const newDuration = currentDuration + additionalMinutes;
+  db.prepare('UPDATE units SET duration = ? WHERE id = ?').run(newDuration, id);
+  
+  res.json({ 
+    ok: true, 
+    message: `Durasi bertambah ${additionalMinutes} menit`,
+    newDuration,
+    newEndTime: newEndTime
+  });
+});
+
+// Extend duration for active station (inventory_pairings)
+app.post('/api/stations/:id/extend', requireAuth, (req, res) => {
+  const id = req.params.id;
+  const { additionalMinutes } = req.body;
+  
+  if (!additionalMinutes || additionalMinutes <= 0) {
+    return res.status(400).json({ error: 'Durasi tambahan tidak valid' });
+  }
+  
+  const station = db.prepare('SELECT * FROM inventory_pairings WHERE id = ?').get(id);
+  if (!station) return res.status(404).json({ error: 'Stasiun tidak ditemukan' });
+  if (!station.active) return res.status(400).json({ error: 'Stasiun tidak aktif' });
+  
+  const currentDuration = station.duration || 0;
+  const currentEndTime = currentDuration > 0 ? station.start_time + (currentDuration * 60000) : Date.now();
+  const newEndTime = currentEndTime + (additionalMinutes * 60000);
+  
+  // Check for schedule conflicts
+  const newEndDate = new Date(newEndTime);
+  
+  // Find pending schedules for this station
+  const conflictingSchedules = db.prepare(`
+    SELECT * FROM schedules 
+    WHERE unitId = ? 
+    AND status = 'pending'
+    AND datetime(scheduledDate || 'T' || COALESCE(scheduledTime, '00:00')) < ?
+    ORDER BY scheduledDate || 'T' || COALESCE(scheduledTime, '00:00') ASC
+  `).all(id, newEndDate.toISOString());
+  
+  if (conflictingSchedules.length > 0) {
+    const conflict = conflictingSchedules[0];
+    return res.status(409).json({ 
+      error: 'Bertabrakan dengan jadwal booking',
+      conflict: {
+        scheduleId: conflict.scheduleId || conflict.id,
+        customer: conflict.customer,
+        date: conflict.scheduledDate,
+        time: conflict.scheduledTime
+      },
+      maxExtendMinutes: Math.max(0, Math.floor(
+        (new Date(conflict.scheduledDate + 'T' + (conflict.scheduledTime || '00:00')).getTime() - currentEndTime - (5 * 60000)) / 60000
+      ))
+    });
+  }
+  
+  // Update station duration
+  const newDuration = currentDuration + additionalMinutes;
+  db.prepare('UPDATE inventory_pairings SET duration = ? WHERE id = ?').run(newDuration, id);
+  
+  res.json({ 
+    ok: true, 
+    message: `Durasi bertambah ${additionalMinutes} menit`,
+    newDuration,
+    newEndTime: newEndTime
+  });
+});
+
 // ═══════════════════════════════════════════════════════════════
 // STATION OPERATIONS (Dashboard Integration)
 // These endpoints mirror the unit operations but work with inventory_pairings
@@ -1741,18 +2126,27 @@ app.post('/api/stations/:id/stop', requireAuth, (req, res) => {
 
   // ═══ INVENTORY USAGE TRACKING ═══
   const hoursUsed = elMin / 60;
+  console.log(`[UsageTracking] Station ${id} (${station.name}) stopped. Duration: ${elMin}min (${hoursUsed.toFixed(2)} hours)`);
+  
   if (hoursUsed > 0) {
     try {
       // Get all items in this pairing
       const pairingItems = db.prepare(`
-        SELECT pi.item_id, pi.role
+        SELECT pi.item_id, pi.role, i.name as item_name
         FROM inventory_pairing_items pi
         JOIN inventory_items i ON pi.item_id = i.id
         WHERE pi.pairing_id = ? AND i.is_active = 1
       `).all(id);
+      
+      console.log(`[UsageTracking] Found ${pairingItems.length} active items in station ${id}:`);
+      pairingItems.forEach(item => {
+        console.log(`  - ${item.item_name} (${item.item_id}) [${item.role}]`);
+      });
 
       // Record usage for each item
       const today = getWIBDateISO();
+      let trackedCount = 0;
+      
       pairingItems.forEach(item => {
         const existing = db.prepare(`
           SELECT id, hours_used FROM inventory_usage 
@@ -1761,16 +2155,21 @@ app.post('/api/stations/:id/stop', requireAuth, (req, res) => {
 
         if (existing) {
           db.prepare(`UPDATE inventory_usage SET hours_used = hours_used + ? WHERE id = ?`).run(hoursUsed, existing.id);
+          console.log(`[UsageTracking] Updated ${item.item_name}: ${existing.hours_used.toFixed(2)} + ${hoursUsed.toFixed(2)} = ${(existing.hours_used + hoursUsed).toFixed(2)} hours`);
         } else {
           db.prepare(`INSERT INTO inventory_usage (item_id, date, hours_used, source, pairing_id) VALUES (?, ?, ?, 'auto', ?)`)
             .run(item.item_id, today, hoursUsed, id);
+          console.log(`[UsageTracking] Created new record for ${item.item_name}: ${hoursUsed.toFixed(2)} hours`);
         }
+        trackedCount++;
       });
 
-      console.log(`[Inventory] Tracked ${hoursUsed.toFixed(2)} hours for ${pairingItems.length} items in station ${id}`);
+      console.log(`[UsageTracking] ✓ Successfully tracked ${trackedCount} items for station ${id}`);
     } catch (e) {
-      console.error('[Inventory] Error tracking usage:', e.message);
+      console.error('[UsageTracking] ✗ Error tracking usage:', e.message);
     }
+  } else {
+    console.log(`[UsageTracking] Skipped: hoursUsed is 0 or negative`);
   }
 
   res.json({ ok: true, tx });
@@ -1792,6 +2191,15 @@ app.post('/api/schedules/:id/start-unit', requireAuth, (req, res) => {
   
   // Get station name
   const station = db.prepare('SELECT * FROM inventory_pairings WHERE id = ?').get(unitId);
+  
+  // CHECK: Validate station is NOT already active
+  if (station && station.active) {
+    return res.status(409).json({ 
+      error: 'Stasiun sedang aktif', 
+      message: `Stasiun ${station.name} sedang digunakan. Selesaikan session yang berjalan terlebih dahulu.` 
+    });
+  }
+  
   const unitName = station ? station.name : schedule.unitName || unitId;
   
   // Prepare note with [TX_ID] prefix (e.g., [PSJ00018])
@@ -2458,8 +2866,8 @@ app.post('/api/expenses', requireAuth, (req, res) => {
   // Auto-generate date in WIB timezone (UTC+7) - no user input needed
   const wibDate = new Date(Date.now() + (7 * 60 * 60 * 1000)).toISOString().split('T')[0];
   const exp = { id: generateExpenseId(), ...req.body, date: wibDate };
-  db.prepare('INSERT INTO expenses (id, item, category, amount, date, note) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(exp.id, exp.item, exp.category || '', exp.amount, exp.date, exp.note);
+  db.prepare('INSERT INTO expenses (id, item, category, amount, date, note, payment_method) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run(exp.id, exp.item, exp.category || '', exp.amount, exp.date, exp.note, exp.payment_method || '');
   res.json({ ok: true, exp });
 });
 
@@ -3089,6 +3497,42 @@ app.delete('/api/capital/expenses/:id', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── EDIT CAPITAL ───────────────────────────────────────────────
+app.put('/api/capital/:id', requireAuth, (req, res) => {
+  try {
+    const { amount, description, date, source } = req.body;
+    const stmt = db.prepare(`
+      UPDATE initial_capital 
+      SET amount = ?, description = ?, date = ?, source = ?
+      WHERE id = ?
+    `);
+    stmt.run(amount, description || '', date || getWIBDateISO(), source || '', req.params.id);
+    
+    const capital = db.prepare('SELECT * FROM initial_capital WHERE id = ?').get(req.params.id);
+    res.json({ ok: true, capital });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
+// ─── EDIT CAPITAL EXPENSE ───────────────────────────────────────
+app.put('/api/capital/expenses/:id', requireAuth, (req, res) => {
+  try {
+    const { item, category, amount, date, note } = req.body;
+    const stmt = db.prepare(`
+      UPDATE capital_expenses 
+      SET item = ?, category = ?, amount = ?, date = ?, note = ?
+      WHERE id = ?
+    `);
+    stmt.run(item, category || '', amount, date || getWIBDateISO(), note || '', req.params.id);
+    
+    const expense = db.prepare('SELECT * FROM capital_expenses WHERE id = ?').get(req.params.id);
+    res.json({ ok: true, expense });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
 // ─── ROI STATS ──────────────────────────────────────────────────
 app.get('/api/stats/roi', requireAuth, (req, res) => {
   try {
@@ -3154,6 +3598,96 @@ app.get('/api/stats/roi', requireAuth, (req, res) => {
     });
   } catch (err) {
     console.error('ROI stats error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── POTENTIAL REVENUE CHART ─────────────────────────────────────
+app.get('/api/stats/revenue-projection', requireAuth, (req, res) => {
+  try {
+    // Get capital data
+    const capital = db.prepare('SELECT SUM(amount) as total FROM initial_capital').get();
+    const capitalExpenses = db.prepare('SELECT SUM(amount) as total FROM capital_expenses').get();
+    
+    const totalCapital = capital?.total || 0;
+    const totalSpent = capitalExpenses?.total || 0;
+    const remaining = totalCapital - totalSpent;
+    
+    // Get daily revenue for the last 30 days
+    const dailyRevenue = db.prepare(`
+      SELECT 
+        date(endTime) as day,
+        SUM(paid) as revenue
+      FROM transactions
+      WHERE endTime IS NOT NULL
+      GROUP BY date(endTime)
+      ORDER BY day DESC
+      LIMIT 30
+    `).all();
+    
+    // Calculate average daily revenue
+    const revenues = dailyRevenue.map(d => d.revenue).filter(r => r > 0);
+    const avgDailyRevenue = revenues.length > 0 
+      ? revenues.reduce((a, b) => a + b, 0) / revenues.length 
+      : 0;
+    
+    // Generate projection for next 180 days (6 months)
+    const today = new Date();
+    const projections = [];
+    let cumulativeRevenue = 0;
+    
+    // Calculate BEP day
+    const bepDays = avgDailyRevenue > 0 ? Math.ceil(totalSpent / avgDailyRevenue) : 0;
+    
+    for (let i = 1; i <= 180; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+      
+      cumulativeRevenue += avgDailyRevenue;
+      const netPosition = cumulativeRevenue - totalSpent;
+      
+      projections.push({
+        day: i,
+        date: date.toISOString().split('T')[0],
+        projectedRevenue: Math.round(cumulativeRevenue),
+        investment: totalSpent,
+        netPosition: Math.round(netPosition),
+        isBreakEven: i === bepDays,
+        isProfit: netPosition > 0
+      });
+    }
+    
+    // Historical data (last 30 days)
+    const historical = dailyRevenue.reverse().map((d, idx) => ({
+      day: -dailyRevenue.length + idx + 1,
+      date: d.day,
+      actualRevenue: d.revenue,
+      cumulativeRevenue: 0 // Will be calculated
+    }));
+    
+    // Calculate cumulative for historical
+    let histCumulative = 0;
+    for (let i = 0; i < historical.length; i++) {
+      histCumulative += historical[i].actualRevenue;
+      historical[i].cumulativeRevenue = histCumulative;
+    }
+    
+    res.json({
+      ok: true,
+      summary: {
+        totalCapital,
+        totalSpent,
+        remaining,
+        avgDailyRevenue: Math.round(avgDailyRevenue),
+        breakEvenDays: bepDays,
+        projected6MonthRevenue: Math.round(avgDailyRevenue * 180),
+        projected6MonthProfit: Math.round((avgDailyRevenue * 180) - totalSpent)
+      },
+      historical,
+      projections
+    });
+  } catch (err) {
+    console.error('Revenue projection error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -3390,10 +3924,17 @@ app.put('/api/inventory/:id', requireAuth, (req, res) => {
   res.json({ ok: true, message: 'Item updated successfully' });
 });
 
-// Delete inventory item (soft delete)
+// Delete inventory item (soft delete) - also unpair from any station
 app.delete('/api/inventory/:id', requireAuth, (req, res) => {
-  db.prepare('UPDATE inventory_items SET is_active = 0 WHERE id = ?').run(req.params.id);
-  res.json({ ok: true, message: 'Item deleted successfully' });
+  const itemId = req.params.id;
+  
+  // First, remove pairing from any station
+  db.prepare('DELETE FROM inventory_pairing_items WHERE item_id = ?').run(itemId);
+  
+  // Then soft delete the item
+  db.prepare('UPDATE inventory_items SET is_active = 0 WHERE id = ?').run(itemId);
+  
+  res.json({ ok: true, message: 'Item deleted and unpaired from station' });
 });
 
 // Add maintenance record
@@ -3893,35 +4434,139 @@ app.get('/api/inventory-analytics', requireAuth, (req, res) => {
     FROM inventory_items WHERE is_active = 1
     GROUP BY category
   `).all();
-  
-  // Top performers (pairings with most usage)
+
+  // Item-level usage data with current pairing info
+  const itemUsageData = db.prepare(`
+    SELECT
+      i.id,
+      i.name,
+      i.category,
+      i.condition,
+      i.purchase_date,
+      i.purchase_cost,
+      COALESCE(SUM(u.hours_used), 0) as total_usage_hours,
+      COUNT(DISTINCT u.date) as usage_days,
+      MAX(u.date) as last_usage_date,
+      (SELECT p.name FROM inventory_pairings p
+       JOIN inventory_pairing_items pi2 ON p.id = pi2.pairing_id
+       WHERE pi2.item_id = i.id LIMIT 1) as current_station,
+      (SELECT p.id FROM inventory_pairings p
+       JOIN inventory_pairing_items pi2 ON p.id = pi2.pairing_id
+       WHERE pi2.item_id = i.id LIMIT 1) as current_station_id,
+      (SELECT SUM(cost) FROM inventory_maintenance WHERE item_id = i.id) as total_maintenance_cost,
+      (SELECT COUNT(*) FROM inventory_maintenance WHERE item_id = i.id) as maintenance_count
+    FROM inventory_items i
+    LEFT JOIN inventory_usage u ON i.id = u.item_id
+    WHERE i.is_active = 1
+    GROUP BY i.id
+    ORDER BY total_usage_hours DESC
+  `).all();
+
+  // Calculate usage stats (last 30 days)
+  const usageStats30d = db.prepare(`
+    SELECT
+      COALESCE(SUM(hours_used), 0) as total_hours,
+      COUNT(DISTINCT item_id) as active_items,
+      COUNT(DISTINCT date) as active_days
+    FROM inventory_usage
+    WHERE date >= date('now', '-30 days')
+  `).get();
+
+  // Usage by category (last 30 days)
+  const usageByCategory = db.prepare(`
+    SELECT
+      i.category,
+      COALESCE(SUM(u.hours_used), 0) as total_hours,
+      COUNT(DISTINCT i.id) as item_count
+    FROM inventory_items i
+    LEFT JOIN inventory_usage u ON i.id = u.item_id AND u.date >= date('now', '-30 days')
+    WHERE i.is_active = 1
+    GROUP BY i.category
+    ORDER BY total_hours DESC
+  `).all();
+
+  // Top performers (items with most usage)
   const topPerformers = db.prepare(`
-    SELECT p.id, p.name, COALESCE(SUM(u.hours_used), 0) as total_hours
+    SELECT
+      i.id,
+      i.name,
+      i.category,
+      COALESCE(SUM(u.hours_used), 0) as total_hours,
+      (SELECT p.name FROM inventory_pairings p
+       JOIN inventory_pairing_items pi2 ON p.id = pi2.pairing_id
+       WHERE pi2.item_id = i.id LIMIT 1) as station_name
+    FROM inventory_items i
+    LEFT JOIN inventory_usage u ON i.id = u.item_id
+    WHERE i.is_active = 1
+    GROUP BY i.id
+    ORDER BY total_hours DESC
+    LIMIT 10
+  `).all();
+
+  // Underutilized items (items with < 10 hours total usage)
+  const underutilizedItems = db.prepare(`
+    SELECT
+      i.id,
+      i.name,
+      i.category,
+      i.purchase_cost,
+      COALESCE(SUM(u.hours_used), 0) as total_hours,
+      i.purchase_date,
+      (SELECT p.name FROM inventory_pairings p
+       JOIN inventory_pairing_items pi2 ON p.id = pi2.pairing_id
+       WHERE pi2.item_id = i.id LIMIT 1) as station_name
+    FROM inventory_items i
+    LEFT JOIN inventory_usage u ON i.id = u.item_id
+    WHERE i.is_active = 1
+    GROUP BY i.id
+    HAVING total_hours < 10
+    ORDER BY total_hours ASC
+    LIMIT 10
+  `).all();
+
+  // Daily usage trend (last 30 days)
+  const dailyUsageTrend = db.prepare(`
+    SELECT
+      date,
+      COALESCE(SUM(hours_used), 0) as total_hours,
+      COUNT(DISTINCT item_id) as items_used
+    FROM inventory_usage
+    WHERE date >= date('now', '-30 days')
+    GROUP BY date
+    ORDER BY date ASC
+  `).all();
+
+  // Station utilization stats
+  const stationUtilization = db.prepare(`
+    SELECT
+      p.id,
+      p.name,
+      COUNT(DISTINCT pi.item_id) as item_count,
+      COALESCE(SUM(u.hours_used), 0) as total_usage_hours
     FROM inventory_pairings p
     LEFT JOIN inventory_pairing_items pi ON p.id = pi.pairing_id
     LEFT JOIN inventory_usage u ON pi.item_id = u.item_id AND u.date >= date('now', '-30 days')
-    WHERE pi.role = 'konsol'
+    WHERE p.is_active = 1
     GROUP BY p.id
-    ORDER BY total_hours DESC
-    LIMIT 5
+    ORDER BY total_usage_hours DESC
   `).all();
-  
+
   // Need attention (items in bad condition or with upcoming maintenance)
   const needAttention = db.prepare(`
-    SELECT i.*, 
+    SELECT i.*,
       (SELECT MAX(next_scheduled_maintenance) FROM inventory_maintenance WHERE item_id = i.id) as next_maintenance
     FROM inventory_items i
     WHERE i.condition IN ('rusak', 'perbaikan', 'rusak_total')
     OR i.id IN (
-      SELECT item_id FROM inventory_maintenance 
+      SELECT item_id FROM inventory_maintenance
       WHERE next_scheduled_maintenance <= date('now', '+7 days')
     )
     ORDER BY i.condition DESC
   `).all();
-  
+
   // Recent maintenance costs
   const maintenanceStats = db.prepare(`
-    SELECT 
+    SELECT
       COALESCE(SUM(cost), 0) as total_cost,
       COUNT(*) as count,
       strftime('%Y-%m', maintenance_date) as month
@@ -3930,10 +4575,16 @@ app.get('/api/inventory-analytics', requireAuth, (req, res) => {
     GROUP BY month
     ORDER BY month DESC
   `).all();
-  
+
   res.json({
     assets_by_category: assetsByCategory,
+    item_usage_data: itemUsageData,
+    usage_stats_30d: usageStats30d,
+    usage_by_category: usageByCategory,
     top_performers: topPerformers,
+    underutilized_items: underutilizedItems,
+    daily_usage_trend: dailyUsageTrend,
+    station_utilization: stationUtilization,
     need_attention: needAttention,
     maintenance_stats: maintenanceStats,
     total_items: db.prepare('SELECT COUNT(*) as c FROM inventory_items WHERE is_active = 1').get().c,
@@ -3958,6 +4609,114 @@ app.post('/api/units/:unit_id/pairing', requireAuth, (req, res) => {
     .run(req.params.unit_id, pairing_id);
   
   res.json({ ok: true, message: 'Pairing linked to unit' });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// INVENTORY TRACKING VERIFICATION ENDPOINT
+// ═══════════════════════════════════════════════════════════════
+app.get('/api/inventory/verify-tracking', requireAuth, (req, res) => {
+  try {
+    const today = getWIBDateISO();
+    
+    // Get all stations with their items and today's usage
+    const stations = db.prepare(`
+      SELECT 
+        p.id as station_id,
+        p.name as station_name,
+        p.active,
+        i.id as item_id,
+        i.name as item_name,
+        i.category,
+        pi.role,
+        COALESCE(u.hours_used, 0) as today_hours,
+        COALESCE((SELECT SUM(hours_used) FROM inventory_usage WHERE item_id = i.id), 0) as total_hours
+      FROM inventory_pairings p
+      LEFT JOIN inventory_pairing_items pi ON p.id = pi.pairing_id
+      LEFT JOIN inventory_items i ON pi.item_id = i.id AND i.is_active = 1
+      LEFT JOIN inventory_usage u ON i.id = u.item_id AND u.date = ?
+      ORDER BY p.name, i.category
+    `).all(today);
+
+    // Get summary stats
+    const stats = db.prepare(`
+      SELECT 
+        COUNT(DISTINCT item_id) as items_tracked,
+        COUNT(DISTINCT date) as days_tracked,
+        COALESCE(SUM(hours_used), 0) as total_hours_all,
+        COALESCE(SUM(CASE WHEN date = ? THEN hours_used ELSE 0 END), 0) as today_hours_all
+      FROM inventory_usage
+    `).get(today);
+
+    res.json({
+      ok: true,
+      date: today,
+      stats,
+      stations: stations.filter(s => s.item_id), // Only return stations with items
+      message: 'Tracking verification data'
+    });
+  } catch (e) {
+    console.error('[VerifyTracking] Error:', e.message);
+    res.status(500).json({ error: 'Failed to verify tracking', details: e.message });
+  }
+});
+
+// Item-specific usage verification
+app.get('/api/inventory/:id/usage-verification', requireAuth, (req, res) => {
+  try {
+    const itemId = req.params.id;
+    const today = getWIBDateISO();
+    
+    // Get item details
+    const item = db.prepare('SELECT id, name, category FROM inventory_items WHERE id = ?').get(itemId);
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+    
+    // Get usage history
+    const usageHistory = db.prepare(`
+      SELECT date, hours_used, source, pairing_id, created_at
+      FROM inventory_usage
+      WHERE item_id = ?
+      ORDER BY date DESC
+      LIMIT 30
+    `).all(itemId);
+    
+    // Get total usage
+    const totalUsage = db.prepare(`
+      SELECT COALESCE(SUM(hours_used), 0) as total,
+             COALESCE(SUM(CASE WHEN date = ? THEN hours_used ELSE 0 END), 0) as today
+      FROM inventory_usage
+      WHERE item_id = ?
+    `).get(today, itemId);
+    
+    // Get current station
+    const currentStation = db.prepare(`
+      SELECT p.id, p.name, pi.role, pi.assigned_at
+      FROM inventory_pairings p
+      JOIN inventory_pairing_items pi ON p.id = pi.pairing_id
+      WHERE pi.item_id = ? AND p.is_active = 1
+      LIMIT 1
+    `).get(itemId);
+    
+    res.json({
+      ok: true,
+      item: {
+        id: item.id,
+        name: item.name,
+        category: item.category
+      },
+      usage: {
+        total_hours: totalUsage.total,
+        today_hours: totalUsage.today,
+        history: usageHistory
+      },
+      current_station: currentStation || null,
+      message: 'Usage verification data'
+    });
+  } catch (e) {
+    console.error('[VerifyTracking] Error:', e.message);
+    res.status(500).json({ error: 'Failed to verify tracking', details: e.message });
+  }
 });
 
 // Serve static files

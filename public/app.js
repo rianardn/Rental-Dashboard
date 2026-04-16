@@ -44,9 +44,26 @@
 
     // Global error handler for mobile debugging
     window.addEventListener('error', function(e) {
-      showToast('JS Error: ' + e.message.substring(0, 50), 'error');
-      console.error('Global error:', e.message, 'at', e.filename, ':', e.lineno);
+      const msg = e.message || 'Unknown error';
+      const filename = e.filename || 'unknown';
+      const lineno = e.lineno || 0;
+      
+      // Skip CORS/script errors from external domains
+      if (msg === 'Script error.' || !filename.includes(window.location.hostname)) {
+        console.warn('[CORS/External Error]', msg, filename, lineno);
+        return; // Don't show toast for external script errors
+      }
+      
+      showToast('Error: ' + msg.substring(0, 50), 'error');
+      console.error('[App Error]', msg, 'at', filename, ':', lineno, e.error);
     });
+    
+    // Catch unhandled promise rejections
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('[Unhandled Promise]', e.reason);
+      showToast('Async Error: ' + String(e.reason).substring(0, 50), 'error');
+    });
+    
     let isOnline = true;
     
     // ═════════════════ Audio Warning System ═════════════════
@@ -296,6 +313,7 @@
         startPolling();
         startTimers(); // Start timer updates separately (1 second interval)
         initSidebar(); // Initialize sidebar state untuk desktop
+        initTheme(); // Initialize theme system
         showLoading(false);
       } catch (error) {
         showLoading(false);
@@ -390,8 +408,12 @@
       const unitDisplays = document.querySelectorAll('.timer-display[data-unit-id]');
       const stationDisplays = document.querySelectorAll('.timer-display[data-station-id]');
       const now = Date.now();
-      const warnMs = settings.warnBefore * 60000;
+      const warnMs = 300000; // 5 minutes
       const FINAL_ALERT_SECONDS = 30;
+
+      // Track if any station needs warning bubble (< 5 minutes)
+      let stationsNeedingWarning = [];
+      let hasExpiredStation = false;
 
       // Process unit displays (legacy)
       unitDisplays.forEach(display => {
@@ -452,13 +474,58 @@
           const remaining = (duration * 60000) - elapsed;
           const isWarning = remaining < warnMs && remaining > 0;
           const isExpired = remaining <= 0;
+          const isBlinkingOrange = remaining < 300000 && remaining > 0; // Less than 5 minutes
           const isFinal30Seconds = remaining <= (FINAL_ALERT_SECONDS * 1000) && remaining > 0;
 
           countdownEl.className = 'timer-countdown';
           if (isExpired) countdownEl.classList.add('expired');
           else if (isWarning) countdownEl.classList.add('warning');
+          else if (isBlinkingOrange) countdownEl.style.color = '#FFA500';
 
           countdownEl.textContent = isExpired ? 'WAKTU HABIS' : formatTime(remaining);
+
+          // Track for warning bubble
+          if (isBlinkingOrange && !isExpired) {
+            const station = stations.find(s => s.id === stationId);
+            if (station) {
+              stationsNeedingWarning.push({
+                id: stationId,
+                name: station.name,
+                remaining: remaining,
+                isExpired: false
+              });
+            }
+          }
+          if (isExpired) {
+            hasExpiredStation = true;
+            // Also add expired stations to the list
+            const station = stations.find(s => s.id === stationId);
+            if (station) {
+              const alreadyTracked = stationsNeedingWarning.some(s => s.id === station.id);
+              if (!alreadyTracked) {
+                stationsNeedingWarning.push({
+                  id: station.id,
+                  name: station.name,
+                  remaining: 0,
+                  isExpired: true
+                });
+              }
+            }
+          }
+
+          // Add/remove blinking-orange class to parent unit-card
+          const unitCard = display.closest('.unit-card');
+          if (unitCard) {
+            if (isExpired) {
+              unitCard.classList.remove('blinking-orange');
+              unitCard.classList.add('expired-red');
+            } else if (isBlinkingOrange) {
+              unitCard.classList.add('blinking-orange');
+              unitCard.classList.remove('expired-red');
+            } else {
+              unitCard.classList.remove('blinking-orange', 'expired-red');
+            }
+          }
 
           // Play warning jingle for stations
           if (isFinal30Seconds && !warnedUnits.has('station-' + stationId)) {
@@ -471,8 +538,166 @@
           }
         }
       });
+
+      // Check all active stations for warning bubble (even if not displayed on current page)
+      const now2 = Date.now();
+      stations.forEach(station => {
+        if (!station.active || !station.duration || station.duration <= 0) return;
+        
+        const elapsed = now2 - station.startTime;
+        const remaining = (station.duration * 60000) - elapsed;
+        
+        if (remaining > 0 && remaining < 300000) { // Less than 5 minutes but not expired
+          // Only add if not already tracked
+          const alreadyTracked = stationsNeedingWarning.some(s => s.id === station.id);
+          if (!alreadyTracked) {
+            stationsNeedingWarning.push({
+              id: station.id,
+              name: station.name,
+              remaining: remaining,
+              isExpired: false
+            });
+          }
+        }
+        if (remaining <= 0) {
+          hasExpiredStation = true;
+          // Also add expired stations to the list
+          const alreadyTracked = stationsNeedingWarning.some(s => s.id === station.id);
+          if (!alreadyTracked) {
+            stationsNeedingWarning.push({
+              id: station.id,
+              name: station.name,
+              remaining: 0,
+              isExpired: true
+            });
+          }
+        }
+      });
+
+      // Update warning bubble
+      updateWarningBubble(stationsNeedingWarning, hasExpiredStation);
     }
 
+    // Update floating warning bubble
+    // Bubble hanya dihapus ketika: 1) User di Dashboard, atau 2) Stasiun benar-benar tidak aktif lagi
+    function updateWarningBubble(stationsNeedingWarning, hasExpiredStation) {
+      const container = document.getElementById('warningBubblesContainer');
+      if (!container) return;
+
+      const currentPage = document.querySelector('.page.active');
+      const isOnDashboard = currentPage && currentPage.id === 'pageDashboard';
+      
+      // Track all active station IDs that have ever had a bubble
+      window.activeBubbleStations = window.activeBubbleStations || new Set();
+      
+      // Add current warning stations to tracked set
+      stationsNeedingWarning.forEach(s => window.activeBubbleStations.add(s.id));
+      
+      // Get all currently active station IDs from the global stations array
+      const activeStationIds = new Set(stations.filter(s => s.active).map(s => s.id));
+      
+      // Only clear bubbles if user is on Dashboard
+      if (isOnDashboard) {
+        container.innerHTML = '';
+        window.activeBubbleStations.clear();
+        return;
+      }
+
+      // Create/update bubbles for stations needing warning
+      stationsNeedingWarning.forEach((station) => {
+        let bubble = container.querySelector(`.warning-bubble[data-station-id="${station.id}"]`);
+        
+        if (!bubble) {
+          bubble = createWarningBubble(station);
+          container.appendChild(bubble);
+        } else {
+          // Update content only (not position)
+          const timeEl = bubble.querySelector('.bubble-time');
+          if (timeEl) timeEl.textContent = station.isExpired ? 'WAKTU HABIS' : formatTime(station.remaining);
+        }
+      });
+      
+      // Only remove bubbles for stations that are COMPLETELY inactive (ended by user)
+      // NOT for stations that just finished their time naturally
+      const existingBubbles = Array.from(container.querySelectorAll('.warning-bubble'));
+      existingBubbles.forEach(bubble => {
+        const id = bubble.dataset.stationId;
+        // Only remove if station is completely inactive (user ended it)
+        if (!activeStationIds.has(id)) {
+          bubble.remove();
+          window.activeBubbleStations.delete(id);
+        }
+      });
+    }
+
+    function createWarningBubble(station) {
+      const bubble = document.createElement('div');
+      bubble.className = 'warning-bubble' + (station.isExpired ? ' expired' : '');
+      bubble.dataset.stationId = station.id;
+      bubble.style.cssText = `
+        cursor: grab;
+        background: ${station.isExpired ? 'linear-gradient(135deg, #dc2626, #e60012)' : 'linear-gradient(135deg, #FF8C00, #FFA500)'};
+        border-radius: 16px;
+        padding: 12px 16px;
+        box-shadow: 0 4px 20px rgba(255, 140, 0, 0.5);
+        max-width: 280px;
+        margin-bottom: 8px;
+        pointer-events: auto;
+        position: relative;
+        user-select: none;
+        touch-action: none;
+      `;
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.style.cssText = 'display: flex; align-items: center; gap: 10px;';
+      contentDiv.innerHTML = `
+        <div style="font-size: 1.5rem;">${station.isExpired ? '🔴' : '⏰'}</div>
+        <div style="flex: 1;">
+          <div style="font-size: 0.75rem; font-weight: 600; color: white; text-transform: uppercase;">${station.name}</div>
+          <div class="bubble-time" style="font-size: 1.1rem; font-weight: 700; color: white;">${station.isExpired ? 'WAKTU HABIS' : formatTime(station.remaining)}</div>
+        </div>
+      `;
+      
+      bubble.appendChild(contentDiv);
+      
+      // Click to navigate - NO DRAG
+      bubble.addEventListener('click', () => goToDashboardFromBubble(station.id));
+      bubble.style.cursor = 'pointer';
+      
+      return bubble;
+    }
+
+    // Simple bubble state (no drag)
+    window.bubbleClickState = { lastClickTime: 0 };
+
+    // Navigate to Dashboard from warning bubble - scroll to specific station
+    function goToDashboardFromBubble(stationId) {
+      // Debounce: prevent double clicks
+      const now = Date.now();
+      if (now - window.bubbleClickState.lastClickTime < 500) return;
+      window.bubbleClickState.lastClickTime = now;
+      
+      showPage('pageDashboard');
+      // Update nav buttons - first button is Dashboard
+      document.querySelectorAll('.nav-btn').forEach((btn, index) => {
+        btn.classList.remove('active');
+        if (index === 0) btn.classList.add('active');
+      });
+      
+      // Scroll to the specific station card after a short delay
+      setTimeout(() => {
+        const stationCard = document.querySelector(`[data-station-id="${stationId}"]`);
+        if (stationCard) {
+          stationCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Add highlight effect
+          stationCard.style.animation = 'none';
+          stationCard.offsetHeight; // Trigger reflow
+          stationCard.style.animation = '';
+        }
+      }, 100);
+    }
+
+    // ═════════════════ Floating Bubble Drag ═════════════════
     // ═════════════════ Rendering ═════════════════
     function renderAll() {
       renderDashboard();
@@ -513,12 +738,12 @@
       if (isActive) {
         const elapsed = Date.now() - station.startTime;
         const remaining = station.duration > 0 ? (station.duration * 60000) - elapsed : null;
+        const warnMs = settings.warnBefore * 60000;
+        const isWarning = remaining !== null && remaining < warnMs && remaining > 0;
+        const isExpired = remaining !== null && remaining <= 0;
+        const isBlinkingOrange = remaining !== null && remaining < 300000 && remaining > 0; // Less than 5 minutes
 
         if (remaining !== null) {
-          const warnMs = settings.warnBefore * 60000;
-          const isWarning = remaining < warnMs && remaining > 0;
-          const isExpired = remaining <= 0;
-
           timerHTML = `
             <div class="timer-display" data-station-id="${station.id}" data-start-time="${station.startTime}" data-duration="${station.duration}">
               <div class="timer-countdown ${isWarning ? 'warning' : ''} ${isExpired ? 'expired' : ''}" data-timer-type="countdown">
@@ -595,7 +820,7 @@
         }
 
         return `
-          <div class="unit-card active ${isBooking ? 'booking' : ''}" data-station-id="${station.id}" style="border: 2px solid #22c55e;">
+          <div class="unit-card active ${isBooking ? 'booking' : ''} ${isBlinkingOrange ? 'blinking-orange' : ''} ${isExpired ? 'expired-red' : ''}" data-station-id="${station.id}">
             <div class="unit-header">
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <div class="unit-name">${station.name}</div>
@@ -642,8 +867,9 @@
                 </div>
               `}
             </div>
-            <div class="unit-actions" style="margin-top: 12px;">
-              <button class="btn btn-stop" onclick="stopStation('${station.id}')" style="background: linear-gradient(145deg, #dc2626, #b91c1c); box-shadow: 0 4px 15px rgba(220,38,38,0.3);">STOP</button>
+            <div class="unit-actions" style="margin-top: 12px; display: flex; gap: 8px;">
+              <button class="btn btn-stop" onclick="stopStation('${station.id}')" style="background: linear-gradient(145deg, #dc2626, #b91c1c); box-shadow: 0 4px 15px rgba(220,38,38,0.3); flex: 1;">AKHIRI</button>
+              <button class="btn-extend" onclick="openExtendDurationModal('${station.id}', '${station.name}')" title="Tambah durasi">➕</button>
             </div>
           </div>
         `;
@@ -837,6 +1063,7 @@
           <div class="action-btns">
             ${isActive ? `
               <button class="btn-stop" onclick="stopSession(${unit.id})">AKHIRI</button>
+              <button class="btn-extend" onclick="openExtendDurationModal(${unit.id}, '${unit.name}')" title="Tambah durasi">➕</button>
             ` : `
               <button class="btn-start" onclick="startSession(${unit.id}, '${unit.name}')">MULAI</button>
             `}
@@ -976,7 +1203,7 @@
                 <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" class="fs-75">${t.id || ''}</span>
               </div>
               <div class="text-right flex-1">
-                💳 ${t.payment || 'cash'}
+                💳 ${(paymentMethods.find(m => m.id === t.payment)?.icon || '')} ${(paymentMethods.find(m => m.id === t.payment)?.name) || t.payment || 'Tunai'}
               </div>
             </div>
 
@@ -1053,6 +1280,11 @@
             <div class="empty-state-icon">💸</div>
             <div class="empty-state-text">Belum ada pengeluaran ${periodLabels[currentPeriod] || 'pada periode ini'}</div>
           </div>
+          <div style="text-align: center; margin-top: 16px;">
+            <button class="btn btn-red" onclick="openAddExpenseModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px;">
+              <span>➕</span> Tambah Pengeluaran
+            </button>
+          </div>
         `;
       } else {
         container.innerHTML = latest5Expenses.map((e, index) => {
@@ -1093,7 +1325,7 @@
             </div>
             ` : ''}
 
-            <!-- Row 4: Time | TX ID (centered) | Note -->
+            <!-- Row 4: Time | TX ID (centered) | Payment Method -->
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--ps3-muted); padding-top: 8px; border-top: 1px solid var(--ps3-red-badge); opacity: 0.85;">
               <div class="info-row-compact">
                 <span>🕐</span>
@@ -1103,14 +1335,27 @@
                 <span class="tx-id-label">TX ID:</span>
                 <span onclick="copyToClipboard('${e.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" class="fs-75">${e.id || ''}</span>
               </div>
-              <div style="font-style: italic; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; flex: 1;">
-                ${e.note ? `💬 ${e.note}` : ''}
+              <div class="text-right flex-1">
+                💳 ${(paymentMethods.find(m => m.id === (e.payment_method || e.payment))?.icon || '')} ${(paymentMethods.find(m => m.id === (e.payment_method || e.payment))?.name) || e.payment_method || e.payment || 'Tunai'}
               </div>
             </div>
 
+            <!-- Row 5: Note (if exists) -->
+            ${e.note ? `
+            <div style="font-size: 0.8rem; color: var(--ps3-muted); font-style: italic; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--ps3-border); opacity: 0.85;">
+              💬 ${e.note}
+            </div>
+            ` : ''}
+
           </div>
-        `}).join('') + (hasMoreExpenses ? `
+        `}).join('') + `
           <div style="text-align: center; margin-top: 16px;">
+            <button class="btn btn-red" onclick="openAddExpenseModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px;">
+              <span>➕</span> Tambah Pengeluaran
+            </button>
+          </div>
+        ` + (hasMoreExpenses ? `
+          <div style="text-align: center; margin-top: 12px;">
             <button onclick="openAllExpensesModal()" style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); color: var(--ps3-text); padding: 12px 24px; border-radius: 10px; cursor: pointer; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px;">
               <span>📋</span> Lihat Semua (${filteredExpenses.length} Pengeluaran)
             </button>
@@ -1630,7 +1875,7 @@
               <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" class="fs-75">${t.id || ''}</span>
             </div>
             <div class="text-right flex-1">
-              💳 ${t.payment || 'cash'}
+              💳 ${(paymentMethods.find(m => m.id === t.payment)?.icon || '')} ${(paymentMethods.find(m => m.id === t.payment)?.name) || t.payment || 'Tunai'}
             </div>
           </div>
 
@@ -2683,18 +2928,24 @@
     function stopSession(unitId) {
       const unit = units.find(u => u.id === unitId);
       if (!unit || !unit.active) return;
-      
+
       currentUnitId = unitId;
       document.getElementById('stopUnitName').textContent = unit.name;
-      
+
       const elapsed = Math.floor((Date.now() - unit.startTime) / 60000);
       const cost = Math.round((elapsed / 60) * settings.ratePerHour);
-      
+
       document.getElementById('stopDuration').textContent = `${elapsed} menit`;
       document.getElementById('stopCost').value = cost;
       document.getElementById('stopPaid').value = cost;
-      document.getElementById('stopPayment').value = 'cash';
-      
+
+      // Populate payment methods and set default to first method (usually cash)
+      populatePaymentMethodDropdowns();
+      const stopPaymentDropdown = document.getElementById('stopPayment');
+      if (stopPaymentDropdown && paymentMethods.length > 0) {
+        stopPaymentDropdown.value = paymentMethods[0].id;
+      }
+
       openModal('modalStop');
     }
 
@@ -2890,18 +3141,24 @@
         showToast('Stasiun tidak aktif', 'error');
         return;
       }
-      
+
       currentStationId = stationId;
       document.getElementById('stopStationName').textContent = station.name;
-      
+
       const elapsed = Math.floor((Date.now() - station.startTime) / 60000);
       const cost = Math.round((elapsed / 60) * settings.ratePerHour);
-      
+
       document.getElementById('stopStationDuration').textContent = `${elapsed} menit`;
       document.getElementById('stopStationCost').value = cost;
       document.getElementById('stopStationPaid').value = cost;
-      document.getElementById('stopStationPayment').value = 'cash';
-      
+
+      // Populate payment methods and set default to first method (usually cash)
+      populatePaymentMethodDropdowns();
+      const stopStationPaymentDropdown = document.getElementById('stopStationPayment');
+      if (stopStationPaymentDropdown && paymentMethods.length > 0) {
+        stopStationPaymentDropdown.value = paymentMethods[0].id;
+      }
+
       openModal('modalStopStation');
     }
 
@@ -3120,6 +3377,172 @@
       return category;
     }
 
+    // ═════════════════ Modal Expense Functions ═════════════════
+
+    function openAddExpenseModal() {
+      // Reset form
+      document.getElementById('modalExpenseCategory').value = '';
+      document.getElementById('modalExpenseSubCategory').value = '';
+      document.getElementById('modalExpenseCustomName').value = '';
+      document.getElementById('modalExpenseAmount').value = '';
+      document.getElementById('modalExpenseNote').value = '';
+      document.getElementById('modalExpensePaymentMethod').value = '';
+      document.getElementById('modalExpenseSubCategoryGroup').style.display = 'none';
+      document.getElementById('modalExpenseCustomGroup').style.display = 'none';
+      document.getElementById('modalExpenseBalancePreview').textContent = '';
+
+      // Populate payment methods dropdown
+      populatePaymentMethodDropdowns();
+
+      // Open modal
+      openModal('modalAddExpense');
+    }
+
+    function onModalExpenseCategoryChange() {
+      const category = document.getElementById('modalExpenseCategory').value;
+      const subGroup = document.getElementById('modalExpenseSubCategoryGroup');
+      const subSelect = document.getElementById('modalExpenseSubCategory');
+      const customGroup = document.getElementById('modalExpenseCustomGroup');
+
+      // Reset sub-dropdown
+      subSelect.innerHTML = '<option value="">-- Pilih Sub --</option>';
+
+      // Check if this category has sub-categories
+      if (EXPENSE_SUB_CATEGORIES[category]) {
+        subGroup.style.display = 'block';
+        customGroup.style.display = 'none';
+
+        // Populate sub-categories
+        EXPENSE_SUB_CATEGORIES[category].forEach(sub => {
+          const option = document.createElement('option');
+          option.value = sub.value;
+          option.textContent = sub.label;
+          subSelect.appendChild(option);
+        });
+      } else if (category === 'Custom') {
+        subGroup.style.display = 'none';
+        customGroup.style.display = 'block';
+      } else {
+        subGroup.style.display = 'none';
+        customGroup.style.display = 'none';
+      }
+    }
+
+    function getModalExpenseDisplayName() {
+      const category = document.getElementById('modalExpenseCategory').value;
+      const subCategory = document.getElementById('modalExpenseSubCategory').value;
+      const customName = document.getElementById('modalExpenseCustomName').value.trim();
+
+      if (!category) return null;
+
+      // For categories with sub-categories
+      if (EXPENSE_SUB_CATEGORIES[category] && subCategory) {
+        return `${category} - ${subCategory}`;
+      }
+
+      // For Custom
+      if (category === 'Custom') {
+        return customName || 'Custom';
+      }
+
+      // For simple categories (Listrik, Prive, etc.)
+      return category;
+    }
+
+    function updateModalExpenseBalancePreview() {
+      const paymentMethodId = document.getElementById('modalExpensePaymentMethod').value;
+      const previewDiv = document.getElementById('modalExpenseBalancePreview');
+
+      if (!paymentMethodId) {
+        previewDiv.textContent = '';
+        return;
+      }
+
+      // Calculate current balance
+      calculatePaymentMethodBalances();
+
+      const method = paymentMethods.find(m => m.id === paymentMethodId);
+      if (method) {
+        const formattedBalance = 'Rp' + Math.abs(method.balance).toLocaleString('id-ID');
+        const balanceClass = method.balance >= 0 ? 'text-green' : 'text-red';
+        const sign = method.balance >= 0 ? '' : '-';
+        previewDiv.innerHTML = `Saldo tersedia: <span class="${balanceClass}">${sign}${formattedBalance}</span>`;
+      }
+    }
+
+    async function addExpenseFromModal() {
+      const category = document.getElementById('modalExpenseCategory').value;
+      const amount = parseInt(document.getElementById('modalExpenseAmount').value);
+      const note = document.getElementById('modalExpenseNote').value;
+      const paymentMethod = document.getElementById('modalExpensePaymentMethod').value;
+
+      // Validate category selection
+      if (!category) {
+        showToast('Pilih tipe biaya pengeluaran terlebih dahulu', 'error');
+        return;
+      }
+
+      // Get the display name based on category/sub-category/custom
+      const item = getModalExpenseDisplayName();
+
+      // Validate sub-category if required
+      if (EXPENSE_SUB_CATEGORIES[category] && !document.getElementById('modalExpenseSubCategory').value) {
+        showToast('Pilih sub-kategori untuk ' + category, 'error');
+        return;
+      }
+
+      // Validate custom name if Custom selected
+      if (category === 'Custom' && !document.getElementById('modalExpenseCustomName').value.trim()) {
+        showToast('Masukkan nama pengeluaran custom', 'error');
+        return;
+      }
+
+      if (!amount || amount <= 0) {
+        showToast('Jumlah pengeluaran wajib diisi dan lebih dari 0', 'error');
+        return;
+      }
+
+      if (!paymentMethod) {
+        showToast('Pilih metode pembayaran', 'error');
+        return;
+      }
+
+      // Calculate current balance to validate
+      calculatePaymentMethodBalances();
+      const method = paymentMethods.find(m => m.id === paymentMethod);
+
+      if (!method) {
+        showToast('Metode pembayaran tidak ditemukan', 'error');
+        return;
+      }
+
+      // Validate sufficient balance
+      if (method.balance < amount) {
+        const formattedBalance = 'Rp' + method.balance.toLocaleString('id-ID');
+        showToast(`Saldo tidak mencukupi. Saldo tersedia: ${formattedBalance}`, 'error');
+        return;
+      }
+
+      // Date auto-set by backend in WIB timezone - no user input needed
+      try {
+        await api('POST', '/expenses', { item, amount, note, category, payment_method: paymentMethod });
+
+        // Update local balance immediately for better UX
+        method.balance -= amount;
+        savePaymentMethods();
+
+        // Close modal
+        closeModal('modalAddExpense');
+
+        await loadData();
+        renderExpenses();
+        updateReportStats();
+        showToast('Pengeluaran ditambahkan: ' + item, 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
     // ═════════════════ Data Management ═════════════════
     async function addExpense() {
       const category = document.getElementById('expenseCategory').value;
@@ -3199,6 +3622,157 @@
       }
     }
 
+    // ═════════════════ THEME SYSTEM ═════════════════
+    
+    const THEMES = {
+      'ps3-classic': {
+        name: 'PS3 Classic',
+        description: 'Tema hitam & silver ala PS3 2006',
+        icon: '🎮',
+        colors: ['#000000', '#c0c0c0', '#e60012']
+      },
+      'dark-night': {
+        name: 'Dark Night',
+        description: 'Tema gelap dengan aksen biru GitHub',
+        icon: '🌙',
+        colors: ['#0d1117', '#58a6ff', '#f85149']
+      },
+      'midnight-purple': {
+        name: 'Midnight Purple',
+        description: 'Tema ungu elegan dengan aksen merah',
+        icon: '💜',
+        colors: ['#1a1a2e', '#e94560', '#00d9ff']
+      },
+      'cyberpunk-neon': {
+        name: 'Cyberpunk Neon',
+        description: 'Tema neon dengan warna-warni futuristik',
+        icon: '🌆',
+        colors: ['#0a0a0f', '#00f5ff', '#ff00ff']
+      },
+      'forest-moss': {
+        name: 'Forest Moss',
+        description: 'Tema hijau alami yang menenangkan',
+        icon: '🌿',
+        colors: ['#1a1f1a', '#81b29a', '#f2cc8f']
+      },
+      'ocean-deep': {
+        name: 'Ocean Deep',
+        description: 'Tema biru laut yang tenang',
+        icon: '🌊',
+        colors: ['#0a1628', '#1e90ff', '#4ecdc4']
+      },
+      'retro-amber': {
+        name: 'Retro Amber',
+        description: 'Tema amber vintage ala monitor CRT',
+        icon: '📺',
+        colors: ['#1a1500', '#ffb000', '#ff4444']
+      },
+      'cherry-blossom': {
+        name: 'Cherry Blossom',
+        description: 'Tema pink lembut yang manis',
+        icon: '🌸',
+        colors: ['#1a0a14', '#ff6b9d', '#ffb7c5']
+      }
+    };
+    
+    let currentTheme = localStorage.getItem('ps3_theme') || 'ps3-classic';
+    
+    function initTheme() {
+      // Apply saved theme
+      applyTheme(currentTheme);
+      
+      // Render theme grid
+      renderThemeGrid();
+      
+      // Update current theme display
+      updateCurrentThemeDisplay();
+    }
+    
+    function applyTheme(themeId) {
+      if (!THEMES[themeId]) themeId = 'ps3-classic';
+      
+      // Remove all theme data attributes
+      Object.keys(THEMES).forEach(id => {
+        document.body.removeAttribute('data-theme-' + id);
+      });
+      
+      // Set new theme
+      document.documentElement.setAttribute('data-theme', themeId);
+      currentTheme = themeId;
+      
+      // Save to localStorage
+      localStorage.setItem('ps3_theme', themeId);
+      
+      // Update display
+      updateCurrentThemeDisplay();
+      
+      // Add animation class for smooth transition
+      document.body.classList.add('theme-transition');
+      setTimeout(() => {
+        document.body.classList.remove('theme-transition');
+      }, 300);
+    }
+    
+    function renderThemeGrid() {
+      const grid = document.getElementById('themeGrid');
+      if (!grid) return;
+      
+      grid.innerHTML = Object.entries(THEMES).map(([id, theme]) => `
+        <div class="theme-option ${id === currentTheme ? 'active' : ''}" 
+             data-theme="${id}" 
+             onclick="setTheme('${id}')">
+          <div class="theme-preview-box" style="background: linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]});">
+            <span>${theme.icon}</span>
+          </div>
+          <div class="theme-name">${theme.name}</div>
+        </div>
+      `).join('');
+    }
+    
+    function setTheme(themeId) {
+      if (!THEMES[themeId]) return;
+      
+      // Apply theme
+      applyTheme(themeId);
+      
+      // Re-render grid to update active state
+      renderThemeGrid();
+      
+      // Show toast
+      showToast(`Tema diubah ke: ${THEMES[themeId].name}`, 'success');
+      
+      // Log theme change
+      console.log('[Theme] Changed to:', themeId);
+    }
+    
+    function updateCurrentThemeDisplay() {
+      const info = document.getElementById('currentThemeInfo');
+      const icon = document.getElementById('currentThemeIcon');
+      const name = document.getElementById('currentThemeName');
+      const desc = document.getElementById('currentThemeDesc');
+      
+      if (!info || !name) return;
+      
+      const theme = THEMES[currentTheme];
+      if (theme) {
+        icon.textContent = theme.icon;
+        name.textContent = theme.name;
+        desc.textContent = theme.description;
+        
+        // Update accent color
+        info.style.borderLeftColor = theme.colors[1];
+      }
+    }
+    
+    function getCurrentTheme() {
+      return currentTheme;
+    }
+    
+    // Expose to window
+    window.setTheme = setTheme;
+    window.getCurrentTheme = getCurrentTheme;
+    window.initTheme = initTheme;
+
     // ═════════════════ Payment Methods Management ═════════════════
     
     function savePaymentMethods() {
@@ -3272,21 +3846,23 @@
     function calculatePaymentMethodBalances() {
       // Reset balances
       paymentMethods.forEach(method => method.balance = 0);
-      
-      // Add income from transactions
+
+      // Add income from transactions (field: payment)
       transactions.forEach(tx => {
-        if (tx.payment_method) {
-          const method = paymentMethods.find(m => m.id === tx.payment_method);
+        const paymentMethodId = tx.payment_method || tx.payment;
+        if (paymentMethodId) {
+          const method = paymentMethods.find(m => m.id === paymentMethodId);
           if (method) {
-            method.balance += tx.total_paid || 0;
+            method.balance += tx.total_paid || tx.paid || 0;
           }
         }
       });
-      
-      // Subtract expenses
+
+      // Subtract expenses (field: payment_method)
       expenses.forEach(exp => {
-        if (exp.payment_method) {
-          const method = paymentMethods.find(m => m.id === exp.payment_method);
+        const paymentMethodId = exp.payment_method || exp.payment;
+        if (paymentMethodId) {
+          const method = paymentMethods.find(m => m.id === paymentMethodId);
           if (method) {
             method.balance -= exp.amount || 0;
           }
@@ -3339,8 +3915,8 @@
       if (!method) return;
       
       // Check if method has transactions
-      const hasTransactions = transactions.some(tx => tx.payment_method === method.id) ||
-                              expenses.some(exp => exp.payment_method === method.id);
+      const hasTransactions = transactions.some(tx => (tx.payment_method || tx.payment) === method.id) ||
+                              expenses.some(exp => (exp.payment_method || exp.payment) === method.id);
       
       if (hasTransactions) {
         showToast('Tidak dapat menghapus metode yang memiliki transaksi', 'error');
@@ -3358,20 +3934,60 @@
     }
     
     function populatePaymentMethodDropdowns() {
-      const options = paymentMethods.map(m => 
+      const options = paymentMethods.map(m =>
         `<option value="${m.id}">${m.icon} ${m.name}</option>`
       ).join('');
-      
-      // Update expense form dropdown
+
+      // Update expense form dropdown (legacy - in case still used elsewhere)
       const expenseDropdown = document.getElementById('expensePaymentMethod');
       if (expenseDropdown) {
         expenseDropdown.innerHTML = '<option value="">-- Pilih Metode --</option>' + options;
       }
-      
+
+      // Update modal expense payment dropdown
+      const modalExpensePaymentDropdown = document.getElementById('modalExpensePaymentMethod');
+      if (modalExpensePaymentDropdown) {
+        modalExpensePaymentDropdown.innerHTML = '<option value="">-- Pilih Metode --</option>' + options;
+      }
+
       // Update start session dropdown
       const startDropdown = document.getElementById('startPaymentMethod');
       if (startDropdown) {
         startDropdown.innerHTML = '<option value="">-- Pilih Metode --</option>' + options;
+      }
+
+      // Update stop session dropdowns (Akhiri Sewa modals)
+      const stopPaymentDropdown = document.getElementById('stopPayment');
+      if (stopPaymentDropdown) {
+        stopPaymentDropdown.innerHTML = options;
+      }
+
+      const stopStationPaymentDropdown = document.getElementById('stopStationPayment');
+      if (stopStationPaymentDropdown) {
+        stopStationPaymentDropdown.innerHTML = options;
+      }
+
+      // Update complete schedule dropdown
+      const completeSchedulePaymentDropdown = document.getElementById('completeSchedulePayment');
+      if (completeSchedulePaymentDropdown) {
+        completeSchedulePaymentDropdown.innerHTML = options;
+      }
+
+      // Update edit payment dropdown (no placeholder, just options)
+      const editPaymentDropdown = document.getElementById('editPayment');
+      if (editPaymentDropdown) {
+        editPaymentDropdown.innerHTML = options;
+      }
+
+      // Update filter dropdowns (with "Semua Metode" placeholder)
+      const trashFilterPaymentDropdown = document.getElementById('trashFilterPayment');
+      if (trashFilterPaymentDropdown) {
+        trashFilterPaymentDropdown.innerHTML = '<option value="">Semua Metode</option>' + options;
+      }
+
+      const txFilterPaymentDropdown = document.getElementById('txFilterPayment');
+      if (txFilterPaymentDropdown) {
+        txFilterPaymentDropdown.innerHTML = '<option value="">Semua Metode</option>' + options;
       }
     }
 
@@ -3425,906 +4041,292 @@
       event.target.value = '';
     }
 
-    // Store pending export options
-    let pendingExportOptions = null;
-    let pendingExportPeriod = null;
-    let pendingExportType = null; // 'json' or 'csv'
+    // ═══════════════════════════════════════════════════════════════
+    // FULL BACKUP & RESTORE FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Global variable to store parsed backup data
+    let pendingRestoreData = null;
 
-    // New Export Flow: Start with Modal 1 (Data Type Selection)
-    async function exportFullBackup() {
-      // Load latest data first to ensure complete export
-      await loadData();
-
-      // Show Modal 1: Data Type Selection
-      pendingExportType = 'json';
-      pendingExportPeriod = 'all';
-
-      // Reset checkboxes
-      document.getElementById('exportIncludeIncome').checked = true;
-      document.getElementById('exportIncludeExpense').checked = true;
-      document.getElementById('exportDataTypeError').style.display = 'none';
-
-      // Show modal
-      document.getElementById('modalExportDataType').classList.add('active');
-    }
-
-    // CSV Export with Modal Flow for all periods
-    async function exportCSV(period) {
-      // Load latest data first to ensure complete export
-      await loadData();
-
-      // Use modal flow for ALL periods (today, week, month, year, all)
-      pendingExportType = 'csv';
-      pendingExportPeriod = period; // 'today', 'week', 'month', 'year', 'all'
-      
-      // Reset checkboxes for Modal 1
-      document.getElementById('exportIncludeIncome').checked = true;
-      document.getElementById('exportIncludeExpense').checked = true;
-      document.getElementById('exportDataTypeError').style.display = 'none';
-      
-      // Show Modal 1
-      document.getElementById('modalExportDataType').classList.add('active');
-    }
-
-    // Modal 1: Confirm Data Type Selection
-    function confirmExportDataType() {
-      const includeIncome = document.getElementById('exportIncludeIncome').checked;
-      const includeExpense = document.getElementById('exportIncludeExpense').checked;
-      
-      // Validate: at least one must be selected
-      if (!includeIncome && !includeExpense) {
-        document.getElementById('exportDataTypeError').style.display = 'block';
-        return;
-      }
-      
-      document.getElementById('exportDataTypeError').style.display = 'none';
-      
-      // Store options from Modal 1 (data type selection)
-      pendingExportOptions = {
-        includeIncomeType: includeIncome,      // From Modal 1: Income data type selected
-        includeExpenseType: includeExpense     // From Modal 1: Expense data type selected
-      };
-      
-      // Close Modal 1
-      document.getElementById('modalExportDataType').classList.remove('active');
-      
-      // Configure Modal 2 based on export period
-      const isAllPeriod = pendingExportPeriod === 'all';
-      
-      // Show/hide Ghost Records option based on period
-      document.getElementById('ghostRecordsOption').style.display = isAllPeriod ? 'flex' : 'none';
-      document.getElementById('ghostRecordsInfoBox').style.display = isAllPeriod ? 'block' : 'none';
-      
-      // Update Modal 2 title and description based on period
-      if (isAllPeriod) {
-        document.getElementById('modalExportHistoryTitle').textContent = '📜 Pilih Data untuk Diekspor (Semua)';
-        document.getElementById('modalExportHistoryDesc').textContent = 'Pilih data yang ingin disertakan dalam ekspor lengkap (minimal pilih satu):';
-      } else {
-        const periodLabel = {
-          'today': 'Harian',
-          'week': 'Mingguan',
-          'month': 'Bulanan',
-          'year': 'Tahunan'
-        }[pendingExportPeriod] || pendingExportPeriod;
-        document.getElementById('modalExportHistoryTitle').textContent = `📜 Pilih Data untuk Diekspor (${periodLabel})`;
-        document.getElementById('modalExportHistoryDesc').textContent = `Pilih data ${periodLabel.toLowerCase()} yang ingin disertakan dalam ekspor (minimal pilih satu):`;
-      }
-      
-      // Set all checkboxes for Modal 2 (ALL checked by default)
-      document.getElementById('exportIncludeTransactionHistory').checked = true;
-      document.getElementById('exportIncludeEditHistory').checked = true;
-      // Ghost Records only checked and visible for 'all' period
-      document.getElementById('exportIncludeDeleteHistory').checked = isAllPeriod;
-      
-      document.getElementById('modalExportHistory').classList.add('active');
-    }
-
-    // Modal 2: Execute Export with Selected Options
-    async function executeExportWithOptions() {
-      const includeTransactionHistory = document.getElementById('exportIncludeTransactionHistory').checked;
-      const includeEditHistory = document.getElementById('exportIncludeEditHistory').checked;
-      const includeDeleteHistory = document.getElementById('exportIncludeDeleteHistory').checked;
-      
-      // Validate: at least one option must be selected
-      // For periodic exports, Ghost Records option is hidden so only check first two
-      const isAllPeriod = pendingExportPeriod === 'all';
-      const hasSelection = includeTransactionHistory || includeEditHistory || (isAllPeriod && includeDeleteHistory);
-      
-      if (!hasSelection) {
-        showToast('Pilih minimal satu data untuk diekspor', 'error');
-        return;
-      }
-      
-      // Close modal
-      document.getElementById('modalExportHistory').classList.remove('active');
-      
+    // Create Full Backup - exports ALL application data
+    async function createFullBackup() {
       try {
-        if (pendingExportType === 'json') {
-          // Build query params for backup export (always 'all' for JSON)
-          // Edit history dan ghost records SELALU di-include di server
-          const params = new URLSearchParams();
-          params.set('transactionData', includeTransactionHistory);
-          params.set('transactions', pendingExportOptions.includeIncomeType);
-          params.set('expenses', pendingExportOptions.includeExpenseType);
-          
-          // Fetch data with options
-          const data = await api('GET', `/db?${params.toString()}`);
-          
-          // Add ghost records explanation to metadata
-          // Ghost records SELALU include: TX ID, waktu dihapus/dibatalkan, alasan
-          data.exportMetadata.ghostRecordsInfo = {
-            description: 'Data yang sudah dihapus/dibatalkan (auto clean-up)',
-            fields: ['txId', 'waktuDihapus', 'alasan'],
-            note: 'transaction/expense = dihapus | schedule = dibatalkan',
-            retentionDays: 7
-          };
-          
-          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `ps3-rental-backup-${new Date().toISOString().split('T')[0]}.json`;
-          a.click();
-          URL.revokeObjectURL(url);
-          
-          // Build summary message
-          const parts = [];
-          if (includeTransactionHistory) parts.push('riwayat transaksi');
-          if (pendingExportOptions.includeIncomeType) parts.push('pendapatan');
-          if (pendingExportOptions.includeExpenseType) parts.push('pengeluaran');
-          parts.push('riwayat edit (auto)');
-          parts.push('data dihapus/dibatalkan (auto)');
-          
-          showToast(`Backup tersimpan: ${parts.join(', ')}`, 'success');
-          
-        } else if (pendingExportType === 'csv') {
-          if (pendingExportPeriod === 'all') {
-            // Export CSV All (edit history dan ghost records selalu include di server)
-            await exportCSVAllWithOptions(pendingExportOptions, includeTransactionHistory);
-          } else {
-            // Export CSV for specific period (today/week/month/year)
-            await exportCSVPeriodicWithOptions(pendingExportPeriod, pendingExportOptions, includeTransactionHistory, includeEditHistory);
-          }
+        // Show progress modal
+        openModal('modalBackupProgress');
+        document.getElementById('backupProgressDetail').textContent = 'Mengumpulkan data dari database...';
+        
+        // Fetch all data from new endpoint
+        const response = await api('GET', '/backup/full');
+        
+        if (!response.ok || !response.data) {
+          throw new Error('Gagal mengambil data dari server');
         }
+        
+        const backupData = response.data;
+        
+        // Close progress modal
+        closeModal('modalBackupProgress');
+        
+        // Create and download JSON file
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        // Generate filename with timestamp
+        const date = new Date();
+        const dateStr = date.toISOString().split('T')[0];
+        const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-');
+        a.download = `ps3-rental-full-backup-${dateStr}_${timeStr}.json`;
+        
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        // Count total records for feedback
+        const counts = backupData.exportMetadata?.counts || {};
+        const totalRecords = 
+          (backupData.transactions?.length || 0) +
+          (backupData.expenses?.length || 0) +
+          (backupData.schedules?.length || 0) +
+          (backupData.inventoryItems?.length || 0) +
+          (backupData.inventoryPairings?.length || 0) +
+          (backupData.initialCapital?.length || 0) +
+          (backupData.capitalExpenses?.length || 0);
+        
+        showToast(`✅ Backup berhasil! ${totalRecords} records tersimpan`, 'success');
+        
       } catch (error) {
-        showToast('Ekspor gagal: ' + error.message, 'error');
+        closeModal('modalBackupProgress');
+        console.error('[Backup Error]', error);
+        showToast('❌ Backup gagal: ' + error.message, 'error');
       }
-      
-      // Reset pending options
-      pendingExportOptions = null;
-      pendingExportPeriod = null;
-      pendingExportType = null;
     }
 
-    // Export CSV All (edit history dan ghost records selalu include di server)
-    async function exportCSVAllWithOptions(options, includeTransactionHistory) {
-      const params = new URLSearchParams();
-      params.set('transactionData', includeTransactionHistory);
-      params.set('transactions', options.includeIncomeType);
-      params.set('expenses', options.includeExpenseType);
-      // Edit history dan ghost records SELALU di-include dari server
+    // Open Restore Modal
+    function openRestoreModal() {
+      // Reset modal state
+      document.getElementById('restoreFileInput').value = '';
+      document.getElementById('restoreFileInfo').style.display = 'none';
+      document.getElementById('restoreFileError').style.display = 'none';
+      document.getElementById('restoreConfirm').checked = false;
+      document.getElementById('btnExecuteRestore').disabled = true;
+      pendingRestoreData = null;
       
-      // Fetch data from API
-      const data = await api('GET', `/db?${params.toString()}`);
-      const now = new Date();
+      // Add file change listener
+      const fileInput = document.getElementById('restoreFileInput');
+      fileInput.onchange = handleRestoreFileSelect;
       
-      let csv = '\ufeff';
-      
-      // Add header info
-      csv += 'PS3 RENTAL MANAGER - LAPORAN LENGKAP\n';
-      csv += `Diekspor pada: ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')} WIB\n`;
-      csv += `Timezone: WIB (UTC+7)\n\n`;
-      
-      // SECTION 1: Income Transactions
-      if (includeTransactionHistory && data.transactions && data.transactions.length > 0) {
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'TRANSAKSI PENDAPATAN\n';
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'TX ID,Tanggal,Waktu,Unit,Pelanggan,Durasi (menit),Biaya,Pembayaran,Catatan,Jumlah Edit\n';
-        
-        data.transactions.forEach(t => {
-          const date = new Date(t.endTime);
-          const dateStr = date.toLocaleDateString('id-ID');
-          const timeStr = date.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false}) + ' WIB';
-          csv += `"${t.id}","${dateStr}","${timeStr}","${t.unitName}","${t.customer || '-'}",${t.durationMin},${t.paid},"${t.payment || 'cash'}","${(t.note || '').replace(/"/g, '""')}",${t.editCount || 0}\n`;
-        });
-        
-        const totalIncome = data.transactions.reduce((sum, t) => sum + (t.paid || 0), 0);
-        csv += `"TOTAL","","","","",${data.transactions.length} transaksi,${totalIncome},"","",""\n\n`;
-      }
-      
-      // SECTION 2: Expense Transactions
-      if (includeTransactionHistory && data.expenses && data.expenses.length > 0) {
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'TRANSAKSI PENGELUARAN\n';
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'TX ID,Tanggal,Waktu,Item,Kategori,Jumlah,Catatan,Jumlah Edit\n';
-
-        data.expenses.forEach(e => {
-          const date = new Date(e.created_at);
-          const dateStr = date.toLocaleDateString('id-ID');
-          const timeStr = date.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false}) + ' WIB';
-          csv += `"${e.id}","${dateStr}","${timeStr}","${e.item}","${e.category || '-'}",${e.amount},"${(e.note || '').replace(/"/g, '""')}",${e.editCount || 0}\n`;
-        });
-
-        const totalExpense = data.expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-        csv += `"TOTAL","","","","",${data.expenses.length} transaksi,${totalExpense},"",""\n\n`;
-      }
-      
-      // SECTION 3: Ghost Records (Deleted Transactions)
-      if (includeDeleteHistory && data.deletedRecords && data.deletedRecords.length > 0) {
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'RIWAYAT HAPUS (GHOST RECORDS)\n';
-        csv += 'Catatan: TX ID berikut sudah dihapus permanen dari database\n';
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'TX ID,Tipe Data,Status,Tanggal Hapus,Waktu Hapus,Alasan\n';
-        
-        data.deletedRecords.forEach(r => {
-          const deletedDate = new Date(r.deletedAt);
-          const dateStr = deletedDate.toLocaleDateString('id-ID');
-          const timeStr = deletedDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false}) + ' WIB';
-          const typeLabel = r.recordType === 'transaction' ? 'Pendapatan' : 'Pengeluaran';
-          csv += `"${r.recordId}","${typeLabel}","${r.status}","${dateStr}","${timeStr}","${(r.deleteReason || '-').replace(/"/g, '""')}"\n`;
-        });
-        
-        csv += `"TOTAL","","",${data.deletedRecords.length} data dihapus,"",""\n\n`;
-      }
-      
-      // SECTION 4: Edit History (if requested)
-      if (includeEditHistory) {
-        const hasEditHistory = (data.transactionsEditHistory && data.transactionsEditHistory.length > 0) ||
-                               (data.expensesEditHistory && data.expensesEditHistory.length > 0);
-        
-        if (hasEditHistory) {
-          csv += '═══════════════════════════════════════════════════════════════\n';
-          csv += 'RIWAYAT EDIT\n';
-          csv += '═══════════════════════════════════════════════════════════════\n';
-          csv += 'TX ID,Tipe Data,Field,Yang Diubah,Jadi,Alasan Edit,Tanggal Edit\n';
-          
-          // Income edit history
-          if (data.transactionsEditHistory) {
-            data.transactionsEditHistory.forEach(log => {
-              const editDate = new Date(log.editedAt);
-              const dateStr = editDate.toLocaleDateString('id-ID') + ' ' + editDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false});
-              csv += `"${log.transactionId}","Pendapatan","${log.fieldName}","${(log.oldValue || '-').replace(/"/g, '""')}","${(log.newValue || '-').replace(/"/g, '""')}","${(log.editReason || '-').replace(/"/g, '""')}","${dateStr}"\n`;
-            });
-          }
-          
-          // Expense edit history
-          if (data.expensesEditHistory) {
-            data.expensesEditHistory.forEach(log => {
-              const editDate = new Date(log.editedAt);
-              const dateStr = editDate.toLocaleDateString('id-ID') + ' ' + editDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false});
-              csv += `"${log.expenseId}","Pengeluaran","${log.fieldName}","${(log.oldValue || '-').replace(/"/g, '""')}","${(log.newValue || '-').replace(/"/g, '""')}","${(log.editReason || '-').replace(/"/g, '""')}","${dateStr}"\n`;
-            });
-          }
-          
-          csv += `\n`;
-        }
-      }
-      
-      // Summary Section
-      csv += '═══════════════════════════════════════════════════════════════\n';
-      csv += 'RINGKASAN\n';
-      csv += '═══════════════════════════════════════════════════════════════\n';
-      if (options.includeTransactions) {
-        const count = data.transactions ? data.transactions.length : 0;
-        const total = data.transactions ? data.transactions.reduce((s, t) => s + (t.paid || 0), 0) : 0;
-        csv += `Total Transaksi Pendapatan: ${count} (Rp ${total.toLocaleString('id-ID')})\n`;
-      }
-      if (options.includeExpenses) {
-        const count = data.expenses ? data.expenses.length : 0;
-        const total = data.expenses ? data.expenses.reduce((s, e) => s + (e.amount || 0), 0) : 0;
-        csv += `Total Transaksi Pengeluaran: ${count} (Rp ${total.toLocaleString('id-ID')})\n`;
-      }
-      if (includeDeleteHistory && data.deletedRecords) {
-        csv += `Total Data Dihapus (Ghost Records): ${data.deletedRecords.length}\n`;
-      }
-      csv += '═══════════════════════════════════════════════════════════════\n';
-      csv += 'Catatan: TX ID dengan status "Dihapus" menunjukkan transaksi yang sudah\n';
-      csv += 'dihapus permanen dari database dan hanya menyisakan ID serta info penghapusan.\n';
-      csv += 'Data dihapus otomatis setelah 7 hari di tempat sampah.\n';
-      
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ps3-laporan-lengkap-${now.toISOString().split('T')[0]}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      
-      showToast('Laporan lengkap dengan riwayat diunduh', 'success');
-    }
-
-    // Export CSV for periodic range with options (today/week/month/year)
-    async function exportCSVPeriodicWithOptions(period, options, includeTransactionHistory, includeEditHistory) {
-      // Get current WIB time
-      const now = new Date();
-      const wibOffset = 7 * 60 * 60 * 1000; // 7 hours in milliseconds
-      const wibTime = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + wibOffset);
-      
-      let startTime, endTime, periodLabel;
-      
-      switch(period) {
-        case 'today':
-          // Harian: 00:00 - 23:59 hari ini (WIB)
-          const todayYear = wibTime.getFullYear();
-          const todayMonth = wibTime.getMonth();
-          const todayDate = wibTime.getDate();
-          startTime = new Date(Date.UTC(todayYear, todayMonth, todayDate, 0, 0, 0) - wibOffset).getTime();
-          endTime = new Date(Date.UTC(todayYear, todayMonth, todayDate, 23, 59, 59, 999) - wibOffset).getTime();
-          periodLabel = 'Harian';
-          break;
-          
-        case 'week':
-          // Mingguan: Senin 00:00 - Minggu 23:59 minggu ini (WIB)
-          const currentDay = wibTime.getDay(); // 0 = Minggu, 1 = Senin, ..., 6 = Sabtu
-          const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
-          const mondayDate = new Date(wibTime);
-          mondayDate.setDate(wibTime.getDate() - daysSinceMonday);
-          const sundayDate = new Date(mondayDate);
-          sundayDate.setDate(mondayDate.getDate() + 6);
-          
-          startTime = new Date(Date.UTC(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate(), 0, 0, 0) - wibOffset).getTime();
-          endTime = new Date(Date.UTC(sundayDate.getFullYear(), sundayDate.getMonth(), sundayDate.getDate(), 23, 59, 59, 999) - wibOffset).getTime();
-          periodLabel = 'Mingguan';
-          break;
-          
-        case 'month':
-          // Bulanan: Tanggal 1 00:00 - akhir bulan 23:59 (WIB)
-          const monthYear = wibTime.getFullYear();
-          const month = wibTime.getMonth();
-          const lastDayOfMonth = new Date(Date.UTC(monthYear, month + 1, 0)).getDate(); // Last day of month (1-31)
-
-          // WIB timezone: UTC+7, so we subtract 7 hours from UTC to get WIB
-          startTime = Date.UTC(monthYear, month, 1, 0, 0, 0) - wibOffset;
-          endTime = Date.UTC(monthYear, month, lastDayOfMonth, 23, 59, 59, 999) - wibOffset;
-          periodLabel = 'Bulanan';
-          break;
-          
-        case 'year':
-          // Tahunan: 1 Januari 00:00 - 31 Desember 23:59 (WIB)
-          const year = wibTime.getFullYear();
-          startTime = new Date(Date.UTC(year, 0, 1, 0, 0, 0) - wibOffset).getTime();
-          endTime = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999) - wibOffset).getTime();
-          periodLabel = 'Tahunan';
-          break;
-      }
-      
-      // Filter transactions and expenses by time range
-      let filteredTransactions = [];
-      let filteredExpenses = [];
-      
-      if (options.includeIncomeType) {
-        filteredTransactions = transactions.filter(t => {
-          const tTime = t.endTime || t.timestamp || 0;
-          return tTime >= startTime && tTime <= endTime;
-        });
-      }
-      
-      if (options.includeExpenseType) {
-        filteredExpenses = expenses.filter(e => {
-          const eTime = e.timestamp || e.created_at || 0;
-          return eTime >= startTime && eTime <= endTime;
-        });
-      }
-      
-      // Format date for filename
-      const fileDate = wibTime.toISOString().split('T')[0];
-      
-      let csv = '\ufeff';
-      
-      // Add header info
-      csv += 'PS3 RENTAL MANAGER - LAPORAN ' + periodLabel.toUpperCase() + '\n';
-      // Format dates in WIB timezone for display
-      const formatWIBDate = (timestamp) => {
-        const d = new Date(timestamp);
-        return d.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' });
+      // Add confirm checkbox listener
+      const confirmCheckbox = document.getElementById('restoreConfirm');
+      confirmCheckbox.onchange = function() {
+        const isValid = pendingRestoreData !== null && this.checked;
+        document.getElementById('btnExecuteRestore').disabled = !isValid;
       };
-      csv += `Periode: ${formatWIBDate(startTime)} - ${formatWIBDate(endTime)}\n`;
-      csv += `Diekspor pada: ${wibTime.toLocaleDateString('id-ID')} ${wibTime.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false})} WIB\n`;
-      csv += `Timezone: WIB (UTC+7)\n\n`;
       
-      // SECTION 1: Income Transactions
-      if (includeTransactionHistory && options.includeIncomeType && filteredTransactions.length > 0) {
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'TRANSAKSI PENDAPATAN\n';
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'TX ID,Tanggal,Waktu,Unit,Pelanggan,Durasi (menit),Biaya,Pembayaran,Catatan,Jumlah Edit\n';
-        
-        filteredTransactions.forEach(t => {
-          const date = new Date(t.endTime || t.timestamp);
-          const dateStr = date.toLocaleDateString('id-ID');
-          const timeStr = date.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false}) + ' WIB';
-          csv += `"${t.id}","${dateStr}","${timeStr}","${t.unitName}","${t.customer || '-'}",${t.durationMin || 0},${t.paid || 0},"${t.payment || 'cash'}","${(t.note || '').replace(/"/g, '""')}",${t.editCount || 0}\n`;
-        });
-        
-        const totalIncome = filteredTransactions.reduce((sum, t) => sum + (t.paid || 0), 0);
-        csv += `"TOTAL","","","","",${filteredTransactions.length} transaksi,${totalIncome},"","",""\n\n`;
-      }
-      
-      // SECTION 2: Expense Transactions
-      if (includeTransactionHistory && options.includeExpenseType && filteredExpenses.length > 0) {
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'TRANSAKSI PENGELUARAN\n';
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'TX ID,Tanggal,Waktu,Item,Kategori,Jumlah,Catatan,Jumlah Edit\n';
-
-        filteredExpenses.forEach(e => {
-          const date = new Date(e.timestamp || e.created_at);
-          const dateStr = date.toLocaleDateString('id-ID');
-          const timeStr = date.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false}) + ' WIB';
-          csv += `"${e.id}","${dateStr}","${timeStr}","${e.item}","${e.category || '-'}",${e.amount || 0},"${(e.note || '').replace(/"/g, '""')}",${e.editCount || 0}\n`;
-        });
-        
-        const totalExpense = filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-        csv += `"TOTAL","","","","",${filteredExpenses.length} transaksi,${totalExpense},"",""\n\n`;
-      }
-      
-      // SECTION 3: Edit History (if requested)
-      if (includeEditHistory) {
-        // Filter edit history to only include edits within the time range
-        const incomeEditHistory = [];
-        const expenseEditHistory = [];
-        
-        // Collect edit history from filtered transactions
-        filteredTransactions.forEach(t => {
-          if (t.editHistory && Array.isArray(t.editHistory)) {
-            t.editHistory.forEach(edit => {
-              incomeEditHistory.push({
-                transactionId: t.id,
-                fieldName: edit.field,
-                oldValue: edit.oldValue,
-                newValue: edit.newValue,
-                editReason: edit.reason,
-                editedAt: edit.timestamp
-              });
-            });
-          }
-        });
-        
-        // Collect edit history from filtered expenses
-        filteredExpenses.forEach(e => {
-          if (e.editHistory && Array.isArray(e.editHistory)) {
-            e.editHistory.forEach(edit => {
-              expenseEditHistory.push({
-                expenseId: e.id,
-                fieldName: edit.field,
-                oldValue: edit.oldValue,
-                newValue: edit.newValue,
-                editReason: edit.reason,
-                editedAt: edit.timestamp
-              });
-            });
-          }
-        });
-        
-        const hasEditHistory = incomeEditHistory.length > 0 || expenseEditHistory.length > 0;
-        
-        if (hasEditHistory) {
-          csv += '═══════════════════════════════════════════════════════════════\n';
-          csv += 'RIWAYAT EDIT\n';
-          csv += '═══════════════════════════════════════════════════════════════\n';
-          csv += 'TX ID,Tipe Data,Field,Yang Diubah,Jadi,Alasan Edit,Tanggal Edit\n';
-          
-          // Income edit history
-          incomeEditHistory.forEach(log => {
-            const editDate = new Date(log.editedAt);
-            const dateStr = editDate.toLocaleDateString('id-ID') + ' ' + editDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false});
-            csv += `"${log.transactionId}","Pendapatan","${log.fieldName}","${(log.oldValue || '-').replace(/"/g, '""')}","${(log.newValue || '-').replace(/"/g, '""')}","${(log.editReason || '-').replace(/"/g, '""')}","${dateStr}"\n`;
-          });
-          
-          // Expense edit history
-          expenseEditHistory.forEach(log => {
-            const editDate = new Date(log.editedAt);
-            const dateStr = editDate.toLocaleDateString('id-ID') + ' ' + editDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false});
-            csv += `"${log.expenseId}","Pengeluaran","${log.fieldName}","${(log.oldValue || '-').replace(/"/g, '""')}","${(log.newValue || '-').replace(/"/g, '""')}","${(log.editReason || '-').replace(/"/g, '""')}","${dateStr}"\n`;
-          });
-          
-          csv += `\n`;
-        }
-      }
-      
-      // Summary Section
-      csv += '═══════════════════════════════════════════════════════════════\n';
-      csv += 'RINGKASAN\n';
-      csv += '═══════════════════════════════════════════════════════════════\n';
-      
-      if (options.includeIncomeType) {
-        const totalIncome = filteredTransactions.reduce((sum, t) => sum + (t.paid || 0), 0);
-        csv += `Total Transaksi Pendapatan,${filteredTransactions.length},Total Pendapatan,${totalIncome}\n`;
-      }
-      
-      if (options.includeExpenseType) {
-        const totalExpense = filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-        csv += `Total Transaksi Pengeluaran,${filteredExpenses.length},Total Pengeluaran,${totalExpense}\n`;
-      }
-      
-      if (options.includeIncomeType && options.includeExpenseType) {
-        const totalIncome = filteredTransactions.reduce((sum, t) => sum + (t.paid || 0), 0);
-        const totalExpense = filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-        csv += `NET PROFIT,,,${totalIncome - totalExpense}\n`;
-      }
-      
-      csv += '\nDibuat oleh PS3 Rental Manager\n';
-      
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ps3-laporan-${period}-${fileDate}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      
-      showToast(`Laporan ${periodLabel.toLowerCase()} diunduh`, 'success');
+      openModal('modalRestore');
     }
 
-    // Simple CSV export for other periods (today, week, month, year) - DEPRECATED, use modal flow
-    function exportCSVSimple(period) {
-      let filtered = transactions;
-      const now = new Date();
-      
-      switch(period) {
-        case 'today':
-          const todayKey = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
-          filtered = transactions.filter(t => t.date === todayKey);
-          break;
-        case 'week':
-          const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-          filtered = transactions.filter(t => t.endTime >= weekAgo);
-          break;
-        case 'month':
-          filtered = transactions.filter(t => {
-            const d = new Date(t.endTime);
-            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-          });
-          break;
-        case 'year':
-          filtered = transactions.filter(t => new Date(t.endTime).getFullYear() === now.getFullYear());
-          break;
-      }
-      
-      // CSV Header
-      let csv = '\ufeffTanggal,Waktu,Unit,Pelanggan,Durasi (menit),Biaya,Pembayaran,Catatan\n';
-      
-      filtered.forEach(t => {
-        const date = new Date(t.endTime);
-        const dateStr = date.toLocaleDateString('id-ID');
-        const timeStr = date.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false}) + ' WIB';
-        csv += `"${dateStr}","${timeStr}","${t.unitName}","${t.customer || '-'}",${t.durationMin},${t.paid},"${t.payment || 'cash'}","${t.note || ''}"\n`;
-      });
-      
-      // Add totals
-      const total = filtered.reduce((sum, t) => sum + t.paid, 0);
-      csv += `"","","","TOTAL",${filtered.length} transaksi,${total},"",""\n`;
-      
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ps3-laporan-${period}-${now.toISOString().split('T')[0]}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast(`Laporan ${period} diunduh`, 'success');
-    }
+    // Handle file selection for restore
+    async function handleRestoreFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
 
-    // ═════════════════ CUSTOM EXPORT FUNCTIONS ═════════════════
-    // Global variables for custom export state
-    let pendingCustomExportOptions = {};
-
-    // Step 1: Open Custom Export Modal (load data and show modal)
-    async function exportCustomRange() {
-      // Load latest data first
-      await loadData();
-
-      // Reset modal fields
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('customExportStartDate').value = today;
-      document.getElementById('customExportEndDate').value = today;
-      document.getElementById('customExportCSV').checked = true;
-      document.getElementById('customExportJSON').checked = true;
-      document.getElementById('customExportIncome').checked = true;
-      document.getElementById('customExportExpense').checked = true;
-      document.getElementById('customExportRangeError').style.display = 'none';
-
-      // Show Modal 1
-      document.getElementById('modalCustomExportRange').classList.add('active');
-    }
-
-    // Step 2: Confirm Custom Export Range (validate and go to Modal 2)
-    function confirmCustomExportRange() {
-      const startDate = document.getElementById('customExportStartDate').value;
-      const endDate = document.getElementById('customExportEndDate').value;
-      const includeCSV = document.getElementById('customExportCSV').checked;
-      const includeJSON = document.getElementById('customExportJSON').checked;
-      const includeIncome = document.getElementById('customExportIncome').checked;
-      const includeExpense = document.getElementById('customExportExpense').checked;
-
-      // Validate: must select at least one file format
-      if (!includeCSV && !includeJSON) {
-        document.getElementById('customExportRangeError').style.display = 'block';
-        return;
-      }
-
-      // Validate: must select at least one data type
-      if (!includeIncome && !includeExpense) {
-        document.getElementById('customExportRangeError').style.display = 'block';
-        return;
-      }
-
-      // Validate: dates must be selected
-      if (!startDate || !endDate) {
-        document.getElementById('customExportRangeError').style.display = 'block';
-        document.getElementById('customExportRangeError').querySelector('p').textContent = '⚠️ Pilih range tanggal yang valid';
-        return;
-      }
-
-      // Validate: start date must be before or equal to end date
-      if (new Date(startDate) > new Date(endDate)) {
-        document.getElementById('customExportRangeError').style.display = 'block';
-        document.getElementById('customExportRangeError').querySelector('p').textContent = '⚠️ Tanggal mulai harus sebelum atau sama dengan tanggal akhir';
-        return;
-      }
-
-      document.getElementById('customExportRangeError').style.display = 'none';
-
-      // Store options
-      pendingCustomExportOptions = {
-        startDate: startDate,
-        endDate: endDate,
-        includeCSV: includeCSV,
-        includeJSON: includeJSON,
-        includeIncomeType: includeIncome,
-        includeExpenseType: includeExpense
-      };
-
-      // Close Modal 1
-      document.getElementById('modalCustomExportRange').classList.remove('active');
-
-      // Reset and show Modal 2 (all checked by default)
-      document.getElementById('customExportTransactionHistory').checked = true;
-      document.getElementById('customExportEditHistory').checked = true;
-      document.getElementById('customExportDeleteHistory').checked = true;
-
-      document.getElementById('modalCustomExportOptions').classList.add('active');
-    }
-
-    // Step 3: Execute Custom Export
-    async function executeCustomExport() {
-      const includeTransactionHistory = document.getElementById('customExportTransactionHistory').checked;
-      const includeEditHistory = document.getElementById('customExportEditHistory').checked;
-      const includeDeleteHistory = document.getElementById('customExportDeleteHistory').checked;
-
-      // Validate: at least one option must be selected
-      if (!includeTransactionHistory && !includeEditHistory && !includeDeleteHistory) {
-        showToast('Pilih minimal satu jenis data untuk diekspor', 'error');
-        return;
-      }
-
-      // Close Modal 2
-      document.getElementById('modalCustomExportOptions').classList.remove('active');
+      // Reset displays
+      document.getElementById('restoreFileInfo').style.display = 'none';
+      document.getElementById('restoreFileError').style.display = 'none';
+      document.getElementById('btnExecuteRestore').disabled = true;
+      pendingRestoreData = null;
 
       try {
-        // Convert dates to timestamps (WIB timezone)
-        const wibOffset = 7 * 60 * 60 * 1000;
-        const startDate = new Date(pendingCustomExportOptions.startDate);
-        const endDate = new Date(pendingCustomExportOptions.endDate);
+        const content = await file.text();
+        const data = JSON.parse(content);
 
-        // Set start time to 00:00:00 and end time to 23:59:59
-        const startTime = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0) - wibOffset;
-        const endTime = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999) - wibOffset;
+        // Validate backup structure
+        const validation = validateBackupStructure(data);
+        if (!validation.valid) {
+          throw new Error(validation.error);
+        }
 
-        const formatWIBDate = (timestamp) => {
-          const d = new Date(timestamp);
-          return d.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' });
+        pendingRestoreData = data;
+
+        // Display backup info
+        const meta = data.exportMetadata || {};
+        const exportedAt = meta.exportedAt ? new Date(meta.exportedAt).toLocaleString('id-ID') : 'Tidak diketahui';
+        const version = meta.version || '1.0';
+        
+        // Count records
+        const counts = {
+          transactions: data.transactions?.length || 0,
+          expenses: data.expenses?.length || 0,
+          schedules: data.schedules?.length || 0,
+          inventoryItems: data.inventoryItems?.length || 0,
+          inventoryPairings: data.inventoryPairings?.length || 0,
+          units: data.units?.length || 0,
+          initialCapital: data.initialCapital?.length || 0,
+          capitalExpenses: data.capitalExpenses?.length || 0,
+          editLogs: data.editLogs?.length || 0
         };
 
-        // Export CSV if selected
-        if (pendingCustomExportOptions.includeCSV) {
-          await exportCustomCSV(startTime, endTime, formatWIBDate, includeTransactionHistory, includeEditHistory);
+        document.getElementById('restoreFileDetails').innerHTML = `
+          <div style="display: grid; gap: 4px;">
+            <div><strong>Versi Backup:</strong> ${version}</div>
+            <div><strong>Tanggal Export:</strong> ${exportedAt}</div>
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--ps3-border);">
+              <strong>Data yang tersedia:</strong>
+            </div>
+            <div>• ${counts.transactions} transaksi pendapatan</div>
+            <div>• ${counts.expenses} transaksi pengeluaran</div>
+            <div>• ${counts.schedules} jadwal</div>
+            <div>• ${counts.inventoryItems} item inventori</div>
+            <div>• ${counts.inventoryPairings} stasiun/pairing</div>
+            <div>• ${counts.units} unit</div>
+            <div>• ${counts.initialCapital} data modal</div>
+            <div>• ${counts.editLogs} riwayat edit</div>
+          </div>
+        `;
+
+        document.getElementById('restoreFileInfo').style.display = 'block';
+
+        // Enable restore button if confirmed
+        if (document.getElementById('restoreConfirm').checked) {
+          document.getElementById('btnExecuteRestore').disabled = false;
         }
 
-        // Export JSON if selected
-        if (pendingCustomExportOptions.includeJSON) {
-          await exportCustomJSON(startTime, endTime, formatWIBDate, includeTransactionHistory, includeEditHistory, includeDeleteHistory);
-        }
-
-        showToast('Ekspor kustom berhasil', 'success');
-      } catch (err) {
-        console.error('Custom export error:', err);
-        showToast('Ekspor gagal: ' + err.message, 'error');
+      } catch (error) {
+        pendingRestoreData = null;
+        document.getElementById('restoreFileErrorMsg').textContent = error.message;
+        document.getElementById('restoreFileError').style.display = 'block';
+        document.getElementById('btnExecuteRestore').disabled = true;
       }
     }
 
-    // Export Custom Range CSV
-    async function exportCustomCSV(startTime, endTime, formatWIBDate, includeTransactionHistory, includeEditHistory) {
-      // Filter data by time range
-      let filteredTransactions = [];
-      let filteredExpenses = [];
-
-      if (pendingCustomExportOptions.includeIncomeType) {
-        filteredTransactions = transactions.filter(t => {
-          const tTime = t.endTime || t.timestamp || 0;
-          return tTime >= startTime && tTime <= endTime;
-        });
+    // Validate backup structure
+    function validateBackupStructure(data) {
+      if (!data || typeof data !== 'object') {
+        return { valid: false, error: 'File bukan JSON yang valid' };
       }
 
-      if (pendingCustomExportOptions.includeExpenseType) {
-        filteredExpenses = expenses.filter(e => {
-          const eTime = e.timestamp || e.created_at || 0;
-          return eTime >= startTime && eTime <= endTime;
-        });
+      // Check for export metadata
+      if (!data.exportMetadata) {
+        console.warn('Backup tidak memiliki metadata export');
       }
 
-      const wibTime = new Date();
-      const fileDate = wibTime.toISOString().split('T')[0];
-
-      let csv = '\ufeff';
-      csv += 'PS3 RENTAL MANAGER - LAPORAN KUSTOM\n';
-      csv += `Periode: ${formatWIBDate(startTime)} - ${formatWIBDate(endTime)}\n`;
-      csv += `Diekspor pada: ${wibTime.toLocaleDateString('id-ID')} ${wibTime.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false})} WIB\n`;
-      csv += `Timezone: WIB (UTC+7)\n\n`;
-
-      // Income Transactions
-      if (includeTransactionHistory && filteredTransactions.length > 0) {
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'TRANSAKSI PENDAPATAN\n';
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'TX ID,Tanggal,Waktu,Unit,Pelanggan,Durasi (menit),Biaya,Pembayaran,Catatan,Jumlah Edit\n';
-
-        filteredTransactions.forEach(t => {
-          const date = new Date(t.endTime || t.timestamp);
-          const dateStr = date.toLocaleDateString('id-ID');
-          const timeStr = date.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false}) + ' WIB';
-          csv += `"${t.id}","${dateStr}","${timeStr}","${t.unitName}","${t.customer || '-'}",${t.durationMin || 0},${t.paid || 0},"${t.payment || 'cash'}","${(t.note || '').replace(/"/g, '""')}",${t.editCount || 0}\n`;
-        });
-
-        const totalIncome = filteredTransactions.reduce((sum, t) => sum + (t.paid || 0), 0);
-        csv += `"TOTAL","","","","",${filteredTransactions.length} transaksi,${totalIncome},"","",""\n\n`;
+      // Check required fields (minimum required for a valid backup)
+      if (!data.settings || typeof data.settings !== 'object') {
+        return { valid: false, error: 'Data settings tidak ditemukan atau tidak valid' };
       }
 
-      // Expense Transactions
-      if (includeTransactionHistory && filteredExpenses.length > 0) {
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'TRANSAKSI PENGELUARAN\n';
-        csv += '═══════════════════════════════════════════════════════════════\n';
-        csv += 'TX ID,Tanggal,Waktu,Item,Kategori,Jumlah,Catatan,Jumlah Edit\n';
-
-        filteredExpenses.forEach(e => {
-          const date = new Date(e.timestamp || e.created_at);
-          const dateStr = date.toLocaleDateString('id-ID');
-          const timeStr = date.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false}) + ' WIB';
-          csv += `"${e.id}","${dateStr}","${timeStr}","${e.item}","${e.category || '-'}",${e.amount || 0},"${(e.note || '').replace(/"/g, '""')}",${e.editCount || 0}\n`;
-        });
-
-        const totalExpense = filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-        csv += `"TOTAL","","","","",${filteredExpenses.length} transaksi,${totalExpense},"",""\n\n`;
+      if (!Array.isArray(data.units)) {
+        return { valid: false, error: 'Data units tidak ditemukan atau tidak valid' };
       }
 
-      // Edit History
-      if (includeEditHistory) {
-        const incomeEditHistory = [];
-        const expenseEditHistory = [];
-
-        filteredTransactions.forEach(t => {
-          if (t.editHistory && Array.isArray(t.editHistory)) {
-            t.editHistory.forEach(edit => {
-              incomeEditHistory.push({
-                transactionId: t.id,
-                fieldName: edit.field,
-                oldValue: edit.oldValue,
-                newValue: edit.newValue,
-                editReason: edit.reason,
-                editedAt: edit.timestamp
-              });
-            });
-          }
-        });
-
-        filteredExpenses.forEach(e => {
-          if (e.editHistory && Array.isArray(e.editHistory)) {
-            e.editHistory.forEach(edit => {
-              expenseEditHistory.push({
-                expenseId: e.id,
-                fieldName: edit.field,
-                oldValue: edit.oldValue,
-                newValue: edit.newValue,
-                editReason: edit.reason,
-                editedAt: edit.timestamp
-              });
-            });
-          }
-        });
-
-        const hasEditHistory = incomeEditHistory.length > 0 || expenseEditHistory.length > 0;
-
-        if (hasEditHistory) {
-          csv += '═══════════════════════════════════════════════════════════════\n';
-          csv += 'RIWAYAT EDIT\n';
-          csv += '═══════════════════════════════════════════════════════════════\n';
-          csv += 'TX ID,Tipe Data,Field,Yang Diubah,Jadi,Alasan Edit,Tanggal Edit\n';
-
-          incomeEditHistory.forEach(log => {
-            const editDate = new Date(log.editedAt);
-            const dateStr = editDate.toLocaleDateString('id-ID') + ' ' + editDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false});
-            csv += `"${log.transactionId}","Pendapatan","${log.fieldName}","${(log.oldValue || '-').replace(/"/g, '""')}","${(log.newValue || '-').replace(/"/g, '""')}","${(log.editReason || '-').replace(/"/g, '""')}","${dateStr}"\n`;
-          });
-
-          expenseEditHistory.forEach(log => {
-            const editDate = new Date(log.editedAt);
-            const dateStr = editDate.toLocaleDateString('id-ID') + ' ' + editDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false});
-            csv += `"${log.expenseId}","Pengeluaran","${log.fieldName}","${(log.oldValue || '-').replace(/"/g, '""')}","${(log.newValue || '-').replace(/"/g, '""')}","${(log.editReason || '-').replace(/"/g, '""')}","${dateStr}"\n`;
-          });
-
-          csv += `\n`;
-        }
+      if (!Array.isArray(data.transactions)) {
+        return { valid: false, error: 'Data transactions tidak ditemukan atau tidak valid' };
       }
 
-      // Download CSV
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const startStr = pendingCustomExportOptions.startDate;
-      const endStr = pendingCustomExportOptions.endDate;
-      a.download = `ps3-laporan-kustom-${startStr}_sampai_${endStr}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      // Optional: validate export type
+      if (data.exportMetadata?.type !== 'full-backup') {
+        console.warn('Backup mungkin bukan full backup lengkap');
+      }
+
+      return { valid: true };
     }
 
-    // Export Custom Range JSON
-    async function exportCustomJSON(startTime, endTime, formatWIBDate, includeTransactionHistory, includeEditHistory, includeDeleteHistory) {
-      const params = new URLSearchParams();
-      params.set('transactionData', includeTransactionHistory);
-      params.set('transactions', pendingCustomExportOptions.includeIncomeType);
-      params.set('expenses', pendingCustomExportOptions.includeExpenseType);
-      params.set('editHistory', includeEditHistory);
-      params.set('deleteHistory', includeDeleteHistory);
-
-      // Fetch data from API
-      const data = await api('GET', `/db?${params.toString()}`);
-
-      // Filter by date range
-      if (data.transactions && pendingCustomExportOptions.includeIncomeType) {
-        data.transactions = data.transactions.filter(t => {
-          const tTime = t.endTime || t.timestamp || 0;
-          return tTime >= startTime && tTime <= endTime;
-        });
-      } else {
-        data.transactions = [];
+    // Execute Full Restore
+    async function executeFullRestore() {
+      if (!pendingRestoreData) {
+        showToast('Tidak ada data backup yang valid', 'error');
+        return;
       }
 
-      if (data.expenses && pendingCustomExportOptions.includeExpenseType) {
-        data.expenses = data.expenses.filter(e => {
-          const eTime = e.timestamp || e.created_at || 0;
-          return eTime >= startTime && eTime <= endTime;
-        });
-      } else {
-        data.expenses = [];
+      if (!document.getElementById('restoreConfirm').checked) {
+        showToast('Anda harus mengkonfirmasi untuk melanjutkan', 'error');
+        return;
       }
 
-      // Add export metadata
-      data.exportMetadata = {
-        type: 'custom',
-        startDate: pendingCustomExportOptions.startDate,
-        endDate: pendingCustomExportOptions.endDate,
-        exportedAt: new Date().toISOString(),
-        timezone: 'WIB (UTC+7)',
-        includeTransactionHistory: includeTransactionHistory,
-        includeEditHistory: includeEditHistory,
-        includeDeleteHistory: includeDeleteHistory
-      };
+      // Show progress modal
+      closeModal('modalRestore');
+      openModal('modalRestoreProgress');
 
-      // Download JSON
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const startStr = pendingCustomExportOptions.startDate;
-      const endStr = pendingCustomExportOptions.endDate;
-      a.download = `ps3-backup-kustom-${startStr}_sampai_${endStr}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      try {
+        document.getElementById('restoreProgressDetail').textContent = 'Mengirim data ke server...';
+
+        // Send to server via POST /api/restore/full
+        const result = await api('POST', '/restore/full', { data: pendingRestoreData });
+
+        if (!result.ok) {
+          throw new Error(result.message || 'Server mengembalikan error');
+        }
+
+        // Close progress modal
+        closeModal('modalRestoreProgress');
+
+        // Show success modal with details
+        const counts = result.counts || {};
+        const detailsHTML = `
+          <div style="display: grid; gap: 8px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span>Settings:</span>
+              <span style="font-weight: 600;">${counts.settings || 0}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Unit:</span>
+              <span style="font-weight: 600;">${counts.units || 0}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Transaksi Pendapatan:</span>
+              <span style="font-weight: 600;">${counts.transactions || 0}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Transaksi Pengeluaran:</span>
+              <span style="font-weight: 600;">${counts.expenses || 0}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Jadwal:</span>
+              <span style="font-weight: 600;">${counts.schedules || 0}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Item Inventori:</span>
+              <span style="font-weight: 600;">${counts.inventoryItems || 0}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Stasiun/Pairing:</span>
+              <span style="font-weight: 600;">${counts.inventoryPairings || 0}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Data Modal:</span>
+              <span style="font-weight: 600;">${(counts.initialCapital || 0) + (counts.capitalExpenses || 0)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Edit Logs:</span>
+              <span style="font-weight: 600;">${counts.editLogs || 0}</span>
+            </div>
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--ps3-green); font-weight: 600; color: var(--ps3-green);">
+              Total: ${Object.values(counts).reduce((a, b) => a + (b || 0), 0)} records
+            </div>
+          </div>
+        `;
+
+        document.getElementById('restoreSuccessDetails').innerHTML = detailsHTML;
+        openModal('modalRestoreSuccess');
+
+        // Auto reload after 5 seconds
+        setTimeout(() => {
+          location.reload();
+        }, 5000);
+
+      } catch (error) {
+        closeModal('modalRestoreProgress');
+        showToast('❌ Restore gagal: ' + error.message, 'error');
+        console.error('[Restore Error]', error);
+        
+        // Re-open restore modal so user can retry
+        setTimeout(() => {
+          openModal('modalRestore');
+        }, 500);
+      }
     }
 
     // ═════════════════ Sidebar Toggle ═════════════════
@@ -4383,7 +4385,11 @@
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.getElementById(pageId).classList.add('active');
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      event.target.closest('.nav-btn').classList.add('active');
+      
+      // Only update nav button if called from click event (not from bubble)
+      if (typeof event !== 'undefined' && event?.target) {
+        event.target.closest('.nav-btn')?.classList.add('active');
+      }
       
       if (pageId === 'pageSettings') {
         // Populate settings
@@ -5464,7 +5470,11 @@
       document.getElementById('editPhone').value = transaction.phone || '';
       document.getElementById('editPaid').value = transaction.paid || transaction.total || 0;
       document.getElementById('editDuration').value = transaction.duration || 0;
-      document.getElementById('editPayment').value = transaction.payment || 'cash';
+
+      // Populate payment methods dropdown then set current value
+      populatePaymentMethodDropdowns();
+      document.getElementById('editPayment').value = transaction.payment || (paymentMethods[0] && paymentMethods[0].id) || 'cash';
+
       document.getElementById('editNote').value = transaction.note || '';
       document.getElementById('editReason').value = '';
 
@@ -6258,7 +6268,7 @@
                 <span onclick="copyToClipboard('${t.id || ''}')" class="tx-id-badge" title="Klik untuk copy ID" class="fs-75">${t.id || ''}</span>
               </div>
               <div class="text-right flex-1">
-                💳 ${t.payment || 'cash'}
+                💳 ${(paymentMethods.find(m => m.id === t.payment)?.icon || '')} ${(paymentMethods.find(m => m.id === t.payment)?.name) || t.payment || 'Tunai'}
               </div>
             </div>
 
@@ -7467,7 +7477,12 @@
         <span class="toast-message">${message}</span>
       `;
       container.appendChild(toast);
-      setTimeout(() => toast.remove(), 4000);
+      
+      // Remove with animation
+      setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), 350);
+      }, 4000);
     }
 
     function updateSyncStatus(status) {
@@ -9066,14 +9081,20 @@
           // Populate modal with data (same calculation as stopSession)
           const elapsed = Math.floor((Date.now() - station.startTime) / 60000);
           const cost = Math.round((elapsed / 60) * settings.ratePerHour);
-          
+
           document.getElementById('completeScheduleUnitName').textContent = station.name;
           document.getElementById('completeScheduleCustomer').textContent = station.customer || schedule.customer || '-';
           document.getElementById('completeScheduleDuration').textContent = `${elapsed} menit`;
           document.getElementById('completeScheduleCost').value = cost;
           document.getElementById('completeSchedulePaid').value = cost;
-          document.getElementById('completeSchedulePayment').value = 'cash';
-          
+
+          // Populate payment methods and set default to first method (usually cash)
+          populatePaymentMethodDropdowns();
+          const completeSchedulePaymentDropdown = document.getElementById('completeSchedulePayment');
+          if (completeSchedulePaymentDropdown && paymentMethods.length > 0) {
+            completeSchedulePaymentDropdown.value = paymentMethods[0].id;
+          }
+
           openModal('modalCompleteSchedule');
           return;
         }
@@ -9234,6 +9255,15 @@
           return;
         }
         
+        // CHECK: Validate that station is NOT already active
+        const targetStationId = schedule.unitId;
+        const targetStation = stations.find(s => s.id === targetStationId || s.id === String(targetStationId));
+        
+        if (targetStation && targetStation.active) {
+          showToast(`Stasiun ${targetStation.name} sedang aktif! Selesaikan session yang berjalan terlebih dahulu.`, 'error');
+          return;
+        }
+        
         // Start the session with schedule data and station
         await api('POST', `/schedules/${id}/start-unit`, { unitId: schedule.unitId });
         await loadData();
@@ -9285,6 +9315,13 @@
       const stationId = document.getElementById('scheduleUnitSelect').value;
       if (!stationId) {
         showToast('Pilih stasiun terlebih dahulu', 'error');
+        return;
+      }
+      
+      // CHECK: Validate that selected station is NOT already active
+      const selectedStation = stations.find(s => s.id === stationId || s.id === String(stationId));
+      if (selectedStation && selectedStation.active) {
+        showToast(`Stasiun ${selectedStation.name} sedang aktif! Selesaikan session yang berjalan terlebih dahulu.`, 'error');
         return;
       }
       
@@ -9774,6 +9811,40 @@
       }
     }
 
+    let currentInventoryFilter = '';
+    
+    // Default condition constants for renderInventory (before actual definitions)
+    const defaultConditionColors = {
+      baik: 'var(--ps3-green)',
+      rusak: 'var(--ps3-red)',
+      perbaikan: 'var(--ps3-yellow)',
+      rusak_total: '#666'
+    };
+    
+    const defaultConditionLabels = {
+      baik: '🟢 Baik',
+      rusak: '🔴 Rusak',
+      perbaikan: '🟡 Perbaikan',
+      rusak_total: '⚫ Rusak Total'
+    };
+    
+    function setInventoryFilter(filter) {
+      currentInventoryFilter = filter;
+      // Update active chip styling
+      document.querySelectorAll('.filter-chip').forEach(chip => {
+        if (chip.dataset.filter === filter) {
+          chip.style.background = 'var(--ps3-red)';
+          chip.style.color = 'white';
+          chip.style.borderColor = 'var(--ps3-red)';
+        } else {
+          chip.style.background = 'var(--ps3-surface)';
+          chip.style.color = 'var(--ps3-silver)';
+          chip.style.borderColor = 'var(--ps3-border)';
+        }
+      });
+      renderInventory();
+    }
+
     function renderInventory() {
       const container = document.getElementById('inventoryList');
       if (!container) return;
@@ -9783,55 +9854,73 @@
         inventory = [];
       }
       
-      if (inventory.length === 0) {
-        container.innerHTML = '<p class="empty-state-p20">Belum ada item inventori</p>';
+      // Apply filter
+      let filtered = inventory;
+      if (currentInventoryFilter) {
+        filtered = inventory.filter(item => item.category === currentInventoryFilter);
+      }
+      
+      // Update stats
+      const totalItems = inventory.length;
+      const totalValue = inventory.reduce((sum, item) => sum + (item.purchase_cost || 0), 0);
+      
+      // Update stats in compact header
+      const itemsCountEl = document.getElementById('statItemsCount');
+      const itemsValueEl = document.getElementById('statItemsValue');
+      if (itemsCountEl) itemsCountEl.textContent = totalItems;
+      if (itemsValueEl) itemsValueEl.textContent = totalValue >= 1000000 ? 'Rp' + (totalValue/1000000).toFixed(1) + 'jt' : 'Rp' + totalValue.toLocaleString();
+      
+      if (filtered.length === 0) {
+        container.innerHTML = '<p class="empty-state-p20">' + (currentInventoryFilter ? 'Tidak ada item di kategori ini' : 'Belum ada item inventori') + '</p>';
         return;
       }
       
-      // Group by category
-      const byCategory = {};
-      inventory.forEach(item => {
-        const cat = item.category || 'Lainnya';
-        if (!byCategory[cat]) byCategory[cat] = [];
-        byCategory[cat].push(item);
-      });
-
-      container.innerHTML = Object.entries(byCategory).map(([cat, items]) => `
-        <div class="mb-15">
-          <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ps3-muted); margin-bottom: 8px; border-bottom: 1px solid var(--ps3-border); padding-bottom: 4px;">
-            ${categoryLabels[cat] || cat}
-          </div>
-          ${items.map(item => `
-            <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div>
-                  <span style="font-size: 0.7rem; color: var(--ps3-muted); font-family: monospace;">${item.id}</span>
-                  <div class="fw-600">${item.name}</div>
-                </div>
+      // Use defined constants or defaults
+      const colors = typeof conditionColors !== 'undefined' ? conditionColors : defaultConditionColors;
+      const labels = typeof conditionLabels !== 'undefined' ? conditionLabels : defaultConditionLabels;
+      
+      // Simple compact list - no grouping
+      container.innerHTML = filtered.map(item => {
+        const conditionColor = colors[item.condition] || '#888';
+        const conditionText = labels[item.condition] || item.condition;
+        
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; margin-bottom: 6px;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 500; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${item.name}
               </div>
-              <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-top: 4px;">
-                ${conditionLabels[item.condition] || item.condition}
-                ${item.current_location ? `• 📍 ${item.current_location}` : ''}
-                ${item.purchase_cost ? `• 💰 Rp${item.purchase_cost.toLocaleString()}` : ''}
-              </div>
-              ${item.notes ? `<div style="font-size: 0.75rem; color: var(--ps3-muted); font-style: italic; margin-top: 4px;">💬 ${item.notes}</div>` : ''}
-              <div style="display: flex; gap: 8px; margin-top: 10px;">
-                <button onclick="deleteInventory('${item.id}')" style="background: var(--ps3-border); color: var(--ps3-text); border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">🗑️ Hapus</button>
+              <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+                <span style="font-size: 0.65rem; color: var(--ps3-muted); font-family: monospace;">${item.id}</span>
+                <span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: ${conditionColor}20; color: ${conditionColor}; border: 1px solid ${conditionColor}40;">
+                  ${conditionText.split(' ')[0]}
+                </span>
+                ${item.current_location ? `<span style="font-size: 0.7rem; color: var(--ps3-muted);">📍 ${item.current_location}</span>` : ''}
               </div>
             </div>
-          `).join('')}
-        </div>
-      `).join('');
+            <div style="display: flex; gap: 6px; margin-left: 8px;">
+              <button onclick="openItemDetail('${item.id}')" style="background: var(--ps3-border); color: var(--ps3-silver); border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">
+                📄
+              </button>
+              <button onclick="deleteInventory('${item.id}')" style="background: var(--ps3-border); color: var(--ps3-red); border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">
+                🗑️
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     async function deleteInventory(id) {
-      if (!confirm('Hapus item ini dari inventori?')) return;
+      if (!confirm('Hapus item ini dari inventori? Item akan di-unpair dari stasiun jika terpasang.')) return;
       
       try {
         await api('DELETE', `/inventory/${id}`);
         await loadInventory();
         renderInventory();
-        showToast('Item inventori dihapus', 'success');
+        // Reload stations to update their status (item removed may make station NOT READY)
+        await loadStations();
+        showToast('Item dihapus dan di-unpair dari stasiun', 'success');
       } catch (error) {
         showToast(error.message, 'error');
       }
@@ -9844,7 +9933,6 @@
     let currentItemDetail = null;
     let currentStationDetail = null;
     let stations = [];
-    let inventoryAnalytics = null;
     let globalPairedItemIds = []; // Track items paired to any station
 
     // Inventory Constants (Global Scope)
@@ -9856,6 +9944,16 @@
       kabel_usb: '🔌 Kabel USB',
       kabel_power: '🔌 Kabel Plug',
       lainnya: '📦 Lainnya'
+    };
+
+    const categoryIcons = {
+      konsol: '🎮',
+      tv: '📺',
+      stik: '🕹️',
+      kabel_hdmi: '🔌',
+      kabel_usb: '🔌',
+      kabel_power: '⚡',
+      lainnya: '📦'
     };
 
     const conditionLabels = {
@@ -9981,76 +10079,6 @@
       if (tab === 'analytics') loadInventoryAnalytics();
     }
 
-    // Enhanced renderInventory with stats and filters
-    function renderInventory() {
-      const container = document.getElementById('inventoryList');
-      if (!container) return;
-
-      // Ensure inventory is always an array
-      if (!Array.isArray(inventory)) {
-        inventory = [];
-      }
-
-      // Apply filters
-      const catFilter = document.getElementById('inventoryFilterCategory')?.value || '';
-      const condFilter = document.getElementById('inventoryFilterCondition')?.value || '';
-
-      let filtered = inventory.filter(item => item.is_active !== 0);
-      if (catFilter) filtered = filtered.filter(i => i.category === catFilter);
-      if (condFilter) filtered = filtered.filter(i => i.condition === condFilter);
-
-      // Update stats
-      const totalValue = filtered.reduce((sum, i) => sum + (i.purchase_cost || 0), 0);
-      const needMaint = filtered.filter(i => i.condition === 'perbaikan' || i.condition === 'rusak').length;
-
-      document.getElementById('statTotalItems').textContent = filtered.length;
-      document.getElementById('statTotalValue').textContent = `Rp${totalValue.toLocaleString()}`;
-      document.getElementById('statNeedMaintenance').textContent = needMaint;
-
-      if (filtered.length === 0) {
-        container.innerHTML = '<p class="empty-state-p20">Tidak ada item yang sesuai filter</p>';
-        return;
-      }
-
-      // Group by category
-      const byCategory = {};
-      filtered.forEach(item => {
-        const cat = item.category || 'lainnya';
-        if (!byCategory[cat]) byCategory[cat] = [];
-        byCategory[cat].push(item);
-      });
-
-      container.innerHTML = Object.entries(byCategory).map(([cat, items]) => `
-        <div class="mb-15">
-          <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ps3-muted); margin-bottom: 8px; border-bottom: 1px solid var(--ps3-border); padding-bottom: 4px;">
-            ${categoryLabels[cat] || cat} (${items.length})
-          </div>
-          ${items.map(item => `
-            <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;"
-                 onclick="openItemDetail('${item.id}')"
-                 onmouseover="this.style.borderColor='var(--ps3-silver)'"
-                 onmouseout="this.style.borderColor='var(--ps3-border)'">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div class="flex-1">
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="font-size: 0.65rem; color: var(--ps3-muted); font-family: monospace; background: var(--ps3-card); padding: 2px 6px; border-radius: 4px;">${item.id}</span>
-                    <span style="font-size: 0.7rem; color: ${conditionColors[item.condition] || 'var(--ps3-muted)'}; font-weight: 600;">${conditionLabels[item.condition] || item.condition}</span>
-                  </div>
-                  <div style="font-weight: 600; margin-top: 4px;">${item.name}</div>
-                </div>
-                ${item.purchase_cost ? `<div style="font-size: 0.8rem; color: var(--ps3-green); font-weight: 600;">Rp${item.purchase_cost.toLocaleString()}</div>` : ''}
-              </div>
-              <div style="font-size: 0.75rem; color: var(--ps3-muted); margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px;">
-                ${item.current_location ? `<span>📍 ${item.current_location}</span>` : ''}
-                ${item.total_usage_hours ? `<span>⏱️ ${item.total_usage_hours} jam</span>` : ''}
-                ${item.total_maintenance_cost ? `<span>🔧 Rp${item.total_maintenance_cost.toLocaleString()}</span>` : ''}
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `).join('');
-    }
-
     // Item Detail Functions
     async function openItemDetail(itemId) {
       try {
@@ -10064,41 +10092,41 @@
         const bookValue = item.current_book_value !== undefined ? item.current_book_value : (item.purchase_cost || 0);
 
         document.getElementById('itemDetailInfo').innerHTML = `
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem;">
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 0.85rem; color: var(--ps3-text);">
             <div>
-              <div class="text-muted-7">ID</div>
-              <div style="font-family: monospace; font-weight: 600;">${item.id}</div>
+              <div style="color: var(--ps3-muted); font-size: 0.75rem; margin-bottom: 2px;">ID Item</div>
+              <div style="font-family: monospace; font-weight: 600; color: var(--ps3-silver);">${item.id}</div>
             </div>
             <div>
-              <div class="text-muted-7">Kategori</div>
-              <div>${categoryLabels[item.category] || item.category}</div>
+              <div style="color: var(--ps3-muted); font-size: 0.75rem; margin-bottom: 2px;">Kategori</div>
+              <div style="font-weight: 500;">${categoryLabels[item.category] || item.category}</div>
             </div>
             <div>
-              <div class="text-muted-7">Kondisi</div>
-              <div style="color: ${conditionColors[item.condition] || 'inherit'};">${conditionLabels[item.condition] || item.condition}</div>
+              <div style="color: var(--ps3-muted); font-size: 0.75rem; margin-bottom: 2px;">Kondisi</div>
+              <div style="font-weight: 600; color: ${conditionColors[item.condition] || 'inherit'};">${conditionLabels[item.condition] || item.condition}</div>
             </div>
             <div>
-              <div class="text-muted-7">Lokasi</div>
-              <div>${item.current_location || '-'}</div>
+              <div style="color: var(--ps3-muted); font-size: 0.75rem; margin-bottom: 2px;">Lokasi</div>
+              <div style="font-weight: 500;">${item.current_location || '-'}</div>
             </div>
             <div>
-              <div class="text-muted-7">Tgl Beli</div>
-              <div>${purchaseDate}</div>
+              <div style="color: var(--ps3-muted); font-size: 0.75rem; margin-bottom: 2px;">Tgl Beli</div>
+              <div style="font-weight: 500;">${purchaseDate}</div>
             </div>
             <div>
-              <div class="text-muted-7">Harga Beli</div>
-              <div class="text-green">Rp${(item.purchase_cost || 0).toLocaleString()}</div>
+              <div style="color: var(--ps3-muted); font-size: 0.75rem; margin-bottom: 2px;">Harga Beli</div>
+              <div style="font-weight: 600; color: var(--ps3-green);">Rp${(item.purchase_cost || 0).toLocaleString('id-ID')}</div>
             </div>
             <div>
-              <div class="text-muted-7">Nilai Buku</div>
-              <div>Rp${bookValue.toLocaleString()}</div>
+              <div style="color: var(--ps3-muted); font-size: 0.75rem; margin-bottom: 2px;">Nilai Buku</div>
+              <div style="font-weight: 600;">Rp${bookValue.toLocaleString('id-ID')}</div>
             </div>
             <div>
-              <div class="text-muted-7">Total Jam</div>
-              <div>${item.total_usage_hours || 0} jam</div>
+              <div style="color: var(--ps3-muted); font-size: 0.75rem; margin-bottom: 2px;">Total Jam</div>
+              <div style="font-weight: 600; color: var(--ps3-silver);">${item.total_usage_hours || 0} jam</div>
             </div>
           </div>
-          ${item.notes ? `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--ps3-border); font-size: 0.75rem; color: var(--ps3-muted);">💬 ${item.notes}</div>` : ''}
+          ${item.notes ? `<div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ps3-border); font-size: 0.8rem; color: var(--ps3-muted); line-height: 1.5;">💬 ${item.notes}</div>` : ''}
         `;
 
         // Reset to maintenance tab
@@ -10107,8 +10135,11 @@
         // Load maintenance list
         renderMaintenanceList(item.maintenance_history || []);
 
-        // Load usage stats
-        renderUsageStats(item);
+      // Load usage stats with verification
+      renderUsageStats(item);
+      
+      // Verify tracking data from server
+      verifyItemTracking(item.id);
 
         // Load station info
         renderItemStationInfo(item);
@@ -10120,33 +10151,49 @@
     }
 
     function switchItemTab(tab) {
+      // Hide all tabs
       document.getElementById('itemTabMaintenance').style.display = 'none';
       document.getElementById('itemTabUsage').style.display = 'none';
       document.getElementById('itemTabStation').style.display = 'none';
 
-      document.getElementById('tabItemMaintenance').style.background = 'var(--ps3-surface)';
-      document.getElementById('tabItemUsage').style.background = 'var(--ps3-surface)';
-      document.getElementById('tabItemStation').style.background = 'var(--ps3-surface)';
+      // Reset all tab buttons to inactive style
+      const tabs = ['Maintenance', 'Usage', 'Station'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tabItem${t}`);
+        btn.style.background = 'var(--ps3-surface)';
+        btn.style.color = 'var(--ps3-muted)';
+        btn.style.border = '1px solid var(--ps3-border)';
+        btn.style.fontWeight = '500';
+        btn.style.borderRadius = '8px';
+      });
 
+      // Show selected tab
       document.getElementById(`itemTab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).style.display = 'block';
-      document.getElementById(`tabItem${tab.charAt(0).toUpperCase() + tab.slice(1)}`).style.background = '';
+      
+      // Highlight active tab
+      const activeBtn = document.getElementById(`tabItem${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+      activeBtn.style.background = 'var(--ps3-red)';
+      activeBtn.style.color = '#fff';
+      activeBtn.style.border = '1px solid var(--ps3-red)';
+      activeBtn.style.fontWeight = '700';
+      activeBtn.style.borderRadius = '8px';
     }
 
     function renderMaintenanceList(history) {
       const container = document.getElementById('itemMaintenanceList');
       if (!history || history.length === 0) {
-        container.innerHTML = '<p class="empty-state-p15">Belum ada riwayat perawatan</p>';
+        container.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 20px; font-size: 0.9rem;">🔧 Belum ada riwayat perawatan</p>';
         return;
       }
 
       container.innerHTML = history.map(h => `
-        <div style="background: var(--ps3-card); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
-          <div class="flex-between-center">
-            <div style="font-size: 0.8rem; font-weight: 600;">${new Date(h.maintenance_date).toLocaleDateString('id-ID')}</div>
-            ${h.cost ? `<div style="font-size: 0.8rem; color: var(--ps3-yellow);">Rp${h.cost.toLocaleString()}</div>` : ''}
+        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 10px; transition: all 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-size: 0.85rem; font-weight: 600; color: var(--ps3-silver);">🗓️ ${new Date(h.maintenance_date).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'})}</div>
+            ${h.cost ? `<div style="font-size: 0.85rem; color: var(--ps3-yellow); font-weight: 600;">Rp${h.cost.toLocaleString('id-ID')}</div>` : ''}
           </div>
-          <div style="font-size: 0.75rem; margin-top: 4px;">${h.description}</div>
-          ${h.vendor ? `<div style="font-size: 0.7rem; color: var(--ps3-muted); margin-top: 2px;">🏢 ${h.vendor}</div>` : ''}
+          <div style="font-size: 0.8rem; color: var(--ps3-text); line-height: 1.4;">${h.description}</div>
+          ${h.vendor ? `<div style="font-size: 0.75rem; color: var(--ps3-muted); margin-top: 6px;">🏢 ${h.vendor}</div>` : ''}
         </div>
       `).join('');
     }
@@ -10157,23 +10204,106 @@
       const total30d = usage30d.reduce((sum, u) => sum + (u.hours_used || 0), 0);
 
       container.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-          <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 12px; text-align: center;">
-            <div style="font-size: 1.1rem; font-weight: 700; color: var(--ps3-silver);">${item.total_usage_hours || 0}</div>
-            <div class="fs-65 text-muted">Total Jam</div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+          <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 14px; text-align: center;">
+            <div style="font-size: 1.3rem; font-weight: 700; color: var(--ps3-silver);">${item.total_usage_hours || 0}</div>
+            <div style="font-size: 0.75rem; color: var(--ps3-muted); margin-top: 4px;">⏱️ Total Jam</div>
           </div>
-          <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 12px; text-align: center;">
-            <div style="font-size: 1.1rem; font-weight: 700; color: var(--ps3-yellow);">${total30d.toFixed(1)}</div>
-            <div class="fs-65 text-muted">30 Hari Terakhir</div>
+          <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 14px; text-align: center;">
+            <div style="font-size: 1.3rem; font-weight: 700; color: var(--ps3-red);">${total30d.toFixed(1)}</div>
+            <div style="font-size: 0.75rem; color: var(--ps3-muted); margin-top: 4px;">📅 30 Hari Terakhir</div>
           </div>
         </div>
       `;
+
+      // Render usage chart
+      const ctx = document.getElementById('itemUsageChartCanvas')?.getContext('2d');
+      if (!ctx) return;
+
+      // Destroy existing chart if any
+      if (window.itemUsageChartInstance) {
+        window.itemUsageChartInstance.destroy();
+      }
+
+      // Prepare data for chart (last 30 days)
+      const labels = [];
+      const data = [];
+      
+      // Generate last 30 days labels
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        labels.push(date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }));
+        
+        // Find usage for this date
+        const dateStr = date.toISOString().split('T')[0];
+        const usage = usage30d.find(u => u.date === dateStr);
+        data.push(usage ? (usage.hours_used || 0) : 0);
+      }
+
+      // Create chart
+      window.itemUsageChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Jam Penggunaan',
+            data: data,
+            backgroundColor: 'rgba(230, 0, 18, 0.7)',
+            borderColor: 'rgba(230, 0, 18, 1)',
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              callbacks: {
+                label: function(context) {
+                  return context.parsed.y.toFixed(1) + ' jam';
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              display: false,
+              grid: {
+                display: false
+              }
+            },
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              },
+              ticks: {
+                color: 'rgba(255, 255, 255, 0.7)',
+                font: {
+                  size: 10
+                },
+                callback: function(value) {
+                  return value + 'j';
+                }
+              }
+            }
+          }
+        }
+      });
     }
 
     function renderItemStationInfo(item) {
       const container = document.getElementById('itemStationInfo');
       if (!item.current_pairing) {
-        container.innerHTML = '<p class="empty-state-p15">Item tidak terpasang di stasiun manapun</p>';
+        container.innerHTML = '<p style="text-align: center; color: var(--ps3-muted); padding: 20px; font-size: 0.9rem;">🏢 Item tidak terpasang di stasiun manapun</p>';
         return;
       }
 
@@ -10183,14 +10313,35 @@
       const durationText = formatDuration(durationMs);
 
       container.innerHTML = `
-        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 12px;">
-          <div style="font-size: 0.8rem; font-weight: 600;">🏢 ${item.current_pairing.name}</div>
-          <div class="text-sm text-muted">ID: ${item.current_pairing.id}</div>
-          <div style="font-size: 0.75rem; margin-top: 8px;">Role: ${item.current_pairing.role}</div>
-          <div class="text-sm text-muted">Dipasang: ${new Date(item.current_pairing.assigned_at).toLocaleDateString('id-ID')}</div>
-          <div style="font-size: 0.75rem; margin-top: 6px; color: var(--ps3-silver);">⏱️ ${durationText}</div>
+        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 14px;">
+          <div style="font-size: 0.95rem; font-weight: 600; color: var(--ps3-silver); margin-bottom: 4px;">🏢 ${item.current_pairing.name}</div>
+          <div style="font-size: 0.8rem; color: var(--ps3-muted); margin-bottom: 10px;">ID: ${item.current_pairing.id}</div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 0.8rem; color: var(--ps3-text);">
+            <div>
+              <div style="color: var(--ps3-muted); font-size: 0.7rem;">Role</div>
+              <div style="font-weight: 500;">${item.current_pairing.role}</div>
+            </div>
+            <div>
+              <div style="color: var(--ps3-muted); font-size: 0.7rem;">Dipasang</div>
+              <div style="font-weight: 500;">${new Date(item.current_pairing.assigned_at).toLocaleDateString('id-ID')}</div>
+            </div>
+          </div>
+          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--ps3-border); font-size: 0.8rem; color: var(--ps3-yellow);">⏱️ ${durationText}</div>
         </div>
       `;
+    }
+
+    // Verify item tracking data
+    async function verifyItemTracking(itemId) {
+      try {
+        const response = await api('GET', `/inventory/${itemId}/usage-verification`);
+        if (response.ok && response.usage_data) {
+          console.log('[ItemTracking] Verification data:', response.usage_data);
+        }
+      } catch (e) {
+        // Silently fail - this is just for verification
+        console.log('[ItemTracking] Verification check skipped');
+      }
     }
 
     function openAddMaintenanceModal() {
@@ -10460,67 +10611,83 @@
           </div>
         `;
 
-        // Render items in station with emoji backgrounds and category sorting
+        // Render items in station grouped by category into their respective containers
         let items = station.items || [];
         
-        // Emoji mapping for categories
-        const categoryEmojis = {
-          'konsol': '🎮',
-          'ps3': '🎮',
-          'tv': '📺',
-          'stik': '🎮',
-          'kabel_power': '🔌',
-          'usb': '🔌',
-          'charger': '🔌',
-          'plug': '⚡',
-          'power': '⚡',
-          'kabel_hdmi': '📡',
-          'hdmi': '📡',
-          'lainnya': '📦',
-          'kabel': '🔧'
+        // Group items by category (with special handling for kabel_power based on role)
+        const groupedItems = {
+          'konsol': [],
+          'tv': [],
+          'stik': [],
+          'charger': [],
+          'hdmi': [],
+          'plug': [],
+          'lainnya': []
         };
         
-        // Category sort order: Konsol, TV, Stik, Charger, Plug, HDMI, Lainnya
-        const categoryOrder = {
-          'konsol': 1, 'ps3': 1,
-          'tv': 2,
-          'stik': 3,
-          'kabel_power': 4, 'usb': 4, 'charger': 4,
-          'plug': 5, 'power': 5,
-          'kabel_hdmi': 6, 'hdmi': 6,
-          'lainnya': 7, 'kabel': 7
-        };
-        
-        // Sort items by category order
-        items = items.sort((a, b) => {
-          const orderA = categoryOrder[a.category] || 99;
-          const orderB = categoryOrder[b.category] || 99;
-          if (orderA !== orderB) return orderA - orderB;
-          // Secondary sort by role
-          return (a.role || '').localeCompare(b.role || '');
+        items.forEach(item => {
+          const cat = item.category;
+          const role = item.role || '';
+          
+          if (cat === 'konsol' || cat === 'ps3') {
+            groupedItems.konsol.push(item);
+          } else if (cat === 'tv') {
+            groupedItems.tv.push(item);
+          } else if (cat === 'stik') {
+            groupedItems.stik.push(item);
+          } else if (cat === 'kabel_hdmi' || cat === 'hdmi') {
+            groupedItems.hdmi.push(item);
+          } else if (cat === 'usb' || cat === 'charger') {
+            groupedItems.charger.push(item);
+          } else if (cat === 'kabel_power') {
+            // Special case: kabel_power goes to plug or charger based on role
+            if (role.startsWith('charger')) {
+              groupedItems.charger.push(item);
+            } else {
+              // Default to plug (role === 'power' or no role)
+              groupedItems.plug.push(item);
+            }
+          } else if (cat === 'plug' || cat === 'power') {
+            groupedItems.plug.push(item);
+          } else {
+            // lainnya, kabel, or any other
+            groupedItems.lainnya.push(item);
+          }
         });
         
-        const itemsContainer = document.getElementById('stationItemsList');
-        if (items.length === 0) {
-          itemsContainer.innerHTML = '<p class="empty-state-p15">Belum ada item di stasiun ini</p>';
-        } else {
-          itemsContainer.innerHTML = items.map(i => {
-            const emoji = categoryEmojis[i.category] || '📦';
-            const categoryLabel = getCategoryLabel(i.category);
-            return `
-            <div style="background: var(--ps3-card); border: 1px solid var(--ps3-border); border-radius: 8px; padding: 10px; margin-bottom: 8px; position: relative; overflow: hidden;">
-              <!-- Emoji background -->
-              <div style="position: absolute; right: 40px; top: 50%; transform: translateY(-50%); font-size: 3rem; opacity: 0.08; pointer-events: none; user-select: none; z-index: 0;">${emoji}</div>
-              <div class="flex-between-center" style="position: relative; z-index: 1;">
-                <div>
-                  <div class="text-75 text-muted">${i.item_id}</div>
-                  <div style="font-size: 0.85rem; font-weight: 600;">${i.item_name}</div>
-                  <div class="text-sm" style="color: var(--ps3-silver);">${categoryLabel} • ${i.role}</div>
+        // Render each category's paired items
+        const categoryEmojis = {
+          'konsol': '🎮',
+          'tv': '📺',
+          'stik': '🎮',
+          'charger': '🔌',
+          'hdmi': '📡',
+          'plug': '⚡',
+          'lainnya': '📦'
+        };
+        
+        for (const [category, catItems] of Object.entries(groupedItems)) {
+          const container = document.getElementById(`${category}PairedItems`);
+          if (!container) continue;
+          
+          if (catItems.length === 0) {
+            container.innerHTML = '';
+          } else {
+            const emoji = categoryEmojis[category] || '📦';
+            container.innerHTML = catItems.map(i => `
+              <div style="background: var(--ps3-card); border: 1px solid var(--ps3-border); border-radius: 6px; padding: 6px 8px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 0.9rem;">${emoji}</span>
+                  <div>
+                    <div style="font-size: 0.7rem; color: var(--ps3-muted);">${i.item_id}</div>
+                    <div style="font-size: 0.75rem; font-weight: 500;">${i.item_name}</div>
+                  </div>
                 </div>
-                <button onclick="event.stopPropagation(); removeItemFromStation('${i.item_id}')" style="background: var(--ps3-border); color: var(--ps3-red); border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer;">❌</button>
+                <button onclick="event.stopPropagation(); removeItemFromStation('${i.item_id}')" 
+                  style="background: var(--ps3-border); color: var(--ps3-red); border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.65rem; cursor: pointer; flex-shrink: 0;">❌</button>
               </div>
-            </div>
-          `}).join('');
+            `).join('');
+          }
         }
 
         // Clear any existing dynamic rows (reset to default state) FIRST
@@ -11087,6 +11254,11 @@
     }
 
     // Analytics Functions
+    let inventoryAnalytics = null;
+    let analyticsViewMode = 'dashboard'; // 'dashboard', 'items', 'stations', 'insights'
+    let analyticsItemFilter = '';
+    let analyticsSortBy = 'usage_hours'; // 'usage_hours', 'name', 'category', 'maintenance'
+
     async function loadInventoryAnalytics() {
       try {
         inventoryAnalytics = await api('GET', '/inventory-analytics');
@@ -11096,62 +11268,527 @@
       }
     }
 
+    function switchAnalyticsView(mode) {
+      analyticsViewMode = mode;
+      renderInventoryAnalytics();
+    }
+
+    function setAnalyticsItemFilter(filter) {
+      analyticsItemFilter = filter;
+      // Update all chips: background color and text color
+      document.querySelectorAll('.analytics-filter-chip').forEach(chip => {
+        const isActive = chip.dataset.filter === filter;
+        chip.classList.toggle('active', isActive);
+        chip.style.background = isActive ? 'var(--ps3-red)' : 'var(--ps3-surface)';
+        chip.style.color = isActive ? 'white' : 'var(--ps3-silver)';
+      });
+      renderAnalyticsItemsList();
+    }
+
+    function setAnalyticsSort(sortBy) {
+      analyticsSortBy = sortBy;
+      renderAnalyticsItemsList();
+    }
+
     function renderInventoryAnalytics() {
       const container = document.getElementById('inventoryAnalytics');
       const data = inventoryAnalytics || {};
 
+      const usageStats = data.usage_stats_30d || { total_hours: 0, active_items: 0, active_days: 0 };
+      const avgHoursPerDay = usageStats.active_days > 0 ? (usageStats.total_hours / usageStats.active_days).toFixed(1) : 0;
+
       container.innerHTML = `
-        <!-- Summary Cards -->
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
-          <div class="card-surface-br10-p15-center">
-            <div style="font-size: 1.3rem; font-weight: 700; color: var(--ps3-silver);">${data.total_items || 0}</div>
-            <div class="text-sm text-muted">Total Items</div>
+        <!-- Analytics Navigation -->
+        <div style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;">
+          <button class="analytics-nav-btn ${analyticsViewMode === 'dashboard' ? 'active' : ''}" onclick="switchAnalyticsView('dashboard')" style="flex: 1; min-width: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: ${analyticsViewMode === 'dashboard' ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; color: ${analyticsViewMode === 'dashboard' ? 'white' : 'var(--ps3-silver)'}; font-size: 0.75rem; font-weight: 600; cursor: pointer;">
+            📊 Dashboard
+          </button>
+          <button class="analytics-nav-btn ${analyticsViewMode === 'items' ? 'active' : ''}" onclick="switchAnalyticsView('items')" style="flex: 1; min-width: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: ${analyticsViewMode === 'items' ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; color: ${analyticsViewMode === 'items' ? 'white' : 'var(--ps3-silver)'}; font-size: 0.75rem; font-weight: 600; cursor: pointer;">
+            📦 Per Item
+          </button>
+          <button class="analytics-nav-btn ${analyticsViewMode === 'stations' ? 'active' : ''}" onclick="switchAnalyticsView('stations')" style="flex: 1; min-width: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: ${analyticsViewMode === 'stations' ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; color: ${analyticsViewMode === 'stations' ? 'white' : 'var(--ps3-silver)'}; font-size: 0.75rem; font-weight: 600; cursor: pointer;">
+            🏢 Stasiun
+          </button>
+          <button class="analytics-nav-btn ${analyticsViewMode === 'insights' ? 'active' : ''}" onclick="switchAnalyticsView('insights')" style="flex: 1; min-width: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--ps3-border); background: ${analyticsViewMode === 'insights' ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; color: ${analyticsViewMode === 'insights' ? 'white' : 'var(--ps3-silver)'}; font-size: 0.75rem; font-weight: 600; cursor: pointer;">
+            💡 Insights
+          </button>
+        </div>
+
+        <!-- Dynamic Content Based on View Mode -->
+        <div id="analyticsContent">
+          ${renderAnalyticsContent(data)}
+        </div>
+      `;
+
+      // Render chart if in dashboard mode
+      if (analyticsViewMode === 'dashboard' && data.daily_usage_trend) {
+        setTimeout(() => renderUsageTrendChart(data.daily_usage_trend), 100);
+      }
+    }
+
+    function renderAnalyticsContent(data) {
+      switch(analyticsViewMode) {
+        case 'dashboard':
+          return renderAnalyticsDashboard(data);
+        case 'items':
+          return renderAnalyticsItemsSection(data);
+        case 'stations':
+          return renderAnalyticsStationsSection(data);
+        case 'insights':
+          return renderAnalyticsInsightsSection(data);
+        default:
+          return renderAnalyticsDashboard(data);
+      }
+    }
+
+    function renderAnalyticsDashboard(data) {
+      const usageStats = data.usage_stats_30d || { total_hours: 0, active_items: 0, active_days: 0 };
+      const avgHoursPerDay = usageStats.active_days > 0 ? (usageStats.total_hours / usageStats.active_days).toFixed(1) : 0;
+      const utilizationRate = data.total_items > 0 ? Math.round((usageStats.active_items / data.total_items) * 100) : 0;
+
+      return `
+        <!-- Usage Summary Cards -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px;">
+          <div class="card-surface-br10-p15-center" style="background: linear-gradient(135deg, var(--ps3-surface) 0%, rgba(230,0,18,0.1) 100%);">
+            <div style="font-size: 1.4rem; font-weight: 700; color: var(--ps3-silver);">${usageStats.total_hours.toFixed(0)}</div>
+            <div style="font-size: 0.65rem; color: var(--ps3-muted); text-transform: uppercase;">Jam Penggunaan (30h)</div>
           </div>
-          <div class="card-surface-br10-p15-center">
-            <div style="font-size: 1.3rem; font-weight: 700; color: var(--ps3-green);">Rp${(data.total_value || 0).toLocaleString()}</div>
-            <div class="text-sm text-muted">Total Nilai</div>
+          <div class="card-surface-br10-p15-center" style="background: linear-gradient(135deg, var(--ps3-surface) 0%, rgba(0,255,0,0.1) 100%);">
+            <div style="font-size: 1.4rem; font-weight: 700; color: var(--ps3-green);">${avgHoursPerDay}</div>
+            <div style="font-size: 0.65rem; color: var(--ps3-muted); text-transform: uppercase;">Rata-rata Jam/Hari</div>
           </div>
-          <div class="card-surface-br10-p15-center">
-            <div style="font-size: 1.3rem; font-weight: 700; color: var(--ps3-yellow);">${data.total_maintenance_cost || 0}</div>
-            <div class="text-sm text-muted">Biaya Perawatan</div>
+          <div class="card-surface-br10-p15-center" style="background: linear-gradient(135deg, var(--ps3-surface) 0%, rgba(255,193,7,0.1) 100%);">
+            <div style="font-size: 1.4rem; font-weight: 700; color: var(--ps3-yellow);">${usageStats.active_items}/${data.total_items || 0}</div>
+            <div style="font-size: 0.65rem; color: var(--ps3-muted); text-transform: uppercase;">Item Aktif</div>
           </div>
-          <div class="card-surface-br10-p15-center">
-            <div style="font-size: 1.3rem; font-weight: 700; color: var(--ps3-red);">${data.items_need_attention || 0}</div>
-            <div class="text-sm text-muted">Butuh Perhatian</div>
+          <div class="card-surface-br10-p15-center" style="background: linear-gradient(135deg, var(--ps3-surface) 0%, rgba(0,150,255,0.1) 100%);">
+            <div style="font-size: 1.4rem; font-weight: 700; color: var(--ps3-blue);">${utilizationRate}%</div>
+            <div style="font-size: 0.65rem; color: var(--ps3-muted); text-transform: uppercase;">Utilisasi</div>
           </div>
         </div>
 
-        <!-- Assets by Category -->
+        <!-- Usage Trend Chart -->
         <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 15px; margin-bottom: 15px;">
-          <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: var(--ps3-silver);">📊 Aset per Kategori</div>
-          ${(data.assets_by_category || []).map(c => `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--ps3-border);">
-              <span style="font-size: 0.8rem;">${categoryLabels[c.category] || c.category}</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="font-size: 0.85rem; font-weight: 600; color: var(--ps3-silver);">📈 Tren Penggunaan (30 Hari)</div>
+            <div style="font-size: 0.7rem; color: var(--ps3-muted);">Total: ${usageStats.total_hours.toFixed(0)} jam</div>
+          </div>
+          <div id="usageTrendChart" style="height: 150px; position: relative;">
+            <canvas id="usageTrendCanvas" style="width: 100%; height: 100%;"></canvas>
+          </div>
+        </div>
+
+        <!-- Top Performers -->
+        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+          <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: var(--ps3-green);">🏆 Top Performers (Usage Tertinggi)</div>
+          ${(data.top_performers || []).slice(0, 5).map((item, idx) => `
+            <div style="display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--ps3-border); ${idx === 0 ? 'background: rgba(0,255,0,0.05);' : ''}">
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: ${idx === 0 ? 'var(--ps3-green)' : idx === 1 ? 'var(--ps3-silver)' : idx === 2 ? 'var(--ps3-yellow)' : 'var(--ps3-surface)'}; color: ${idx < 3 ? 'white' : 'var(--ps3-silver)'}; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; margin-right: 12px; border: 2px solid ${idx < 3 ? 'transparent' : 'var(--ps3-border)'};">
+                ${idx + 1}
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 0.8rem; font-weight: 600; color: var(--ps3-silver); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name || 'Unknown'}</div>
+                <div style="font-size: 0.7rem; color: var(--ps3-muted);">${categoryLabels[item.category] || item.category || '-'} ${item.station_name ? '• ' + item.station_name : ''}</div>
+              </div>
               <div style="text-align: right;">
-                <div style="font-size: 0.8rem; font-weight: 600;">${c.count} item</div>
-                <div class="text-sm text-green">Rp${(c.value || 0).toLocaleString()}</div>
+                <div style="font-size: 0.9rem; font-weight: 700; color: var(--ps3-green);">${(item.total_hours || 0).toFixed(0)}j</div>
               </div>
             </div>
-          `).join('') || '<p style="text-align: center; color: var(--ps3-muted);">Tidak ada data</p>'}
+          `).join('') || '<p style="text-align: center; color: var(--ps3-muted); padding: 20px;">Belum ada data penggunaan</p>'}
         </div>
 
-        <!-- Stations Summary -->
+        <!-- Quick Stats Grid -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px;">
+          <div class="card-surface-br10-p15-center">
+            <div style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-silver);">${data.total_items || 0}</div>
+            <div style="font-size: 0.65rem; color: var(--ps3-muted); text-transform: uppercase;">Total Items</div>
+          </div>
+          <div class="card-surface-br10-p15-center">
+            <div style="font-size: 1.2rem; font-weight: 700; color: var(--ps3-green);">Rp${((data.total_value || 0)/1000000).toFixed(1)}jt</div>
+            <div style="font-size: 0.65rem; color: var(--ps3-muted); text-transform: uppercase;">Nilai Aset</div>
+          </div>
+        </div>
+
+        <!-- Assets by Category with Usage -->
         <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 15px;">
-          <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: var(--ps3-silver);">🏢 Ringkasan Stasiun</div>
-          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; padding: 8px 0;">
-            <span>Total Stasiun</span>
-            <span class="fw-600">${data.total_stations || 0}</span>
+          <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: var(--ps3-silver);">📊 Usage per Kategori (30 Hari)</div>
+          ${(data.usage_by_category || []).map(c => {
+            const avgHoursPerItem = c.item_count > 0 ? ((c.total_hours || 0) / c.item_count).toFixed(0) : 0;
+            return `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--ps3-border);">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 0.85rem;">${categoryIcons[c.category] || '📦'}</span>
+                <div>
+                  <div style="font-size: 0.8rem; font-weight: 600; color: var(--ps3-silver);">${categoryLabels[c.category] || c.category || '-'}</div>
+                  <div style="font-size: 0.65rem; color: var(--ps3-muted);">${c.item_count || 0} item • ${avgHoursPerItem}j/item</div>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 0.9rem; font-weight: 700; color: ${(c.total_hours || 0) > 0 ? 'var(--ps3-green)' : 'var(--ps3-muted)'};">${(c.total_hours || 0).toFixed(0)}j</div>
+              </div>
+            </div>
+          `}).join('') || '<p style="text-align: center; color: var(--ps3-muted);">Tidak ada data</p>'}
+        </div>
+      `;
+    }
+
+    function renderAnalyticsItemsSection(data) {
+      const items = data.item_usage_data || [];
+
+      return `
+        <!-- Filter Chips -->
+        <div style="display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; overflow-x: auto;">
+          <button onclick="setAnalyticsItemFilter('')" class="analytics-filter-chip ${analyticsItemFilter === '' ? 'active' : ''}" data-filter="" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--ps3-border); background: ${analyticsItemFilter === '' ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; color: ${analyticsItemFilter === '' ? 'white' : 'var(--ps3-silver)'}; font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
+            Semua
+          </button>
+          <button onclick="setAnalyticsItemFilter('konsol')" class="analytics-filter-chip ${analyticsItemFilter === 'konsol' ? 'active' : ''}" data-filter="konsol" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--ps3-border); background: ${analyticsItemFilter === 'konsol' ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; color: ${analyticsItemFilter === 'konsol' ? 'white' : 'var(--ps3-silver)'}; font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
+            🎮 Konsol
+          </button>
+          <button onclick="setAnalyticsItemFilter('tv')" class="analytics-filter-chip ${analyticsItemFilter === 'tv' ? 'active' : ''}" data-filter="tv" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--ps3-border); background: ${analyticsItemFilter === 'tv' ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; color: ${analyticsItemFilter === 'tv' ? 'white' : 'var(--ps3-silver)'}; font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
+            📺 TV
+          </button>
+          <button onclick="setAnalyticsItemFilter('stik')" class="analytics-filter-chip ${analyticsItemFilter === 'stik' ? 'active' : ''}" data-filter="stik" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--ps3-border); background: ${analyticsItemFilter === 'stik' ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; color: ${analyticsItemFilter === 'stik' ? 'white' : 'var(--ps3-silver)'}; font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
+            🕹️ Stik
+          </button>
+          <button onclick="setAnalyticsItemFilter('kabel')" class="analytics-filter-chip ${analyticsItemFilter === 'kabel' ? 'active' : ''}" data-filter="kabel" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--ps3-border); background: ${analyticsItemFilter === 'kabel' ? 'var(--ps3-red)' : 'var(--ps3-surface)'}; color: ${analyticsItemFilter === 'kabel' ? 'white' : 'var(--ps3-silver)'}; font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
+            🔌 Kabel
+          </button>
+        </div>
+
+        <!-- Sort Options -->
+        <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
+          <span style="font-size: 0.75rem; color: var(--ps3-muted);">Urutkan:</span>
+          <select onchange="setAnalyticsSort(this.value)" style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--ps3-border); background: var(--ps3-surface); color: var(--ps3-silver); font-size: 0.75rem;">
+            <option value="usage_hours" ${analyticsSortBy === 'usage_hours' ? 'selected' : ''}>Jam Penggunaan</option>
+            <option value="name" ${analyticsSortBy === 'name' ? 'selected' : ''}>Nama Item</option>
+            <option value="category" ${analyticsSortBy === 'category' ? 'selected' : ''}>Kategori</option>
+            <option value="maintenance" ${analyticsSortBy === 'maintenance' ? 'selected' : ''}>Biaya Perawatan</option>
+          </select>
+        </div>
+
+        <!-- Items List Container -->
+        <div id="analyticsItemsList" style="max-height: 500px; overflow-y: auto;">
+          ${renderAnalyticsItemsListContent(items)}
+        </div>
+      `;
+    }
+
+    function renderAnalyticsItemsList() {
+      const listContainer = document.getElementById('analyticsItemsList');
+      if (listContainer) {
+        const items = (inventoryAnalytics?.item_usage_data || []);
+        listContainer.innerHTML = renderAnalyticsItemsListContent(items);
+      }
+    }
+
+    function renderAnalyticsItemsListContent(items) {
+      // Filter items
+      let filtered = items;
+      if (analyticsItemFilter) {
+        filtered = items.filter(item =>
+          analyticsItemFilter === 'kabel'
+            ? item.category?.includes('kabel')
+            : item.category === analyticsItemFilter
+        );
+      }
+
+      // Sort items
+      filtered = [...filtered].sort((a, b) => {
+        switch(analyticsSortBy) {
+          case 'usage_hours':
+            return (b.total_usage_hours || 0) - (a.total_usage_hours || 0);
+          case 'name':
+            return (a.name || '').localeCompare(b.name || '');
+          case 'category':
+            return (a.category || '').localeCompare(b.category || '');
+          case 'maintenance':
+            return (b.total_maintenance_cost || 0) - (a.total_maintenance_cost || 0);
+          default:
+            return 0;
+        }
+      });
+
+      if (filtered.length === 0) {
+        return '<p class="empty-state-p20">Tidak ada item dalam kategori ini</p>';
+      }
+
+      return filtered.map(item => {
+        const conditionColor = conditionColors[item.condition] || 'var(--ps3-muted)';
+        const conditionLabel = conditionLabels[item.condition] || item.condition;
+        const isHighUsage = (item.total_usage_hours || 0) > 100;
+        const isLowUsage = (item.total_usage_hours || 0) < 10;
+
+        return `
+        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 12px; margin-bottom: 10px; ${isHighUsage ? 'border-left: 3px solid var(--ps3-green);' : isLowUsage ? 'border-left: 3px solid var(--ps3-yellow);' : ''}">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 0.85rem; font-weight: 600; color: var(--ps3-silver); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</div>
+              <div style="font-size: 0.7rem; color: var(--ps3-muted);">
+                ${categoryLabels[item.category] || item.category}
+                ${item.current_station ? ' • ' + item.current_station : ' • <span style="color: var(--ps3-red);">Tidak terpasang</span>'}
+              </div>
+            </div>
+            <div style="text-align: right; margin-left: 10px;">
+              <div style="font-size: 1rem; font-weight: 700; color: ${isHighUsage ? 'var(--ps3-green)' : isLowUsage ? 'var(--ps3-yellow)' : 'var(--ps3-silver)'};">${item.total_usage_hours?.toFixed(0) || 0}j</div>
+              <div style="font-size: 0.65rem; color: var(--ps3-muted);">Total Usage</div>
+            </div>
           </div>
-          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; padding: 8px 0;">
-            <span>Stasiun Aktif</span>
-            <span class="fw-600 text-green">${data.active_stations || 0}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; padding: 8px 0; border-top: 1px solid var(--ps3-border); margin-top: 8px;">
-            <span>Total Item Terpasang</span>
-            <span style="font-weight: 600; color: var(--ps3-silver);">${data.paired_items || 0}</span>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-top: 10px; border-top: 1px solid var(--ps3-border);">
+            <div style="text-align: center;">
+              <div style="font-size: 0.75rem; font-weight: 600; color: var(--ps3-silver);">${item.usage_days || 0}</div>
+              <div style="font-size: 0.6rem; color: var(--ps3-muted);">Hari Aktif</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 0.75rem; font-weight: 600; color: ${conditionColor};">${conditionLabel}</div>
+              <div style="font-size: 0.6rem; color: var(--ps3-muted);">Kondisi</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 0.75rem; font-weight: 600; color: ${(item.total_maintenance_cost || 0) > 0 ? 'var(--ps3-red)' : 'var(--ps3-muted)'}">Rp${((item.total_maintenance_cost || 0)/1000).toFixed(0)}k</div>
+              <div style="font-size: 0.6rem; color: var(--ps3-muted);">Perawatan</div>
+            </div>
           </div>
         </div>
       `;
+      }).join('');
+    }
+
+    function renderAnalyticsStationsSection(data) {
+      const stations = data.station_utilization || [];
+
+      return `
+        <!-- Station Utilization Header -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px;">
+          <div class="card-surface-br10-p15-center">
+            <div style="font-size: 1.3rem; font-weight: 700; color: var(--ps3-silver);">${data.total_stations || 0}</div>
+            <div style="font-size: 0.65rem; color: var(--ps3-muted); text-transform: uppercase;">Total Stasiun</div>
+          </div>
+          <div class="card-surface-br10-p15-center">
+            <div style="font-size: 1.3rem; font-weight: 700; color: var(--ps3-green);">${data.paired_items || 0}</div>
+            <div style="font-size: 0.65rem; color: var(--ps3-muted); text-transform: uppercase;">Item Terpasang</div>
+          </div>
+        </div>
+
+        <!-- Station Cards -->
+        <div style="max-height: 500px; overflow-y: auto;">
+          ${stations.map(station => {
+            const totalHours = station.total_usage_hours || 0;
+            const avgHoursPerDay = totalHours / 30;
+            const isHighUsage = avgHoursPerDay > 8;
+            const isLowUsage = avgHoursPerDay < 2;
+
+            return `
+            <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 15px; margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--ps3-silver);">🏢 ${station.name || 'Unknown'}</div>
+                <div style="font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; background: ${isHighUsage ? 'rgba(0,255,0,0.15)' : isLowUsage ? 'rgba(255,193,7,0.15)' : 'var(--ps3-bg)'}; color: ${isHighUsage ? 'var(--ps3-green)' : isLowUsage ? 'var(--ps3-yellow)' : 'var(--ps3-muted)'};">
+                  ${station.item_count || 0} item
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                <div style="background: var(--ps3-bg); padding: 10px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 1.1rem; font-weight: 700; color: ${isHighUsage ? 'var(--ps3-green)' : isLowUsage ? 'var(--ps3-yellow)' : 'var(--ps3-silver)'}">${totalHours.toFixed(0)}j</div>
+                  <div style="font-size: 0.65rem; color: var(--ps3-muted);">30 Hari Terakhir</div>
+                </div>
+                <div style="background: var(--ps3-bg); padding: 10px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 1.1rem; font-weight: 700; color: var(--ps3-silver)">${avgHoursPerDay.toFixed(1)}j</div>
+                  <div style="font-size: 0.65rem; color: var(--ps3-muted);">Rata-rata/Hari</div>
+                </div>
+              </div>
+
+              <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--ps3-border);">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="flex: 1; height: 6px; background: var(--ps3-bg); border-radius: 3px; overflow: hidden;">
+                    <div style="width: ${Math.min((avgHoursPerDay / 12) * 100, 100)}%; height: 100%; background: ${isHighUsage ? 'var(--ps3-green)' : isLowUsage ? 'var(--ps3-yellow)' : 'var(--ps3-silver)'}; border-radius: 3px; transition: width 0.3s;"></div>
+                  </div>
+                  <span style="font-size: 0.7rem; color: var(--ps3-muted);">${Math.min((avgHoursPerDay / 12) * 100, 100).toFixed(0)}%</span>
+                </div>
+                <div style="font-size: 0.65rem; color: var(--ps3-muted); margin-top: 4px;">Utilisasi Stasiun (target: 12j/hari)</div>
+              </div>
+            </div>
+          `;
+          }).join('') || '<p class="empty-state-p20">Belum ada data stasiun</p>'}
+        </div>
+      `;
+    }
+
+    function renderAnalyticsInsightsSection(data) {
+      const underutilized = data.underutilized_items || [];
+      const needAttention = data.need_attention || [];
+
+      return `
+        <!-- Underutilized Items Alert -->
+        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <span style="font-size: 1.2rem;">⚠️</span>
+            <div style="font-size: 0.9rem; font-weight: 600; color: var(--ps3-yellow);">Item Underutilized</div>
+            <span style="margin-left: auto; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; background: rgba(255,193,7,0.15); color: var(--ps3-yellow);">${underutilized.length} item</span>
+          </div>
+          <p style="font-size: 0.75rem; color: var(--ps3-muted); margin-bottom: 12px;">Item dengan penggunaan &lt; 10 jam total. Pertimbangkan untuk dipindahkan ke stasiun lain atau dijual.</p>
+
+          ${underutilized.slice(0, 5).map(item => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--ps3-border);">
+              <div>
+                <div style="font-size: 0.8rem; font-weight: 600; color: var(--ps3-silver);">${item.name || 'Unknown'}</div>
+                <div style="font-size: 0.7rem; color: var(--ps3-muted);">${categoryLabels[item.category] || item.category || '-'} • Beli: ${formatDate(item.purchase_date)}</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 0.85rem; font-weight: 700; color: var(--ps3-yellow);">${(item.total_hours || 0).toFixed(0)}j</div>
+                <div style="font-size: 0.65rem; color: var(--ps3-muted);">Rp${(item.purchase_cost || 0).toLocaleString()}</div>
+              </div>
+            </div>
+          `).join('') || '<p style="font-size: 0.75rem; color: var(--ps3-muted); text-align: center; padding: 10px;">Tidak ada item underutilized</p>'}
+        </div>
+
+        <!-- Need Attention -->
+        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <span style="font-size: 1.2rem;">🔧</span>
+            <div style="font-size: 0.9rem; font-weight: 600; color: var(--ps3-red);">Butuh Perhatian</div>
+            <span style="margin-left: auto; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; background: rgba(230,0,18,0.15); color: var(--ps3-red);">${needAttention.length} item</span>
+          </div>
+
+          ${needAttention.slice(0, 5).map(item => {
+            const issue = item.condition === 'rusak' || item.condition === 'rusak_total' ? 'Rusak' :
+                         item.condition === 'perbaikan' ? 'Dalam Perbaikan' : 'Maintenance Jatuh Tempo';
+            return `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--ps3-border);">
+              <div>
+                <div style="font-size: 0.8rem; font-weight: 600; color: var(--ps3-silver);">${item.name || 'Unknown'}</div>
+                <div style="font-size: 0.7rem; color: var(--ps3-red);">${issue}</div>
+              </div>
+              <button onclick="openItemDetail('${item.id}')" style="padding: 6px 12px; border-radius: 6px; border: none; background: var(--ps3-red); color: white; font-size: 0.7rem; cursor: pointer;">Detail</button>
+            </div>
+          `;
+          }).join('') || '<p style="font-size: 0.75rem; color: var(--ps3-muted); text-align: center; padding: 10px;">Tidak ada item yang memerlukan perhatian</p>'}
+        </div>
+
+        <!-- ROI Insights -->
+        <div style="background: var(--ps3-surface); border: 1px solid var(--ps3-border); border-radius: 10px; padding: 15px;">
+          <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; color: var(--ps3-silver);">💡 Rekomendasi</div>
+          <div style="font-size: 0.8rem; color: var(--ps3-muted); line-height: 1.5;">
+            <p style="margin-bottom: 8px;">• <strong style="color: var(--ps3-silver);">Optimasi Stasiun:</strong> Pindahkan item underutilized ke stasiun dengan traffic tinggi.</p>
+            <p style="margin-bottom: 8px;">• <strong style="color: var(--ps3-silver);">Maintenance Schedule:</strong> Item dengan usage >100j perlu perawatan preventif.</p>
+            <p>• <strong style="color: var(--ps3-silver);">Investasi:</strong> Prioritaskan pembelian item kategori dengan usage tertinggi.</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderUsageTrendChart(trendData) {
+      const canvas = document.getElementById('usageTrendCanvas');
+      if (!canvas || !trendData || trendData.length === 0) return;
+
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const width = rect.width;
+      const height = rect.height;
+      const padding = { top: 20, right: 20, bottom: 30, left: 40 };
+      const chartWidth = width - padding.left - padding.right;
+      const chartHeight = height - padding.top - padding.bottom;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, width, height);
+
+      // Get data range with safe fallbacks for undefined values
+      const maxHours = Math.max(...trendData.map(d => d?.total_hours || 0), 1);
+      const dates = trendData.filter(d => d?.date).map(d => new Date(d.date));
+
+      // Draw grid lines
+      ctx.strokeStyle = 'rgba(192, 192, 192, 0.1)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 5; i++) {
+        const y = padding.top + (chartHeight / 5) * i;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+        ctx.stroke();
+      }
+
+      // Draw line chart
+      const validTrendData = trendData.filter(d => d?.total_hours !== undefined);
+      if (validTrendData.length > 1) {
+        ctx.strokeStyle = '#e60012';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        validTrendData.forEach((point, index) => {
+          const x = padding.left + (index / (validTrendData.length - 1)) * chartWidth;
+          const y = padding.top + chartHeight - ((point.total_hours || 0) / maxHours) * chartHeight;
+
+          if (index === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+
+        ctx.stroke();
+
+        // Fill area under line
+        ctx.fillStyle = 'rgba(230, 0, 18, 0.1)';
+        ctx.beginPath();
+        ctx.moveTo(padding.left, padding.top + chartHeight);
+        validTrendData.forEach((point, index) => {
+          const x = padding.left + (index / (validTrendData.length - 1)) * chartWidth;
+          const y = padding.top + chartHeight - ((point.total_hours || 0) / maxHours) * chartHeight;
+          ctx.lineTo(x, y);
+        });
+        ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Draw points
+      validTrendData.forEach((point, index) => {
+        const x = padding.left + (validTrendData.length > 1 ? (index / (validTrendData.length - 1)) * chartWidth : chartWidth / 2);
+        const y = padding.top + chartHeight - ((point.total_hours || 0) / maxHours) * chartHeight;
+
+        ctx.fillStyle = '#e60012';
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw Y-axis labels
+      ctx.fillStyle = '#808080';
+      ctx.font = '10px Rajdhani';
+      ctx.textAlign = 'right';
+      for (let i = 0; i <= 5; i++) {
+        const value = Math.round((maxHours / 5) * (5 - i));
+        const y = padding.top + (chartHeight / 5) * i + 3;
+        ctx.fillText(value + 'j', padding.left - 5, y);
+      }
+
+      // Draw X-axis labels (show 5 dates)
+      ctx.textAlign = 'center';
+      const validDataForLabels = trendData.filter(d => d?.date);
+      const labelCount = Math.min(5, validDataForLabels.length);
+      
+      // Handle edge case: if only 1 data point or no valid data, skip labels
+      if (labelCount === 1) {
+        const x = padding.left + chartWidth / 2;
+        const date = new Date(validDataForLabels[0].date);
+        const label = `${date.getDate()}/${date.getMonth() + 1}`;
+        ctx.fillText(label, x, height - 10);
+      } else if (labelCount > 1) {
+        for (let i = 0; i < labelCount; i++) {
+          const index = Math.floor((i / (labelCount - 1)) * (validDataForLabels.length - 1));
+          const dataPoint = validDataForLabels[index];
+          if (!dataPoint?.date) continue;
+          const x = padding.left + (index / (validDataForLabels.length - 1)) * chartWidth;
+          const date = new Date(dataPoint.date);
+          const label = `${date.getDate()}/${date.getMonth() + 1}`;
+          ctx.fillText(label, x, height - 10);
+        }
+      }
     }
 
     // Capital Functions
@@ -11326,8 +11963,21 @@
               </div>
             </div>
           </div>
+          
+          <div style="border-top: 1px solid var(--ps3-border); padding-top: 15px; margin-top: 15px;">
+            <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ps3-muted); margin-bottom: 10px; text-align: center;">📈 Grafik Proyeksi Revenue (6 Bulan)</div>
+            <div style="height: 200px; position: relative;">
+              <canvas id="revenueProjectionChart"></canvas>
+            </div>
+            <div id="revenueProjectionSummary"></div>
+          </div>
         ` : '<p style="text-align: center; color: var(--ps3-muted); font-size: 0.8rem; padding: 10px;">Belum cukup data transaksi untuk proyeksi. Minimal 2 hari dengan transaksi.</p>'}
       `;
+      
+      // Render chart after DOM update
+      if (avgDaily > 0) {
+        setTimeout(() => renderRevenueProjectionChart(), 100);
+      }
     }
 
     function renderCapitalHistory() {
@@ -11353,6 +12003,10 @@
                 <span class="text-75 text-muted">${formatDate(item.date)}</span>
               </div>
               ${item.description ? `<div class="text-8 text-muted mt-2">${item.description}</div>` : ''}
+              <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <button class="btn btn-sm" style="padding: 4px 8px; font-size: 0.75rem;" onclick="openEditCapitalModal(${item.id}, ${item.amount}, '${item.description || ''}', '${item.date}', '${item.source || ''}')">✏️ Edit</button>
+                <button class="btn btn-sm btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="deleteCapitalItem(${item.id})">🗑️ Hapus</button>
+              </div>
             </div>
           `;
         } else {
@@ -11364,10 +12018,28 @@
               </div>
               <div class="fs-8 text-muted mt-2">${item.item}</div>
               ${item.category ? `<div class="text-sm text-muted">${item.category}</div>` : ''}
+              <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <button class="btn btn-sm" style="padding: 4px 8px; font-size: 0.75rem;" onclick="openEditCapitalExpenseModal(${item.id}, '${item.item}', '${item.category || ''}', ${item.amount}, '${item.date}', '${item.note || ''}')">✏️ Edit</button>
+                <button class="btn btn-sm btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="deleteCapitalExpense(${item.id})">🗑️ Hapus</button>
+              </div>
             </div>
           `;
         }
       }).join('');
+    }
+
+    async function deleteCapitalItem(id, type) {
+      if (!confirm('Hapus data modal ini?')) return;
+      
+      try {
+        await api('DELETE', `/capital/${id}`);
+        await loadCapital();
+        renderCapitalSummary();
+        renderCapitalHistory();
+        showToast('Modal dihapus', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
     }
 
     async function deleteCapitalExpense(id) {
@@ -11381,6 +12053,200 @@
         showToast('Pengeluaran dihapus', 'success');
       } catch (error) {
         showToast(error.message, 'error');
+      }
+    }
+
+    // ═════════════════ CAPITAL EDIT FUNCTIONS ═════════════════
+    function openEditCapitalModal(id, amount, description, date, source) {
+      document.getElementById('editCapitalId').value = id;
+      document.getElementById('editCapitalAmount').value = amount;
+      document.getElementById('editCapitalDesc').value = description || '';
+      document.getElementById('editCapitalDate').value = date;
+      document.getElementById('editCapitalSource').value = source || '';
+      openModal('modalEditCapital', true);
+    }
+
+    function openEditCapitalExpenseModal(id, item, category, amount, date, note) {
+      document.getElementById('editCapitalExpenseId').value = id;
+      document.getElementById('editCapitalExpenseItem').value = item;
+      document.getElementById('editCapitalExpenseCategory').value = category || '';
+      document.getElementById('editCapitalExpenseAmount').value = amount;
+      document.getElementById('editCapitalExpenseDate').value = date;
+      document.getElementById('editCapitalExpenseNote').value = note || '';
+      openModal('modalEditCapitalExpense', true);
+    }
+
+    async function saveEditCapital() {
+      const id = document.getElementById('editCapitalId').value;
+      const amount = parseFloat(document.getElementById('editCapitalAmount').value) || 0;
+      const description = document.getElementById('editCapitalDesc').value.trim();
+      const date = document.getElementById('editCapitalDate').value;
+      const source = document.getElementById('editCapitalSource').value.trim();
+
+      if (amount <= 0) {
+        showToast('Jumlah modal harus lebih dari 0', 'error');
+        return;
+      }
+
+      try {
+        await api('PUT', `/capital/${id}`, { amount, description, date, source });
+        await loadCapital();
+        renderCapitalSummary();
+        renderCapitalHistory();
+        closeModal('modalEditCapital');
+        showToast('Modal berhasil diperbarui', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    async function saveEditCapitalExpense() {
+      const id = document.getElementById('editCapitalExpenseId').value;
+      const item = document.getElementById('editCapitalExpenseItem').value.trim();
+      const category = document.getElementById('editCapitalExpenseCategory').value;
+      const amount = parseFloat(document.getElementById('editCapitalExpenseAmount').value) || 0;
+      const date = document.getElementById('editCapitalExpenseDate').value;
+      const note = document.getElementById('editCapitalExpenseNote').value.trim();
+
+      if (!item) {
+        showToast('Nama item wajib diisi', 'error');
+        return;
+      }
+      if (amount <= 0) {
+        showToast('Jumlah pengeluaran harus lebih dari 0', 'error');
+        return;
+      }
+
+      try {
+        await api('PUT', `/capital/expenses/${id}`, { item, category, amount, date, note });
+        await loadCapital();
+        renderCapitalSummary();
+        renderCapitalHistory();
+        closeModal('modalEditCapitalExpense');
+        showToast('Pengeluaran investasi berhasil diperbarui', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    // ═════════════════ REVENUE PROJECTION CHART ═════════════════
+    let revenueChartInstance = null;
+
+    async function renderRevenueProjectionChart() {
+      const canvas = document.getElementById('revenueProjectionChart');
+      if (!canvas) return;
+
+      try {
+        const response = await api('GET', '/stats/revenue-projection');
+        if (!response.ok) {
+          console.log('Revenue projection data not available');
+          return;
+        }
+
+        const { summary, projections } = response;
+        
+        // Prepare chart data
+        const labels = projections.filter((_, i) => i % 7 === 0).map(p => {
+          const date = new Date(p.date);
+          return `${date.getDate()}/${date.getMonth() + 1}`;
+        });
+        
+        const revenueData = projections.filter((_, i) => i % 7 === 0).map(p => p.projectedRevenue);
+        const investmentLine = projections.filter((_, i) => i % 7 === 0).map(p => p.investment);
+
+        // Destroy existing chart
+        if (revenueChartInstance) {
+          revenueChartInstance.destroy();
+        }
+
+        const ctx = canvas.getContext('2d');
+        revenueChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Proyeksi Pendapatan',
+                data: revenueData,
+                borderColor: '#00aa00',
+                backgroundColor: 'rgba(0, 170, 0, 0.1)',
+                fill: true,
+                tension: 0.4
+              },
+              {
+                label: 'Total Investasi',
+                data: investmentLine,
+                borderColor: '#e60012',
+                backgroundColor: 'transparent',
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  color: '#C0C0C0',
+                  font: { size: 11 }
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return context.dataset.label + ': Rp' + Math.round(context.raw).toLocaleString();
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                ticks: {
+                  color: '#C0C0C0',
+                  font: { size: 10 }
+                },
+                grid: {
+                  color: 'rgba(192, 192, 192, 0.1)'
+                }
+              },
+              y: {
+                ticks: {
+                  color: '#C0C0C0',
+                  font: { size: 10 },
+                  callback: function(value) {
+                    return 'Rp' + (value / 1000000).toFixed(1) + 'M';
+                  }
+                },
+                grid: {
+                  color: 'rgba(192, 192, 192, 0.1)'
+                }
+              }
+            }
+          }
+        });
+
+        // Update summary text
+        const summaryEl = document.getElementById('revenueProjectionSummary');
+        if (summaryEl) {
+          summaryEl.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
+              <div style="background: rgba(0,170,0,0.1); border: 1px solid var(--ps3-green); border-radius: 8px; padding: 8px; text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--ps3-muted);">Proyeksi 6 Bulan</div>
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--ps3-green);">Rp${summary.projected6MonthRevenue.toLocaleString()}</div>
+              </div>
+              <div style="background: rgba(192,192,192,0.1); border: 1px solid var(--ps3-silver); border-radius: 8px; padding: 8px; text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--ps3-muted);">Est. Profit 6 Bulan</div>
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--ps3-silver);">Rp${summary.projected6MonthProfit.toLocaleString()}</div>
+              </div>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('Failed to render revenue projection:', error);
       }
     }
 
@@ -11771,6 +12637,208 @@
         document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
       }
     });
+
+    // Expose functions to window for inline onclick handlers
+    window.deleteInventory = deleteInventory;
+    window.openItemDetail = openItemDetail;
+    window.setInventoryFilter = setInventoryFilter;
+    window.switchAnalyticsView = switchAnalyticsView;
+    window.setAnalyticsItemFilter = setAnalyticsItemFilter;
+    window.setAnalyticsSort = setAnalyticsSort;
+    window.goToDashboardFromBubble = goToDashboardFromBubble;
+
+    // ═════════════════ Extend Duration Functions ═════════════════
+    let currentExtendUnitId = null;
+    let currentExtendUnitName = null;
+
+    function openExtendDurationModal(unitId, unitName) {
+      currentExtendUnitId = unitId;
+      currentExtendUnitName = unitName;
+      
+      // Cari di stations array (Dashboard)
+      let unit = stations.find(s => s.id === unitId || s.id === String(unitId));
+      
+      if (!unit || !unit.active) {
+        showToast('Stasiun tidak aktif', 'error');
+        return;
+      }
+
+      // Calculate current end time
+      const startTime = unit.startTime;
+      const currentDuration = unit.duration || 0;
+      const currentEndTime = currentDuration > 0 ? startTime + (currentDuration * 60000) : null;
+      
+      const infoDiv = document.getElementById('extendDurationInfo');
+      infoDiv.innerHTML = `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span class="text-muted">Stasiun:</span>
+          <span class="fw-600">${unitName}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span class="text-muted">Pelanggan:</span>
+          <span class="fw-600">${unit.customer || '-'}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span class="text-muted">Durasi saat ini:</span>
+          <span class="fw-600">${currentDuration > 0 ? currentDuration + ' menit' : 'Tak terbatas'}</span>
+        </div>
+        ${currentEndTime ? `
+        <div style="display: flex; justify-content: space-between;">
+          <span class="text-muted">Selesai pukul:</span>
+          <span class="fw-600">${new Date(currentEndTime).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false})} WIB</span>
+        </div>
+        ` : ''}
+      `;
+
+      // Reset form
+      document.getElementById('extendDurationInput').value = '';
+      document.getElementById('extendDurationValidation').style.display = 'none';
+      document.getElementById('extendDurationConflict').style.display = 'none';
+      document.getElementById('btnConfirmExtend').disabled = true;
+
+      openModal('modalExtendDuration');
+    }
+
+    function selectExtendDuration(minutes) {
+      document.getElementById('extendDurationInput').value = minutes;
+      validateExtendDuration();
+    }
+
+    async function validateExtendDuration() {
+      const input = document.getElementById('extendDurationInput');
+      const minutes = parseInt(input.value);
+      const validationDiv = document.getElementById('extendDurationValidation');
+      const conflictDiv = document.getElementById('extendDurationConflict');
+      const confirmBtn = document.getElementById('btnConfirmExtend');
+
+      if (!minutes || minutes <= 0) {
+        validationDiv.style.display = 'none';
+        conflictDiv.style.display = 'none';
+        confirmBtn.disabled = true;
+        return;
+      }
+
+      const unit = stations.find(s => s.id === currentExtendUnitId || s.id === String(currentExtendUnitId));
+      if (!unit || !unit.active) return;
+
+      const startTime = unit.startTime;
+      const currentDuration = unit.duration || 0;
+      const currentEndTime = currentDuration > 0 ? startTime + (currentDuration * 60000) : Date.now();
+      const newEndTime = currentEndTime + (minutes * 60000);
+
+      // Format dates for comparison
+      const newEndDate = new Date(newEndTime);
+      const newEndDateStr = newEndDate.toISOString().split('T')[0];
+      const newEndTimeStr = newEndDate.toTimeString().slice(0, 5); // HH:MM
+
+      // Check for booking conflicts
+      const conflictingSchedules = [];
+      
+      // Reload schedules to ensure we have latest data
+      await loadSchedules();
+
+      for (const schedule of schedules) {
+        // Only check pending schedules for this unit/station
+        if (schedule.status !== 'pending') continue;
+        if (schedule.unitId !== currentExtendUnitId && schedule.unitId !== unit.unitId) continue;
+
+        // Get schedule start time
+        const scheduleStart = new Date(schedule.scheduledDate + 'T' + (schedule.scheduledTime || '00:00'));
+        
+        // Check if new end time overlaps with this schedule
+        if (newEndTime > scheduleStart.getTime()) {
+          conflictingSchedules.push({
+            id: schedule.scheduleId || schedule.id,
+            customer: schedule.customer,
+            date: schedule.scheduledDate,
+            time: schedule.scheduledTime,
+            startTime: scheduleStart
+          });
+        }
+      }
+
+      if (conflictingSchedules.length > 0) {
+        // Show conflict
+        const conflict = conflictingSchedules[0]; // Show first conflict
+        conflictDiv.innerHTML = `
+          <div style="font-weight: 700; margin-bottom: 8px;">⚠️ Bertabrakan dengan Jadwal!</div>
+          <div>Tidak bisa menambah ${minutes} menit karena bertabrakan dengan:</div>
+          <div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+            <div><strong>${conflict.customer}</strong></div>
+            <div>Jadwal: ${conflict.date} ${conflict.time}</div>
+            <div style="font-size: 0.8rem; margin-top: 4px;">ID: ${conflict.id}</div>
+          </div>
+          <div style="margin-top: 8px;">Durasi maksimum yang bisa ditambah: <strong>${calculateMaxExtendMinutes(unit, conflict.startTime)} menit</strong></div>
+        `;
+        conflictDiv.style.display = 'block';
+        validationDiv.style.display = 'none';
+        confirmBtn.disabled = true;
+      } else {
+        // No conflict - show validation success
+        conflictDiv.style.display = 'none';
+        validationDiv.innerHTML = `
+          <div style="color: var(--ps3-green);">✅ Tidak ada konflik dengan jadwal yang sudah dibooking</div>
+          <div style="margin-top: 8px; color: var(--ps3-text);">
+            Waktu selesai baru: <strong>${newEndDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit', hour12: false})} WIB</strong>
+          </div>
+        `;
+        validationDiv.style.display = 'block';
+        confirmBtn.disabled = false;
+      }
+    }
+
+    function calculateMaxExtendMinutes(unit, conflictStartTime) {
+      const currentDuration = unit.duration || 0;
+      const currentEndTime = currentDuration > 0 ? unit.startTime + (currentDuration * 60000) : Date.now();
+      const maxExtendMs = conflictStartTime.getTime() - currentEndTime - (5 * 60000); // 5 min buffer
+      return Math.max(0, Math.floor(maxExtendMs / 60000));
+    }
+
+    async function confirmExtendDuration() {
+      const minutes = parseInt(document.getElementById('extendDurationInput').value);
+      if (!minutes || minutes <= 0) {
+        showToast('Masukkan durasi yang valid', 'error');
+        return;
+      }
+
+      const unit = stations.find(s => s.id === currentExtendUnitId || s.id === String(currentExtendUnitId));
+      if (!unit || !unit.active) {
+        showToast('Stasiun tidak aktif', 'error');
+        return;
+      }
+
+      try {
+        await api('POST', `/stations/${currentExtendUnitId}/extend`, { additionalMinutes: minutes });
+        showToast(`Durasi bertambah ${minutes} menit`, 'success');
+        closeModal('modalExtendDuration');
+        await fetchData(); // Refresh data
+      } catch (error) {
+        console.error('Failed to extend duration:', error);
+        showToast('Gagal menambah durasi: ' + (error.message || 'Unknown error'), 'error');
+      }
+    }
+
+    window.goToDashboardFromBubble = goToDashboardFromBubble;
+    window.openExtendDurationModal = openExtendDurationModal;
+    window.selectExtendDuration = selectExtendDuration;
+    window.validateExtendDuration = validateExtendDuration;
+    window.confirmExtendDuration = confirmExtendDuration;
+    
+    // Capital management functions
+    window.openEditCapitalModal = openEditCapitalModal;
+    window.openEditCapitalExpenseModal = openEditCapitalExpenseModal;
+    window.saveEditCapital = saveEditCapital;
+    window.saveEditCapitalExpense = saveEditCapitalExpense;
+    window.deleteCapitalItem = deleteCapitalItem;
+    window.deleteCapitalExpense = deleteCapitalExpense;
+    window.renderRevenueProjectionChart = renderRevenueProjectionChart;
+
+    // Full Backup & Restore functions
+    window.createFullBackup = createFullBackup;
+    window.openRestoreModal = openRestoreModal;
+    window.handleRestoreFileSelect = handleRestoreFileSelect;
+    window.validateBackupStructure = validateBackupStructure;
+    window.executeFullRestore = executeFullRestore;
 
     // Initialize
     (async function init() {
